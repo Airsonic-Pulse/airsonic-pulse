@@ -80,7 +80,7 @@ jobs:
         run: |
           echo "${{ secrets.GPG_SIGNING_PASSPHRASE }}" | gpg --quiet --batch --yes --pinentry-mode loopback --clearsign --passphrase-fd 0 airsonic-main/target/artifacts-checksums.sha;
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
@@ -174,7 +174,7 @@ jobs:
             stable-${{ env.RELEASE_TAG }}
             gitcommit-${{ github.sha }}
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
