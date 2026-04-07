@@ -99,7 +99,7 @@ jobs:
             ${{ steps.tagcalc.outputs.tag }}
             gitcommit-${{ github.sha }}
       - name: Build and push multiplatform images to Dockerhub
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           file: install/docker/Dockerfile
           context: install/docker
