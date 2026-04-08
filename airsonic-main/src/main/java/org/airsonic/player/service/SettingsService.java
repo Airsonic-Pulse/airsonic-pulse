@@ -466,8 +466,14 @@ public class SettingsService {
             .build(new CacheLoader<String, String>() {
                 @Override
                 public String load(String executable) throws Exception {
-                        return Arrays.asList(homeConfig.getTranscodeDirectory().resolve(executable).toString(), executable)
-                            .stream()
+                        Stream.Builder<String> candidates = Stream.builder();
+                        candidates.add(homeConfig.getTranscodeDirectory().resolve(executable).toString());
+                        candidates.add(executable);
+                        if (!System.getProperty("os.name").toLowerCase().startsWith("win")) {
+                            candidates.add("/usr/bin/" + executable);
+                            candidates.add("/usr/local/bin/" + executable);
+                        }
+                        return candidates.build()
                             .filter(command -> isExecutableInstalled(command))
                             .findFirst()
                             .orElseThrow();
