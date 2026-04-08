@@ -227,11 +227,9 @@ public class Playlist {
             return true;
         }
 
-        if (o == null || !(o instanceof Playlist)) {
+        if (!(o instanceof Playlist p)) {
             return false;
         }
-
-        Playlist p = (Playlist) o;
         return Objects.equals(id, p.id);
     }
 

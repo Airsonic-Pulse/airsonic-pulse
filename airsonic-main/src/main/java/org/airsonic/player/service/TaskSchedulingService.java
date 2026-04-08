@@ -143,10 +143,8 @@ public class TaskSchedulingService implements ScheduledTaskHolder {
         }
 
         private RunMetadata getRunMetadata(Instant created, ScheduledTask scheduledTask, Instant now) {
-            if (scheduledTask.getTask() instanceof TriggerTask) {
-                TriggerTask task = (TriggerTask) scheduledTask.getTask();
-                if (task.getTrigger() instanceof RunOnceTrigger) {
-                    RunOnceTrigger trigger = (RunOnceTrigger) task.getTrigger();
+            if (scheduledTask.getTask() instanceof TriggerTask task) {
+                if (task.getTrigger() instanceof RunOnceTrigger trigger) {
                     Instant firstRun = created.plusMillis(trigger.getInitialDelayDuration().toMillis());
                     if (firstRun.isAfter(now)) {
                         return new RunMetadata(firstRun, null, firstRun, RunMetadata.Type.RUN_ONCE);
@@ -154,8 +152,7 @@ public class TaskSchedulingService implements ScheduledTaskHolder {
                         return new RunMetadata(firstRun, firstRun, null, RunMetadata.Type.RUN_ONCE);
                     }
                 }
-            } else if (scheduledTask.getTask() instanceof IntervalTask) {
-                IntervalTask task = (IntervalTask) scheduledTask.getTask();
+            } else if (scheduledTask.getTask() instanceof IntervalTask task) {
                 Instant firstRun = created.plusMillis(task.getInitialDelayDuration().toMillis());
                 long millis = ChronoUnit.MILLIS.between(firstRun, now);
                 if (millis < 0) {

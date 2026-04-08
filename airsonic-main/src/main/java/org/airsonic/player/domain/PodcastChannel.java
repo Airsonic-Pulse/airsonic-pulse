@@ -171,11 +171,9 @@ public class PodcastChannel implements Serializable {
             return true;
         }
 
-        if (other == null || !(other instanceof PodcastChannel)) {
+        if (!(other instanceof PodcastChannel otherChannel)) {
             return false;
         }
-
-        PodcastChannel otherChannel = (PodcastChannel) other;
         return Objects.equals(id, otherChannel.id);
     }
 

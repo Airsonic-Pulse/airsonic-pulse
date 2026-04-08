@@ -278,8 +278,8 @@ public class SonosService implements SonosSoap {
         AbstractMedia abstractMedia = sonosHelper.forMediaFile(mediaFile, getUsername(), getRequest());
 
         ExtendedMetadata extendedMetadata = new ExtendedMetadata();
-        if (abstractMedia instanceof MediaCollection) {
-            extendedMetadata.setMediaCollection((MediaCollection) abstractMedia);
+        if (abstractMedia instanceof MediaCollection mc) {
+            extendedMetadata.setMediaCollection(mc);
         } else {
             extendedMetadata.setMediaMetadata((MediaMetadata) abstractMedia);
         }

@@ -430,10 +430,9 @@ public class Player {
     @Override
     public boolean equals(Object obj) {
         if (this == obj) return true;
-        if (obj == null || !(obj instanceof Player)) {
+        if (!(obj instanceof Player other)) {
             return false;
         }
-        Player other = (Player) obj;
         return Objects.equals(id, other.id);
     }
 

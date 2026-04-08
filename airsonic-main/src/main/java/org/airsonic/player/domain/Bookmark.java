@@ -144,11 +144,11 @@ public class Bookmark {
     @Override
     public boolean equals(Object obj) {
 
-        if (obj == null || !(obj instanceof Bookmark)) {
+        if (!(obj instanceof Bookmark b)) {
             return false;
         }
 
-        return Objects.equals(id, ((Bookmark) obj).id);
+        return Objects.equals(id, b.id);
     }
 
 }

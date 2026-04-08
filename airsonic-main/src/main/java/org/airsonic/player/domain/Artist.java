@@ -137,11 +137,9 @@ public class Artist {
     @Override
     public boolean equals(Object obj) {
 
-        if (obj == null || !(obj instanceof Artist)) {
+        if (!(obj instanceof Artist other)) {
             return false;
         }
-
-        Artist other = (Artist) obj;
         return Objects.equals(name, other.name);
     }
 }

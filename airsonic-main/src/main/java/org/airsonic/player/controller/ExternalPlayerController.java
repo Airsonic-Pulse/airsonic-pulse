@@ -110,7 +110,7 @@ public class ExternalPlayerController {
         securityService.createGuestUserIfNotExists();
         Player player = playerService.getGuestPlayer(request.getRemoteAddr());
 
-        Instant expires = authentication instanceof JWTAuthenticationToken ? JWTSecurityService.getExpiration((JWTAuthenticationToken) authentication) : null;
+        Instant expires = authentication instanceof JWTAuthenticationToken jwtToken ? JWTSecurityService.getExpiration(jwtToken) : null;
 
         Map<String, Object> map = new HashMap<>();
 

@@ -232,10 +232,9 @@ public class PodcastEpisode {
     public boolean equals(Object obj) {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
-        if (!(obj instanceof PodcastEpisode)) {
+        if (!(obj instanceof PodcastEpisode other)) {
             return false;
         }
-        PodcastEpisode other = (PodcastEpisode) obj;
         return Objects.equals(channel, other.channel)
                 && Objects.equals(episodeGuid, other.episodeGuid)
                 && Objects.equals(url, other.url);

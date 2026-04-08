@@ -195,9 +195,9 @@ public class CaptionsController {
         String user = null;
         Instant expiration = null;
 
-        if (authentication instanceof JWTAuthenticationToken) {
+        if (authentication instanceof JWTAuthenticationToken jwtToken) {
             user = authentication.getName();
-            expiration = JWTSecurityService.getExpiration((JWTAuthenticationToken) authentication);
+            expiration = JWTSecurityService.getExpiration(jwtToken);
         }
 
         return listCaptions(video, NetworkUtil.getBaseUrl(request), user, expiration);

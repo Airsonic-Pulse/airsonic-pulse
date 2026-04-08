@@ -295,11 +295,9 @@ public class Album {
     @Override
     public boolean equals(Object obj) {
 
-        if (obj == null || !(obj instanceof Album)) {
+        if (!(obj instanceof Album other)) {
             return false;
         }
-
-        Album other = (Album) obj;
 
         return Objects.equals(path, other.path) && Objects.equals(folder, other.folder);
     }

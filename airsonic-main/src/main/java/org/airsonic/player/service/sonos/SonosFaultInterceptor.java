@@ -73,8 +73,7 @@ public class SonosFaultInterceptor extends AbstractSoapInterceptor {
         Fault fault = (Fault) message.getContent(Exception.class);
         LOG.warn("Error with Soap message", fault);
 
-        if (fault.getCause() instanceof SonosSoapFault) {
-            SonosSoapFault cause = (SonosSoapFault) fault.getCause();
+        if (fault.getCause() instanceof SonosSoapFault cause) {
             fault.setFaultCode(new QName(cause.getFaultCode()));
             fault.setMessage(cause.getFaultCode());
 
@@ -82,9 +81,9 @@ public class SonosFaultInterceptor extends AbstractSoapInterceptor {
             Element details = document.createElement("detail");
             fault.setDetail(details);
 
-            if (cause instanceof TokenRefreshRequired) {
+            if (cause instanceof TokenRefreshRequired trr) {
                 try {
-                    marshaller.marshal(((TokenRefreshRequired) cause).getRefreshTokens(), details);
+                    marshaller.marshal(trr.getRefreshTokens(), details);
                 } catch (JAXBException e) {
                     LOG.warn("Could not marshal Sonos refresh tokens", e);
                 }

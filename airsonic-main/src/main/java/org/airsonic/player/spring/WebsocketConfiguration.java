@@ -100,7 +100,7 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
                         new WebsocketInterceptedServletRequest(sshr, contextPath));
                 attributes.put(USER_AGENT, request.getHeaders().getFirst("User-Agent"));
                 attributes.put(UNDERLYING_HTTP_SESSION,
-                        ((ServletServerHttpRequest) request).getServletRequest().getSession(false));
+                        sshr.getServletRequest().getSession(false));
                 attributes.put(BASE_URL, NetworkUtil.getBaseUrl(sshr.getServletRequest()));
             }
 

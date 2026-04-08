@@ -82,11 +82,9 @@ public class PodcastChannelRule {
             return true;
         }
 
-        if (other == null || !(other instanceof PodcastChannelRule)) {
+        if (!(other instanceof PodcastChannelRule otherRule)) {
             return false;
         }
-
-        PodcastChannelRule otherRule = (PodcastChannelRule) other;
         return Objects.equals(id, otherRule.id);
     }
 

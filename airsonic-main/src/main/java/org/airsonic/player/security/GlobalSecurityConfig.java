@@ -57,11 +57,10 @@ public class GlobalSecurityConfig {
 
     @EventListener
     public void loginFailureListener(AbstractAuthenticationFailureEvent event) {
-        if (event.getSource() instanceof AbstractAuthenticationToken) {
-            AbstractAuthenticationToken token = (AbstractAuthenticationToken) event.getSource();
+        if (event.getSource() instanceof AbstractAuthenticationToken token) {
             Object details = token.getDetails();
-            if (details instanceof WebAuthenticationDetails) {
-                LOG.info("Login failed from [{}]", ((WebAuthenticationDetails) details).getRemoteAddress());
+            if (details instanceof WebAuthenticationDetails wad) {
+                LOG.info("Login failed from [{}]", wad.getRemoteAddress());
             }
         }
     }

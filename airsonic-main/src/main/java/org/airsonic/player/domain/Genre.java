@@ -90,11 +90,9 @@ public class Genre {
     @Override
     public boolean equals(Object obj) {
 
-        if (obj == null || !(obj instanceof Genre)) {
+        if (!(obj instanceof Genre other)) {
             return false;
         }
-
-        Genre other = (Genre) obj;
         return Objects.equals(name, other.name);
     }
 }

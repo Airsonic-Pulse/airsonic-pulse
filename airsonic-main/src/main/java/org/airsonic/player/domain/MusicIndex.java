@@ -94,11 +94,9 @@ public class MusicIndex implements Serializable {
         if (this == o) {
             return true;
         }
-        if (!(o instanceof MusicIndex)) {
+        if (!(o instanceof MusicIndex musicIndex)) {
             return false;
         }
-
-        final MusicIndex musicIndex = (MusicIndex) o;
 
         return Objects.equals(index, musicIndex.index);
     }

@@ -227,8 +227,8 @@ public class UPnPService {
         List<String> result = new ArrayList<String>();
         for (Device<?, ?, ?> device : upnpService.getRegistry()
                 .getDevices(new DeviceType("schemas-upnp-org", "ZonePlayer"))) {
-            if (device instanceof RemoteDevice) {
-                URL descriptorURL = ((RemoteDevice) device).getIdentity().getDescriptorURL();
+            if (device instanceof RemoteDevice remoteDevice) {
+                URL descriptorURL = remoteDevice.getIdentity().getDescriptorURL();
                 if (descriptorURL != null) {
                     result.add(descriptorURL.getHost());
                 }

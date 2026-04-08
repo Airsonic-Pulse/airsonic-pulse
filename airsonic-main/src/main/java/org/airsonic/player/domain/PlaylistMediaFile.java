@@ -75,9 +75,7 @@ public class PlaylistMediaFile implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof PlaylistMediaFile)) return false;
-
-        PlaylistMediaFile that = (PlaylistMediaFile) o;
+        if (!(o instanceof PlaylistMediaFile that)) return false;
 
         if (orderIndex != that.orderIndex) return false;
         if (id != null ? !id.equals(that.id) : that.id != null) return false;

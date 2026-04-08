@@ -128,8 +128,8 @@ public class SonosLinkSecurityInterceptor extends AbstractSoapInterceptor {
     private String getAction(SoapMessage message) {
         Object soapAction = message.get("SOAPAction");
 
-        if (soapAction instanceof String) {
-            String[] split = ((String) soapAction).split("#");
+        if (soapAction instanceof String s) {
+            String[] split = s.split("#");
             if (split.length > 1) {
                 return split[1];
             }

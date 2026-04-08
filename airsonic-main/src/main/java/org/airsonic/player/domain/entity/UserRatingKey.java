@@ -63,9 +63,7 @@ public class UserRatingKey implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof UserRatingKey)) return false;
-
-        UserRatingKey that = (UserRatingKey) o;
+        if (!(o instanceof UserRatingKey that)) return false;
 
         if (mediaFileId != that.mediaFileId) return false;
         if (!username.equals(that.username)) return false;
