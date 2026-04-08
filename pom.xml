@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.airsonic.player</groupId>
     <artifactId>airsonic</artifactId>
-    <version>12.0.0-SNAPSHOT</version>
+    <version>13.0.0-SNAPSHOT</version>
     <name>Airsonic</name>
     <packaging>pom</packaging>
     <organization>
@@ -22,6 +22,7 @@
     </parent>
 
     <properties>
+        <java.version>21</java.version>
         <failOnDependencyWarning>true</failOnDependencyWarning>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <cxf.version>4.1.3</cxf.version>
@@ -372,8 +373,7 @@
                     <encoding>UTF-8</encoding>
                     <verbose>false</verbose>
                     <showWarnings>true</showWarnings>
-                    <source>${java.version}</source>
-                    <target>${java.version}</target>
+                    <release>21</release>
                 </configuration>
             </plugin>
             <plugin>
@@ -500,17 +500,6 @@
             <properties>
                 <java.version>21</java.version>
                 <docker.java.version>21.0.7_6</docker.java.version>
-            </properties>
-        </profile>
-        <profile>
-            <id>java17</id>
-            <activation>
-                <jdk>[17,21)</jdk>
-            </activation>
-            <properties>
-                <java.version>17</java.version>
-                <docker.java.version>17.0.15_6</docker.java.version>
-                <lucene.version>9.12.2</lucene.version>
             </properties>
         </profile>
     </profiles>
