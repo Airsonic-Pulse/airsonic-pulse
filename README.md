@@ -4,7 +4,7 @@ Airsonic-Pulse
 
 What is Airsonic-Pulse?
 -----------------------
-Airsonic-Pulse is a continuation of [Airsonic-Advanced](https://github.com/kagemomiji/airsonic-advanced), a free, web-based media streamer providing ubiquitous access to your music. Airsonic-Pulse picks up where Airsonic-Advanced left off, with a focus on modernization, stability, and long-term maintenance.
+Airsonic-Pulse is a continuation of Kagemomiji's [Airsonic-Advanced](https://github.com/kagemomiji/airsonic-advanced), a free, web-based media streamer providing ubiquitous access to your music. Airsonic-Pulse picks up where Airsonic-Advanced left off, with a focus on modernization, stability, and long-term maintenance.
 
 **Fork lineage:** Subsonic → Airsonic → Airsonic-Advanced → **Airsonic-Pulse**
 
