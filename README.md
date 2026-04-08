@@ -1,5 +1,6 @@
 Airsonic-Pulse
 ==============
+(this readme is being rewritten)
 
 What is Airsonic-Pulse?
 -----------------------
@@ -85,8 +86,8 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Ability to pass properties via environment or system variables. You can but do not need to modify `airsonic.properties` to change preferences
   - Ability to use custom URLs to scrobble on ListenBrainz servers
   - Ability to use Repeat-One in play queues in web-clients
-  - Sonos support: [read documentation](https://github.com/kagemomiji/airsonic-advanced/blob/master/SONOS.md)
-  - Chromecast support: [read details](https://github.com/kagemomiji/airsonic-advanced/blob/master/CHROMECAST.md)
+  - Sonos support: [read documentation](https://github.com/litebito/airsonic-pulse/blob/master/SONOS.md)
+  - Chromecast support: [read details](https://github.com/litebito/airsonic-pulse/blob/master/CHROMECAST.md)
   - Ability to upload to specified folders (via `UploadsFolder` property/parameter)
   - Ability to upload multiple files simultaneously
   - Ability to upload and extract more archive formats:
@@ -132,9 +133,7 @@ Airsonic-Advanced snapshots are generally pretty stable and recommended for use 
 
 ### Stand-alone binaries
 Airsonic-Advanced can be downloaded from
-[GitHub](https://github.com/kagemomiji/airsonic-advanced/releases).
-
-The release signature may be verified using the [public key](https://github.com/kagemomiji/airsonic-advanced/blob/master/releases_public_key.asc).
+[GitHub](https://github.com/litebito/airsonic-pulse/releases).
 
 You need a _minimum_ Java Runtime Environment (JRE) of 1.8 for 10.6.x series, and 11 for 11.x onwards (including snapshots).
 - For 11.x releases and onwards -> Java 17
