@@ -34,6 +34,12 @@ Written in Java, Airsonic runs on most platforms, including Windows, Mac, Linux 
 
 ![Screenshot](contrib/assets/screenshot.png)
 
+Feature Enhancements in Airsonic-Pulse:
+---------------------------------------------------------
+The following is an incomplete list of features that are enhanced from Airsonic-Advanced:
+More modern base frameworks and libraries
+  - Spring Boot 3.x (instead of 2.x), Spring Framework 6.x (instead of 5.x). Plus all the additional dependency upgrades due to the base libaries being upgraded (including EhCache, upgraded SQL connectors etc.)
+
 Feature Enhancements (inherited from Airsonic-Advanced):
 ---------------------------------------------------------
 The following is an incomplete list of features that are enhanced from Airsonic:
