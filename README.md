@@ -1,17 +1,18 @@
-<!--
-# README.md
-# kagemomiji/airsonic-advanced
--->
-Airsonic-Advanced
-=================
-![](https://github.com/kagemomiji/airsonic-advanced/workflows/Edge%20Deploy%20CI%20(Maven)/badge.svg)
-![](https://github.com/kagemomiji/airsonic-advanced/workflows/Stable%20Deploy%20CI%20(Maven)/badge.svg)
+Airsonic-Pulse
+==============
 
-What is kagemomiji/airsonic-advanced?
-------------------------------------
-The main objective of this repository is to keep airsonic-advanced safe for use.
-I don't have much time to add features right now as I am adding tests to prevent deggregation and upgrade dependent libraries.
-Therefore, PRs for additional features are welcome!
+What is Airsonic-Pulse?
+-----------------------
+Airsonic-Pulse is a continuation of [Airsonic-Advanced](https://github.com/kagemomiji/airsonic-advanced), a free, web-based media streamer providing ubiquitous access to your music. Airsonic-Pulse picks up where Airsonic-Advanced left off, with a focus on modernization, stability, and long-term maintenance.
+
+**Fork lineage:** Subsonic → Airsonic → Airsonic-Advanced → **Airsonic-Pulse**
+
+### Why Airsonic-Pulse?
+Airsonic-Advanced was abandoned by its maintainers. Airsonic-Pulse continues the project with:
+- Active maintenance and security updates
+- Modernization of the Java platform (Java 21+)
+- Planned frontend overhaul
+- Continued Subsonic API compatibility
 
 What is Airsonic-Advanced?
 --------------------------
@@ -32,8 +33,8 @@ Written in Java, Airsonic runs on most platforms, including Windows, Mac, Linux 
 
 ![Screenshot](contrib/assets/screenshot.png)
 
-Feature Enhancements:
----------------------
+Feature Enhancements (inherited from Airsonic-Advanced):
+---------------------------------------------------------
 The following is an incomplete list of features that are enhanced from Airsonic:
 - More modern base frameworks and libraries
   - Spring Boot 2.x (instead of 1.x), Spring Framework 5.x (instead of 4.x). Plus all the additional dependency upgrades due to the base libaries being upgraded (including EhCache, upgraded SQL connectors etc.)
@@ -77,7 +78,7 @@ The following is an incomplete list of features that are enhanced from Airsonic:
   - Consistency checks and refactors
   - Documentation fixes
 - Miscellaneous
-  - Works with JDK17
+  - Works with JDK 21 (JDK 17 support will be removed in a future release)
   - Uses JSR 310 (Java time) instead of older Java packages for time/duration tracking
   - Uses Java's NIO for handling files instead of the older IO packages
   - More precise song duration calculation
@@ -168,11 +169,11 @@ docker compose -p airsonic-hsqldb -f docker-compose.hsqldb.yaml up
 ```
 
 ### Building/Compiling
-You may compile the code yourself by using maven. One of the repositories does not have https, so you may need to allow that for maven. A custom `settings.xml` has been put in `.mvn` folder for this purpose. A sample invocation would be (in the root):
+You may compile the code yourself by using Maven. A sample invocation would be (in the root):
 ```
-mvn clean compile package verify
+mvn clean package
 ```
-The main binary would be in `airsonic-main/target`
+Requires Java 21 and Maven 3.9+. The WAR file will be at `airsonic-main/target/airsonic.war`.
 
 ### Configuration
 
@@ -180,6 +181,10 @@ See the [Configuration](./docs/configures/README.md)
 
 Compatibility Notes:
 ------
+
+### Airsonic-Pulse 12.x
+Version 12.0.0 is the initial Airsonic-Pulse release. It is based on the final version of kagemomiji/airsonic-advanced (11.1.4) and remains fully compatible with it. Future 13.x releases will modernize the codebase (Java 21 exclusively) and may introduce breaking changes. Migration notes will be documented here when applicable.
+
 The following properties are new in Airsonic-Advanced:
   - `MediaScannerParallelism(<= 11.1.2)`: (default: number of available processors + 1) The parallelism to use when scanning media
   - `AIRSONIC_SCAN_PARALLELISM(> 11.1.2)`: (default: number of available processors + 1) The parallelism to use when scanning media
@@ -244,12 +249,14 @@ Around November 2019, Airsonic-Advanced was forked off the base Airsonic fork du
 
 December 2022, this repository forked from Airsonic-Advanced.
 
+In April 2026, Airsonic-Pulse was created as a continuation of kagemomiji/airsonic-advanced, which had become inactive. Airsonic-Pulse aims to modernize the codebase while maintaining the project's core mission as a free, open-source, self-hosted media server.
+
 Pull Requests are always welcome. All Pull Requests are reviewed before being merged to ensure we continue to meet our goals.
 
 License
 -------
 
-Airsonic-Advanced and Airsonic are free software and licensed under the [GNU General Public License version 3](http://www.gnu.org/copyleft/gpl.html). The code in this repository (and associated binaries) are free of any "license key" or other restrictions. If you wish to thank the maintainer of this repository, please consider a donation to the [Electronic Frontier Foundation](https://supporters.eff.org/donate).
+Airsonic-Pulse, Airsonic-Advanced, and Airsonic are free software and licensed under the [GNU General Public License version 3](http://www.gnu.org/copyleft/gpl.html). The code in this repository (and associated binaries) are free of any "license key" or other restrictions. If you wish to thank the maintainer of this repository, please consider a donation to the [Electronic Frontier Foundation](https://supporters.eff.org/donate).
 
 The [Subsonic source code](https://github.com/airsonic/subsonic-svn) was released under the GPLv3 through version 6.0-beta1. Beginning with 6.0-beta2, source is no longer provided. Binaries of Subsonic are only available under a commercial license. There is a [Subsonic Premium](http://www.subsonic.org/pages/premium.jsp) service which adds functionality not available in Airsonic. Subsonic also offers RPM, Deb, Exe, and other pre-built packages that Airsonic [currently does not](https://github.com/airsonic/airsonic/issues/65).
 
@@ -263,6 +270,6 @@ The cover art functionality supporting multiple image file formats is powered by
 
 Community
 ---------
-Bugs/feature requests/discussions pertaining to kagemomiji/airsonic-advanced may be raised as issues within GitHub on the Airsonic-Advanced project page.
+Bugs, feature requests, and discussions for Airsonic-Pulse can be raised as issues on the [Airsonic-Pulse GitHub page](https://github.com/litebito/airsonic-pulse).
 
-GitHub Discussions is prepared for community discussion, questions, etc:
+For historical context, the upstream project is archived at [kagemomiji/airsonic-advanced](https://github.com/kagemomiji/airsonic-advanced).
