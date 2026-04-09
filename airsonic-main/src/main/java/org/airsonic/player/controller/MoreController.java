@@ -43,7 +43,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Controller for the "more" page.
@@ -76,7 +75,7 @@ public class MoreController {
             Map<String, Object> context = settingsService.buildSpelContext();
             if (StringUtils.isNotEmpty(user.getUsername())) {
                 context.put("USER_NAME", user.getUsername());
-                context.put("USER_MUSIC_FOLDERS", musicFolders.stream().map(MusicFolder::getPath).map(Path::toString).collect(Collectors.toList()));
+                context.put("USER_MUSIC_FOLDERS", musicFolders.stream().map(MusicFolder::getPath).map(Path::toString).toList());
             }
             return context;
         };

@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping({"/statistics", "/statistics.view"})
@@ -34,7 +33,7 @@ public class StatisticsController {
 
     @GetMapping("/users")
     public List<UserDataTransferStatistics> getUserStatistics() {
-        return userService.getAllUsers().stream().map(x -> new UserDataTransferStatistics(x.getUsername(), x.getBytesStreamed(), x.getBytesDownloaded(), x.getBytesUploaded())).collect(Collectors.toList());
+        return userService.getAllUsers().stream().map(x -> new UserDataTransferStatistics(x.getUsername(), x.getBytesStreamed(), x.getBytesDownloaded(), x.getBytesUploaded())).toList();
     }
 
     @GetMapping("/transfers")

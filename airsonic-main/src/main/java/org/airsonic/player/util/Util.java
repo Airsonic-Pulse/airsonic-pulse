@@ -40,7 +40,6 @@ import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
-import static java.util.stream.Collectors.toList;
 
 /**
  * Miscellaneous general utility methods.
@@ -64,7 +63,7 @@ public final class Util {
 
     public static <T> List<T> subList(List<T> list, long offset, long max) {
         if (list.size() == Integer.MAX_VALUE) {
-            return list.stream().skip(offset).limit(max).collect(toList());
+            return list.stream().skip(offset).limit(max).toList();
         }
         return list.subList(Math.min(list.size(), Ints.saturatedCast(offset)), Math.min(list.size(), Ints.saturatedCast(offset + max)));
     }

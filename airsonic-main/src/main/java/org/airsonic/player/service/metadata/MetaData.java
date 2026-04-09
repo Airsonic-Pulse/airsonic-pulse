@@ -23,7 +23,6 @@ package org.airsonic.player.service.metadata;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Contains meta-data (song title, artist, album etc) for a music file.
@@ -178,15 +177,15 @@ public class MetaData {
     }
 
     public List<Track> getAudioTracks() {
-        return this.getTracks().stream().filter(i -> i.isAudio()).collect(Collectors.toList());
+        return this.getTracks().stream().filter(i -> i.isAudio()).toList();
     }
 
     public List<Track> getVideoTracks() {
-        return this.getTracks().stream().filter(i -> i.isVideo()).collect(Collectors.toList());
+        return this.getTracks().stream().filter(i -> i.isVideo()).toList();
     }
 
     public List<Track> getSubtitleTracks() {
-        return this.getTracks().stream().filter(i -> i.isSubtitle()).collect(Collectors.toList());
+        return this.getTracks().stream().filter(i -> i.isSubtitle()).toList();
     }
 
     public List<Chapter> getChapters() {

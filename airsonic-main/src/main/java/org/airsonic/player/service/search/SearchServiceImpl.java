@@ -33,7 +33,6 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.util.*;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 import static org.airsonic.player.service.search.IndexType.*;
 import static org.springframework.util.ObjectUtils.isEmpty;
@@ -134,7 +133,7 @@ public class SearchServiceImpl implements SearchService {
         List<Integer> docs = Arrays
                 .stream(searcher.search(query, Integer.MAX_VALUE).scoreDocs)
                 .map(sd -> sd.doc)
-                .collect(Collectors.toList());
+                .toList();
 
         List<D> result = new ArrayList<>();
         StoredFields storedFields = searcher.storedFields();

@@ -48,7 +48,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Controller
@@ -156,7 +155,7 @@ public class CaptionsController {
                     }
 
                     return i;
-                }).collect(Collectors.toList());
+                }).toList();
         Process process = new ProcessBuilder(command).start();
         Resource resource = new InputStreamResource(process.getInputStream());
         // Must read stderr from the process, otherwise it may block.
@@ -231,7 +230,7 @@ public class CaptionsController {
                         getUrl(basePath, externalUser, externalExpiration, video.getId(),
                                 URLEncoder.encode(c.toString(), StandardCharsets.UTF_8))));
 
-        return Stream.concat(internalCaptions, externalCaptions).collect(Collectors.toList());
+        return Stream.concat(internalCaptions, externalCaptions).toList();
     }
 
     public MetaData getVideoMetaData(MediaFile video) {
@@ -272,7 +271,7 @@ public class CaptionsController {
             return children.parallel()
                     .filter(c -> Files.isRegularFile(c))
                     .filter(c -> CAPTIONS_FORMATS.contains(FilenameUtils.getExtension(c.toString())))
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (IOException e) {
             LOG.warn("Could not retrieve directory list for {} to find subtitle files for {}", parentPath, video, e);
 

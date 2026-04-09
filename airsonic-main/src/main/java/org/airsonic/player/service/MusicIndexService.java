@@ -29,10 +29,8 @@ import java.io.Serializable;
 import java.nio.file.Paths;
 import java.text.Collator;
 import java.util.*;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static java.util.stream.Collectors.toList;
 
 /**
  * Provides services for grouping artists by index.
@@ -72,7 +70,7 @@ public class MusicIndexService {
     private List<MediaFile> getSingleSongs(List<MusicFolder> folders, boolean refresh) {
         return folders.stream().flatMap(f -> mediaFileService
                 .getChildrenOf(mediaFileService.getMediaFile(Paths.get(""), f, !refresh), true, false, true, !refresh)
-                .stream()).collect(toList());
+                .stream()).toList();
     }
 
     public List<MediaFile> getShortcuts(List<MusicFolder> musicFoldersToUse) {
@@ -81,7 +79,7 @@ public class MusicIndexService {
                         .map(musicFolder -> Pair.of(Paths.get(shortcut), musicFolder)))
                 .map(pair -> mediaFileService.getMediaFile(pair.getLeft(), pair.getRight(), true))
                 .filter(Objects::nonNull)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private <T extends SortableArtist> SortedMap<MusicIndex, List<T>> sortArtists(List<T> artists) {

@@ -23,7 +23,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Controller
@@ -124,7 +123,7 @@ public class MediaFileWSController {
                         Optional.ofNullable(ids).orElse(Collections.emptyList()).parallelStream().map(mediaFileService::getMediaFile))
                 .filter(Objects::nonNull)
                 .filter(x -> mediaFileService.showMediaFile(x))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private String guessArtist(List<MediaFile> children) {
@@ -195,7 +194,7 @@ public class MediaFileWSController {
         if (Objects.nonNull(parent) && !mediaFileService.isRoot(parent)) {
             List<MediaFile> siblings = mediaFileService.getChildrenOf(parent, false, true, true);
             result.addAll(siblings.stream().filter(sibling -> sibling.isAlbum() && !sibling.equals(dir))
-                    .collect(Collectors.toList()));
+                    .toList());
         }
         return result;
     }

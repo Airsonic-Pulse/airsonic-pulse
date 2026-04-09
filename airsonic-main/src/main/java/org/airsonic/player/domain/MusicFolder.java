@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * Represents a top level directory in which music or other media is stored.
@@ -223,11 +222,11 @@ public class MusicFolder implements Serializable {
 
 
     public static List<Integer> toIdList(List<MusicFolder> from) {
-        return from.stream().map(toId()).collect(Collectors.toList());
+        return from.stream().map(toId()).toList();
     }
 
     public static List<String> toPathList(List<MusicFolder> from) {
-        return from.stream().map(toPath()).collect(Collectors.toList());
+        return from.stream().map(toPath()).toList();
     }
 
     public static Function<MusicFolder, Integer> toId() {

@@ -25,7 +25,6 @@ import org.airsonic.player.domain.User;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class PodcastChannelCommand {
 
@@ -59,7 +58,7 @@ public class PodcastChannelCommand {
     }
 
     public void setEpisodesByDAO(List<PodcastEpisode> episodes) {
-        this.episodes = episodes.stream().map(PodcastEpisodeCommand::new).collect(Collectors.toList());
+        this.episodes = episodes.stream().map(PodcastEpisodeCommand::new).toList();
     }
 
     public boolean isPartyModeEnabled() {

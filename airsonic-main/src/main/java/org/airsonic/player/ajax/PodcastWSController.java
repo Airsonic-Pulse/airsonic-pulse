@@ -17,7 +17,6 @@ import org.springframework.stereotype.Controller;
 import java.security.Principal;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
 
 @Controller
 @MessageMapping("/podcasts")
@@ -33,7 +32,7 @@ public class PodcastWSController {
 
     @SubscribeMapping("all")
     public List<PodcastChannelInfo> getAllPodcastChannels() {
-        return podcastPersistenceService.getAllChannels().stream().map(this::wrap).collect(toList());
+        return podcastPersistenceService.getAllChannels().stream().map(this::wrap).toList();
     }
 
     @MessageMapping("channel")

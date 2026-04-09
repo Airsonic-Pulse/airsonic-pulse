@@ -67,7 +67,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.airsonic.player.security.RESTRequestParameterProcessingFilter.decrypt;
@@ -1664,7 +1663,7 @@ public class SubsonicRESTController {
     public void savePlayQueue(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
         String username = securityService.getCurrentUsername(request);
-        List<Integer> mediaFileIds = Arrays.stream(getIntParameters(request, "id")).boxed().collect(Collectors.toList());
+        List<Integer> mediaFileIds = Arrays.stream(getIntParameters(request, "id")).boxed().toList();
         Integer current = getIntParameter(request, "current");
         Long position = getLongParameter(request, "position");
         String changedBy = getRequiredStringParameter(request, "c");

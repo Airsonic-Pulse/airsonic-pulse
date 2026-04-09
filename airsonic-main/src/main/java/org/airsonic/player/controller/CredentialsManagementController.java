@@ -31,7 +31,6 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -76,7 +75,7 @@ public class CredentialsManagementController {
                     return c;
                 })
                 .sorted(Comparator.comparing(CredentialsCommand::getCreated))
-                .collect(Collectors.toList());
+                .toList();
 
         User userInDb = securityService.getUserByName(user.getName());
 

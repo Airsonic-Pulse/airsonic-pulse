@@ -42,7 +42,6 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
 
 /**
  * @author Allen Petersen
@@ -115,7 +114,7 @@ public class MediaFileUpnpProcessor extends UpnpContentProcessor <MediaFile, Med
             // if there's only one root folder just return it
             return getChildren(mediaFileService.getMediaFile("", allFolders.get(0)));
         } else {
-            return allFolders.stream().map(f -> mediaFileService.getMediaFile("", f)).collect(toList());
+            return allFolders.stream().map(f -> mediaFileService.getMediaFile("", f)).toList();
         }
     }
 

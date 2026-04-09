@@ -19,7 +19,6 @@ import java.util.Optional;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
-import static java.util.stream.Collectors.toList;
 
 public abstract class PlaylistImportHandler implements Ordered {
     @Autowired
@@ -58,7 +57,7 @@ public abstract class PlaylistImportHandler implements Ordered {
                 // look relative to all music folders
                 possibles.addAll(mediaFileService.getMediaFilesByRelativePath(path).stream()
                         .filter(m -> !EnumSet.of(MediaType.DIRECTORY, MediaType.ALBUM).contains(m.getMediaType()))
-                        .collect(toList()));
+                        .toList());
 
                 // look relative to home
                 Path resolvedFile = Paths.get(".").toAbsolutePath().resolve(path).normalize();

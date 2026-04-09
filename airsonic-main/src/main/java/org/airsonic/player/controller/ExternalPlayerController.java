@@ -50,7 +50,6 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
 
 /**
  * Controller for the page used to play shared music (Twitter, Facebook etc).
@@ -137,7 +136,7 @@ public class ExternalPlayerController {
                             return Stream.of(addUrlInfo(request, player, f, expires));
                         }
                     })
-                    .collect(toList());
+                    .toList();
         }
 
         return emptyList();

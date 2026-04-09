@@ -332,7 +332,7 @@ public class MediaFileService {
     public List<MediaFile> getVisibleChildrenOf(MediaFile parent, boolean includeDirectories, boolean sort) {
         return getChildrenOf(parent, true, includeDirectories, sort).stream()
                 .filter(this::showMediaFile)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     /**
@@ -382,7 +382,7 @@ public class MediaFileService {
                 resultStream = resultStream.sorted(new MediaFileComparator(settingsService.isSortAlbumsByYear()));
             }
 
-            return resultStream.collect(Collectors.toList());
+            return resultStream.toList();
         } catch (Exception e) {
             LOG.error("get children of {} failed", parent.getPath(), e);
             return Collections.emptyList();
@@ -479,7 +479,7 @@ public class MediaFileService {
                 .findByUsernameAndMediaFileMediaTypeInAndMediaFileFolderInAndMediaFilePresentTrue(username,
                         MediaType.audioTypes(), musicFolders,
                         new OffsetBasedPageRequest(offset, count, Sort.by("created").descending().and(Sort.by("id"))))
-                .stream().map(StarredMediaFile::getMediaFile).collect(Collectors.toList());
+                .stream().map(StarredMediaFile::getMediaFile).toList();
     }
 
     /**
@@ -522,7 +522,7 @@ public class MediaFileService {
                 .findByUsernameAndMediaFileMediaTypeAndMediaFileFolderInAndMediaFilePresentTrue(username,
                         MediaType.DIRECTORY, musicFolders,
                         new OffsetBasedPageRequest(offset, count, Sort.by("created").descending().and(Sort.by("id"))))
-                .stream().map(StarredMediaFile::getMediaFile).collect(Collectors.toList());
+                .stream().map(StarredMediaFile::getMediaFile).toList();
     }
 
      /**
@@ -641,7 +641,7 @@ public class MediaFileService {
                 .findByUsernameAndMediaFileMediaTypeAndMediaFileFolderInAndMediaFilePresentTrue(username,
                         MediaType.ALBUM, musicFolders,
                         new OffsetBasedPageRequest(offset, count, Sort.by("created").descending().and(Sort.by("id"))))
-                .stream().map(StarredMediaFile::getMediaFile).collect(Collectors.toList());
+                .stream().map(StarredMediaFile::getMediaFile).toList();
     }
 
     /**
@@ -843,7 +843,7 @@ public class MediaFileService {
                     LOG.warn("Could not find base file '{}' for cue sheet {}", filePath, indexPath);
                     return Stream.empty();
                 }
-            }).collect(Collectors.toList());
+            }).toList();
             result.addAll(indexedTracks);
         }
 
@@ -859,7 +859,7 @@ public class MediaFileService {
             tracks.forEach(t -> storedChildrenMap.remove(Pair.of(t.getPath(), t.getStartPosition())));
             tracks.add(base);
             return tracks.stream();
-        }).collect(Collectors.toList());
+        }).toList();
         result.addAll(audioBookTracks);
 
         // remove indexPath for deleted cuesheets, if any
@@ -871,7 +871,7 @@ public class MediaFileService {
                 }
                 return m;
             })
-            .collect(Collectors.toList());
+            .toList();
         result.addAll(nonIndexedTracks);
 
         // Delete children that no longer exist on disk.
@@ -1037,7 +1037,7 @@ public class MediaFileService {
             // Is this an album?
             if (!isRoot(mediaFile)) {
                 try (Stream<Path> stream = Files.list(file)) {
-                    List<Path> children = stream.parallel().collect(Collectors.toList());
+                    List<Path> children = stream.parallel().toList();
                     Path firstChild = children.parallelStream()
                             .filter(this::includeMediaFileByPath)
                             .filter(x -> Files.isRegularFile(x))

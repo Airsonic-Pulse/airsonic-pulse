@@ -40,7 +40,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 import java.util.Optional;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -87,14 +86,14 @@ public class PodcastSettingsController {
                             .filter(c -> c.getId().equals(cr.getId()))
                             .findFirst()
                             .map(c -> c.getTitle()).orElse(null)))
-                .collect(toList()));
+                .toList());
         command.getRules().add(new PodcastRule(new PodcastChannelRule(-1, settingsService.getPodcastUpdateInterval(), settingsService.getPodcastEpisodeRetentionCount(), settingsService.getPodcastEpisodeDownloadCount()), "DEFAULT"));
 
         command.setNewRule(new PodcastRule());
         command.setNoRuleChannels(channels.parallelStream()
                 .filter(c -> rules.stream().noneMatch(r -> r.getId().equals(c.getId())))
                 .map(c -> new PodcastRule(c.getId(), c.getTitle()))
-                .collect(toList()));
+                .toList());
 
         model.addAttribute("command", command);
         return "podcastSettings";

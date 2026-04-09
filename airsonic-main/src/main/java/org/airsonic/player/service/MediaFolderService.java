@@ -30,11 +30,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 @Service
 public class MediaFolderService {
@@ -81,7 +79,7 @@ public class MediaFolderService {
         return Streams.concat(
                 getAllMusicFolders(includeDisabled, includeNonExisting).stream(),
                 includeDeleted ? getDeletedMusicFolders().stream() : Stream.empty())
-            .collect(toList());
+            .toList();
     }
 
     /**
@@ -97,7 +95,7 @@ public class MediaFolderService {
                     return user.getMusicFolders()
                         .stream()
                         .filter(folder -> folder.isEnabled() && !folder.isDeleted() && Files.exists(folder.getPath()))
-                        .collect(Collectors.toList());
+                        .toList();
                 })
                 .orElse(new ArrayList<>());
         });
@@ -112,7 +110,7 @@ public class MediaFolderService {
     public List<MusicFolder> getMusicFoldersForUser(String username, Integer selectedMusicFolderId) {
         return getMusicFoldersForUser(username).stream()
                 .filter(f -> selectedMusicFolderId == null || selectedMusicFolderId < 0 || f.getId().equals(selectedMusicFolderId))
-                .collect(toList());
+                .toList();
     }
 
     @Transactional
@@ -369,19 +367,19 @@ public class MediaFolderService {
             // is same but not itself
             Path fAbsolute = f.getPath().normalize().toAbsolutePath();
             return fAbsolute.equals(absoluteFolderPath) && !f.getId().equals(folder.getId());
-        }).collect(toList());
+        }).toList();
         List<MusicFolder> ancestorFolders = allFolders.parallelStream().filter(f -> {
             // is ancestor
             Path fAbsolute = f.getPath().normalize().toAbsolutePath();
             return absoluteFolderPath.getNameCount() > fAbsolute.getNameCount()
                     && absoluteFolderPath.startsWith(fAbsolute);
-        }).sorted(Comparator.comparing(f -> f.getPath().getNameCount(), Comparator.reverseOrder())).collect(toList());
+        }).sorted(Comparator.comparing(f -> f.getPath().getNameCount(), Comparator.reverseOrder())).toList();
         List<MusicFolder> descendantFolders = allFolders.parallelStream().filter(f -> {
             // is descendant
             Path fAbsolute = f.getPath().normalize().toAbsolutePath();
             return fAbsolute.getNameCount() > absoluteFolderPath.getNameCount()
                     && fAbsolute.startsWith(absoluteFolderPath);
-        }).sorted(Comparator.comparing(f -> f.getPath().getNameCount())).collect(toList());
+        }).sorted(Comparator.comparing(f -> f.getPath().getNameCount())).toList();
 
         return Triple.of(sameFolders, ancestorFolders, descendantFolders);
     }

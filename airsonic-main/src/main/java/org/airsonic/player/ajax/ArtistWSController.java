@@ -14,7 +14,6 @@ import org.springframework.stereotype.Controller;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Controller
 @MessageMapping("/artist")
@@ -51,7 +50,7 @@ public class ArtistWSController {
         MediaFile artist = mediaFileService.getMediaFile(mediaFileId);
         return lastFmService.getSimilarArtistsByMediaFile(artist, limit, false, musicFolders).parallelStream()
                 .map(similarArtist -> new SimilarArtist(similarArtist.getId(), similarArtist.getName()))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public static class ArtistInfoRequest {

@@ -62,7 +62,6 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class CoverArtCreateService {
@@ -258,7 +257,7 @@ public class CoverArtCreateService {
                 .map(mediaFileService::getParentOf)
                 .filter(album -> album != null && !mediaFileService.isRoot(album))
                 .distinct()
-                .collect(Collectors.toList());
+                .toList();
 
         if (albums.isEmpty()) {
             return createAutoCover(request, size, size);

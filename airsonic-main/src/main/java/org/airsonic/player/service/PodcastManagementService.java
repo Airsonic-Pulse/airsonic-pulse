@@ -19,7 +19,6 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 @Service
 public class PodcastManagementService {
@@ -136,7 +135,7 @@ public class PodcastManagementService {
     public void refreshChannelIds(final List<Integer> channelIds, final boolean downloadEpisodes) {
         List<PodcastChannel> channels = channelIds.stream().map(channelId -> podcastPersistenceService.getChannel(channelId))
             .filter(channel -> channel != null)
-            .collect(Collectors.toList());
+            .toList();
         refreshChannels(channels, downloadEpisodes);
     }
 
@@ -184,7 +183,7 @@ public class PodcastManagementService {
                             .stream()
                             .filter(episode -> episode.getStatus() == PodcastStatus.NEW && episode.getUrl() != null)
                             .map(ep -> podcastDownloadClient.downloadEpisode(ep.getId()))
-                            .collect(Collectors.toList());
+                            .toList();
                         CompletableFuture.allOf(episodeFutures.toArray(new CompletableFuture[episodeFutures.size()])).join();
                     }
                     podcastPersistenceService.setChannelCompleted(channel);

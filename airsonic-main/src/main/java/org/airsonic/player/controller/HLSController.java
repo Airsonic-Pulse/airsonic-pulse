@@ -82,7 +82,6 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Controller which produces the HLS (Http Live Streaming) playlist.
@@ -160,7 +159,7 @@ public class HLSController {
                 .map(b -> b.getRight() != null ? b
                         : Pair.of(b.getLeft(), TranscodingService.getSuitableVideoSize(mediaFile.getWidth(),
                                 mediaFile.getHeight(), b.getLeft())))
-                .collect(Collectors.toList());
+                .toList();
         if (bitRates.isEmpty())
             bitRates = Collections.singletonList(
                     Pair.of(VideoPlayerController.DEFAULT_BIT_RATE, TranscodingService.getSuitableVideoSize(

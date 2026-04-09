@@ -51,7 +51,6 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.Comparator;
 import java.util.List;
 
-import static java.util.stream.Collectors.toList;
 
 /**
  * Controller for the page used to administer the set of music folders.
@@ -160,7 +159,7 @@ public class MusicFolderSettingsController {
         return musicFolders.stream().map(f -> {
             Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = MediaFolderService.getMusicFolderPathOverlaps(f, mediaFolderService.getAllMusicFolders(true, true));
             return new MusicFolderSettingsCommand.MusicFolderInfo(f, !overlaps.getLeft().isEmpty() || !overlaps.getMiddle().isEmpty() || !overlaps.getRight().isEmpty(), MediaFolderService.logMusicFolderOverlap(overlaps));
-        }).sorted(Comparator.comparing(MusicFolderInfo::getType).thenComparing(MusicFolderInfo::getId)).collect(toList());
+        }).sorted(Comparator.comparing(MusicFolderInfo::getType).thenComparing(MusicFolderInfo::getId)).toList();
     }
 
     @PostMapping
@@ -183,7 +182,7 @@ public class MusicFolderSettingsController {
                 }
             }
         }
-        List<MusicFolder> podcastFolders = mediaFolderService.getAllMusicFolders(true, true).stream().filter(m -> m.getType() == Type.PODCAST).collect(toList());
+        List<MusicFolder> podcastFolders = mediaFolderService.getAllMusicFolders(true, true).stream().filter(m -> m.getType() == Type.PODCAST).toList();
         long enabledPodcasts = podcastFolders.stream().filter(pf -> pf.isEnabled()).count();
         if (enabledPodcasts != 1) {
             podcastFolders.stream().findFirst().ifPresent(pf -> mediaFolderService.enablePodcastFolder(pf.getId()));

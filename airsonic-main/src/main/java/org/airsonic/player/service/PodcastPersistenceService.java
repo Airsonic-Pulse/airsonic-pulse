@@ -58,9 +58,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -139,7 +137,7 @@ public class PodcastPersistenceService {
                 podcastChannelRepository.save(c);
                 LOG.info("Reset channel status '{}' since refresh was interrupted.", c.getTitle());
                 return c.getId();
-            }).collect(Collectors.toList());
+            }).toList();
     }
 
     /**
@@ -228,7 +226,7 @@ public class PodcastPersistenceService {
      */
     public List<PodcastChannel> getChannelsWithoutRule() {
         Set<Integer> ruleIds = podcastRuleRepository.findAll().parallelStream().map(r -> r.getId()).collect(toSet());
-        return podcastChannelRepository.findAll().parallelStream().filter(c -> !ruleIds.contains(c.getId())).collect(toList());
+        return podcastChannelRepository.findAll().parallelStream().filter(c -> !ruleIds.contains(c.getId())).toList();
     }
 
     /**
@@ -398,7 +396,7 @@ public class PodcastPersistenceService {
                     return ep;
                 })
                 .sorted(Comparator.comparing(PodcastEpisode::getPublishDate, Comparator.nullsLast(Comparator.reverseOrder())))
-                .collect(Collectors.toList());
+                .toList();
         }).orElseGet(() -> {
             LOG.warn("Podcast channel with id {} not found", channelId);
             return new ArrayList<>();
@@ -693,7 +691,7 @@ public class PodcastPersistenceService {
         return podcastEpisodeRepository.findByChannelAndLockedFalse(channel).stream()
             .filter(filterAllowed)
             .sorted(Comparator.comparing(PodcastEpisode::getPublishDate, Comparator.nullsLast(Comparator.reverseOrder())))
-            .collect(Collectors.toList());
+            .toList();
     }
 
     /**

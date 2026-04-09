@@ -191,7 +191,7 @@ public class DownloadController {
             Supplier<TransferStatus> statusSupplier, Consumer<TransferStatus> statusCloser, Collection<Pair<Path, MusicFolder>> additionalFiles)
             throws IOException {
         if (indices == null) {
-            indices = IntStream.range(0, files.size()).boxed().collect(Collectors.toList());
+            indices = IntStream.range(0, files.size()).boxed().toList();
         } else if (indices.parallelStream().anyMatch(i -> i >= files.size())) {
             throw new IllegalArgumentException("Can't have index > number of files");
         }
@@ -243,7 +243,7 @@ public class DownloadController {
                                         return Pair.of(f, Pair.of(zipName, size));
                                     })
                                     // need to create a new stream, because try-with-resources will close the paths stream before it exits
-                                    .collect(Collectors.toList()).stream();
+                                    .toList().stream();
                         } catch (Exception e) {
                             LOG.warn("Error retrieving file to zip", e);
                             return Stream.empty();

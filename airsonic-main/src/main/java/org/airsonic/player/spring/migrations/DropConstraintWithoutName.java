@@ -22,7 +22,6 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.joining;
-import static java.util.stream.Collectors.toList;
 
 public class DropConstraintWithoutName implements CustomSqlChange {
     private String tableName;
@@ -38,7 +37,7 @@ public class DropConstraintWithoutName implements CustomSqlChange {
     }
 
     public void setColumns(String columns) {
-        this.columns = Stream.of(StringUtils.split(columns, ",")).map(StringUtils::trimToNull).map(StringUtils::lowerCase).filter(Objects::nonNull).collect(toList());
+        this.columns = Stream.of(StringUtils.split(columns, ",")).map(StringUtils::trimToNull).map(StringUtils::lowerCase).filter(Objects::nonNull).toList();
     }
 
     @Override

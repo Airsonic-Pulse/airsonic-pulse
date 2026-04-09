@@ -178,7 +178,7 @@ public class PlaylistService {
         return playlistMediaFileRepository.findMediaFilesByPlaylistId(id).stream()
                 .filter(Objects::nonNull)
                 .filter(x -> x.isPresent() || includeNotPresent)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<MediaFile> filterNoDurationFiles(List<MediaFile> files) {
@@ -264,7 +264,7 @@ public class PlaylistService {
             p.setChanged(Instant.now());
             playlistRepository.save(p);
             return p;
-        }).collect(Collectors.toList());
+        }).toList();
     }
 
     /**

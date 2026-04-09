@@ -50,7 +50,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
@@ -431,7 +430,7 @@ public class TranscodingService {
         String[] ka = kl.toArray(new String[0]);
         String[] va = vl.toArray(new String[0]);
         List<String> result = IntStream.range(0, splitCommand.length)
-                .mapToObj(i -> substituteTranscodingVariable(i, splitCommand[i], ka, va)).collect(Collectors.toList());
+                .mapToObj(i -> substituteTranscodingVariable(i, splitCommand[i], ka, va)).toList();
 
         return new ProcessBuilder(result);
     }

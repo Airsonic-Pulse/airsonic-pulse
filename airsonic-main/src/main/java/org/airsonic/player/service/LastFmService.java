@@ -34,7 +34,6 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Provides services from the Last.fm REST API.
@@ -379,7 +378,7 @@ public class LastFmService {
             return matches.stream()
                     .map(this::convert)
                     .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
+                    .toList();
         } catch (Throwable x) {
             LOG.warn("Failed to search for cover art for " + artist + " - " + album, x);
             return Collections.emptyList();

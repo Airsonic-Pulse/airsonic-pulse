@@ -22,7 +22,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 @Controller
@@ -100,7 +99,7 @@ public class PlaylistWSController {
         List<MediaFile> files = Stream
                 .concat(playlistService.getFilesInPlaylist(req.getId(), true).stream(),
                         req.getModifierIds().stream().map(mediaFileService::getMediaFile).filter(Objects::nonNull))
-                .collect(Collectors.toList());
+                .toList();
 
         playlistService.setFilesInPlaylist(req.getId(), files);
         playlistService.broadcastFileChange(req.getId(), false, true);
