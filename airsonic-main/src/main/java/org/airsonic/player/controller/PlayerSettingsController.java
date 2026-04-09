@@ -79,7 +79,7 @@ public class PlayerSettingsController {
         if (playerId != null) {
             player = playerService.getPlayerById(playerId);
         } else if (!players.isEmpty()) {
-            player = players.get(0);
+            player = players.getFirst();
         }
 
         if (player != null) {

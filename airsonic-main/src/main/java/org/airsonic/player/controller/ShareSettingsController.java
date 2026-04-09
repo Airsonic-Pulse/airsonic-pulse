@@ -122,7 +122,7 @@ public class ShareSettingsController {
         for (Share share : shareService.getSharesForUser(user)) {
             List<MediaFile> files = shareService.getSharedFiles(share.getId(), musicFolders);
             if (!files.isEmpty()) {
-                MediaFile file = files.get(0);
+                MediaFile file = files.getFirst();
                 result.add(new ShareInfo(shareService.getShareUrl(request, share), share, file.isDirectory() ? file :
                         mediaFileService
                         .getParentOf(file)));

@@ -105,7 +105,7 @@ public class HlsSession {
 
     private Integer getLatestCompletedSegmentIndex() {
         SortedSet<Integer> completed = getCompletedSegmentIndexes();
-        return completed.isEmpty() ? null : completed.last();
+        return completed.isEmpty() ? null : completed.getLast();
     }
 
     private SortedSet<Integer> getCompletedSegmentIndexes() {
@@ -114,7 +114,7 @@ public class HlsSession {
                     .filter(c -> "ts".equals(MoreFiles.getFileExtension(c))).map(MoreFiles::getNameWithoutExtension)
                     .map(Integer::valueOf).collect(Collectors.toCollection(() -> new TreeSet<>()));
             if (!result.isEmpty() && isProcessAlive()) {
-                result.remove(result.last());
+                result.remove(result.getLast());
             }
             return result;
         } catch (IOException e) {

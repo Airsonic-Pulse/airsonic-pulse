@@ -112,7 +112,7 @@ public class MediaFileUpnpProcessor extends UpnpContentProcessor <MediaFile, Med
 
         if (allFolders.size() == 1) {
             // if there's only one root folder just return it
-            return getChildren(mediaFileService.getMediaFile("", allFolders.get(0)));
+            return getChildren(mediaFileService.getMediaFile("", allFolders.getFirst()));
         } else {
             return allFolders.stream().map(f -> mediaFileService.getMediaFile("", f)).toList();
         }

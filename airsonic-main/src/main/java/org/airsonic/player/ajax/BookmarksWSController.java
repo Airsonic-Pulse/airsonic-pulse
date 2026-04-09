@@ -42,7 +42,7 @@ public class BookmarksWSController {
         }
         return new BookmarkInfo(
                 bookmark.getId(),
-                mediaFileService.toMediaFileEntryList(Collections.singletonList(mediaFile), user, true, false, null, null, null).get(0),
+                mediaFileService.toMediaFileEntryList(Collections.singletonList(mediaFile), user, true, false, null, null, null).getFirst(),
                 bookmark.getChanged(),
                 bookmark.getCreated(),
                 bookmark.getComment(),

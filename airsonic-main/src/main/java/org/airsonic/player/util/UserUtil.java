@@ -30,7 +30,7 @@ public class UserUtil {
         return admins.stream()
                 .filter(user -> User.USERNAME_ADMIN.equals(user.getUsername()))
                 .findAny()
-                .orElseGet(() -> admins.iterator().next());
+                .orElseGet(() -> admins.getFirst());
     }
 
 }

@@ -463,7 +463,7 @@ public class PlayerService {
         // Look for existing player.
         List<Player> players = getPlayersForUserAndClientId(User.USERNAME_GUEST, null);
         if (!players.isEmpty()) {
-            return players.get(0);
+            return players.getFirst();
         }
 
         // Create player if necessary.

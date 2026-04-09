@@ -169,7 +169,7 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
         @Override
         public String getParameter(String name) {
             return Optional.ofNullable(getOriginalRequest().getServletRequest().getParameter(name))
-                    .orElse(Optional.ofNullable(getOriginalRequest().getHeaders().get(name)).map(x -> x.get(0))
+                    .orElse(Optional.ofNullable(getOriginalRequest().getHeaders().get(name)).map(x -> x.getFirst())
                             .orElse(null));
         }
 
@@ -351,7 +351,7 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
         @Override
         public String getHeader(String name) {
             return Optional.ofNullable(getOriginalRequest().getServletRequest().getHeader(name)).orElse(
-                    Optional.ofNullable(getOriginalRequest().getHeaders().get(name)).map(x -> x.get(0)).orElse(null));
+                    Optional.ofNullable(getOriginalRequest().getHeaders().get(name)).map(x -> x.getFirst()).orElse(null));
         }
 
         @Override

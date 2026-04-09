@@ -458,7 +458,7 @@ public class MediaFileService {
         if (results.isEmpty()) {
             return null;
         }
-        return results.get(0);
+        return results.getFirst();
     }
 
     /**
@@ -501,7 +501,7 @@ public class MediaFileService {
             return null;
         }
         // return the first result
-        return results.get(0);
+        return results.getFirst();
     }
 
     /**

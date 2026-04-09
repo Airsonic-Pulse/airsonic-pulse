@@ -526,7 +526,7 @@ public class TranscodingService {
                     }
 
                     if (transcoding == null) {
-                        transcoding = applicableTranscodings.get(0);
+                        transcoding = applicableTranscodings.getFirst();
                     }
                 }
             }

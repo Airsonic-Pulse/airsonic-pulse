@@ -164,7 +164,7 @@ public class SonosHelper {
 
         List<MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username);
         if (musicFolders.size() == 1) {
-            return forMusicFolder(musicFolders.get(0), username, request);
+            return forMusicFolder(musicFolders.getFirst(), username, request);
         }
 
         for (MusicFolder musicFolder : musicFolders) {
@@ -684,10 +684,10 @@ public class SonosHelper {
 
             // @FIXME when a new transcoding choice can be set we can put the right transcoding here for Sonos player.
             // Now, we remove transcoding for Sonos player
-            transcodingService.setTranscodingsForPlayerByIds(players.get(0), new ArrayList<>());
+            transcodingService.setTranscodingsForPlayerByIds(players.getFirst(), new ArrayList<>());
         }
 
-        return players.get(0);
+        return players.getFirst();
     }
 
     public String createJwt(SonosLink sonoslink, String path, String privateKey) {

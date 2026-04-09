@@ -172,7 +172,7 @@ public class HLSController {
         if (bitRates.size() > 1) {
             generateVariantPlaylist(authentication, basePath, prefix, id, player, bitRates, writer);
         } else {
-            generateNormalPlaylist(authentication, basePath, prefix, id, player, bitRates.get(0), Math.round(duration), writer);
+            generateNormalPlaylist(authentication, basePath, prefix, id, player, bitRates.getFirst(), Math.round(duration), writer);
         }
 
         return;

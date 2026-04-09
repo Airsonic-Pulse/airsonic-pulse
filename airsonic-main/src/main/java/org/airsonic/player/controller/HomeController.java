@@ -117,7 +117,7 @@ public class HomeController {
             case DECADE:
                 List<Integer> decades = createDecades();
                 command.setDecades(decades);
-                int decade = getIntParameter(request, "decade", decades.get(0));
+                int decade = getIntParameter(request, "decade", decades.getFirst());
                 command.setDecade(decade);
                 albums = getByYear(listOffset, LIST_SIZE, decade, decade + 9, musicFolders);
                 break;

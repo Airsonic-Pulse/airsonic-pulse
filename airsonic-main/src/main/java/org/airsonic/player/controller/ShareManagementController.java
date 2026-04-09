@@ -64,7 +64,7 @@ public class ShareManagementController {
         List<MediaFile> files = getMediaFiles(request);
         MediaFile dir = null;
         if (!files.isEmpty()) {
-            dir = files.get(0);
+            dir = files.getFirst();
             if (!dir.isAlbum()) {
                 dir = mediaFileService.getParentOf(dir);
             }

@@ -149,7 +149,7 @@ public class MediaFolderService {
 
         // if new folder has ancestors, reassign portion of closest ancestor's tree to new folder
         if (!overlaps.getMiddle().isEmpty()) {
-            MusicFolder ancestor = overlaps.getMiddle().get(0);
+            MusicFolder ancestor = overlaps.getMiddle().getFirst();
             reassignChildren(ancestor, musicFolder);
             clearMediaFileCache();
         }
@@ -254,7 +254,7 @@ public class MediaFolderService {
             Triple<List<MusicFolder>, List<MusicFolder>, List<MusicFolder>> overlaps = getMusicFolderPathOverlaps(folder, getAllMusicFolders(true, true, true));
             // if folder has ancestors, reassign hierarchy to immediate ancestor and true delete
             if (!overlaps.getMiddle().isEmpty()) {
-                reassignChildren(folder, overlaps.getMiddle().get(0));
+                reassignChildren(folder, overlaps.getMiddle().getFirst());
                 musicFolderRepository.delete(folder);
             } else {
                 // if folder has descendants, ignore. they'll stay under descendant hierarchy

@@ -46,7 +46,7 @@ public class MediaFileWSController {
             return ImmutableMap.of("contentType", "notFound");
         }
 
-        MediaFile dir = mediaFiles.get(0);
+        MediaFile dir = mediaFiles.getFirst();
         if (dir.isFile()) {
             dir = mediaFileService.getParentOf(dir);
         }
@@ -71,7 +71,7 @@ public class MediaFileWSController {
                 subDirs.add(child);
             }
         }
-        MediaFileDirectoryEntry entry = new MediaFileDirectoryEntry(mediaFileService.toMediaFileEntryList(Collections.singletonList(dir), user.getName(), true, true, null, null, null).get(0));
+        MediaFileDirectoryEntry entry = new MediaFileDirectoryEntry(mediaFileService.toMediaFileEntryList(Collections.singletonList(dir), user.getName(), true, true, null, null, null).getFirst());
         entry.setFiles(mediaFileService.toMediaFileEntryList(files, user.getName(), true, false, null, null, null));
         entry.setSubDirs(mediaFileService.toMediaFileEntryList(subDirs, user.getName(), false, false, null, null, null));
         entry.setAncestors(mediaFileService.toMediaFileEntryList(getAncestors(dir), user.getName(), false, false, null, null, null));

@@ -263,7 +263,7 @@ public class CoverArtCreateService {
             return createAutoCover(request, size, size);
         }
         if (albums.size() < 4) {
-            return createImage(createMediaFileCoverArtRequest(albums.get(0), 0), size);
+            return createImage(createMediaFileCoverArtRequest(albums.getFirst(), 0), size);
         }
 
         BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_RGB);

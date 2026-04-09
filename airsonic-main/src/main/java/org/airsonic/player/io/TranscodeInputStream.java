@@ -65,7 +65,7 @@ public class TranscodeInputStream extends InputStream {
         processInputStream = process.getInputStream();
 
         // Must read stderr from the process, otherwise it may block.
-        final String name = processBuilder.command().get(0);
+        final String name = processBuilder.command().getFirst();
         new InputStreamReaderThread(process.getErrorStream(), name, true).start();
 
         // Copy data in a separate thread
