@@ -55,12 +55,12 @@ public class AddUnknownMediaFolders implements CustomSqlChange {
         if (conn != null) {
             try (PreparedStatement st1 = conn.prepareStatement("SELECT MAX(id) AS maxid FROM music_folder;");
                     ResultSet rs1 = st1.executeQuery();
-                    PreparedStatement st2 = conn.prepareStatement(""
-                        + "SELECT m.folder "
-                        + "FROM media_file m "
-                        + "LEFT OUTER JOIN music_folder f "
-                        + "ON m.folder = f.path "
-                        + "WHERE f.path IS NULL;");
+                    PreparedStatement st2 = conn.prepareStatement("""
+                            SELECT m.folder \
+                            FROM media_file m \
+                            LEFT OUTER JOIN music_folder f \
+                            ON m.folder = f.path \
+                            WHERE f.path IS NULL;""");
                     ResultSet rs2 = st2.executeQuery();
                     ) {
                 while (rs1.next()) {

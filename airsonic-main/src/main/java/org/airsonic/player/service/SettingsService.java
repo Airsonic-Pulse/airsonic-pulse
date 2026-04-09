@@ -175,14 +175,14 @@ public class SettingsService {
     private static final int DEFAULT_COVER_ART_QUALITY = 90;
     private static final String DEFAULT_WELCOME_TITLE = "Welcome to Airsonic!";
     private static final String DEFAULT_WELCOME_SUBTITLE = null;
-    private static final String DEFAULT_WELCOME_MESSAGE = "__Welcome to Airsonic!__\n" +
-            "\\\\ \\\\\n" +
-            "Airsonic is a free, web-based media streamer, providing ubiquitous access to your music. \n" +
-            "\\\\ \\\\\n" +
-            "Use it to share your music with friends, or to listen to your own music while at work. You can stream to multiple " +
-            "players simultaneously, for instance to one player in your kitchen and another in your living room.\n" +
-            "\\\\ \\\\\n" +
-            "To change or remove this message, log in with administrator rights and go to <a href='settings.view'>Settings</a> > <a href='generalSettings.view'>General</a>.";
+    private static final String DEFAULT_WELCOME_MESSAGE = """
+            __Welcome to Airsonic!__
+            \\\\ \\\\
+            Airsonic is a free, web-based media streamer, providing ubiquitous access to your music.\s
+            \\\\ \\\\
+            Use it to share your music with friends, or to listen to your own music while at work. You can stream to multiple players simultaneously, for instance to one player in your kitchen and another in your living room.
+            \\\\ \\\\
+            To change or remove this message, log in with administrator rights and go to <a href='settings.view'>Settings</a> > <a href='generalSettings.view'>General</a>.""";
     private static final String DEFAULT_LOGIN_MESSAGE = null;
     private static final String DEFAULT_SESSION_TIMEOUT_DURATION = "30m";
     private static final String DEFAULT_LOCALE_LANGUAGE = "en";

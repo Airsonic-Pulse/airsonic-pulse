@@ -142,13 +142,17 @@ public class RecoverController {
             message.setFrom(new InternetAddress(settingsService.getSmtpFrom()));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(email));
             message.setSubject("Airsonic Password");
-            message.setText("Hi there!\n\n" +
-                    "You have requested to reset your Airsonic password.  Please find your new login details below.\n\n" +
-                    "Username: " + username + "\n" +
-                    "Password: " + password + "\n\n" +
-                    "--\n" +
-                    "Your Airsonic server\n" +
-                    "airsonic.github.io/");
+            message.setText("""
+                    Hi there!
+
+                    You have requested to reset your Airsonic password.  Please find your new login details below.
+
+                    Username: %s
+                    Password: %s
+
+                    --
+                    Your Airsonic server
+                    airsonic.github.io/""".formatted(username, password));
             message.setSentDate(Date.from(Instant.now()));
 
             Transport trans = session.getTransport(prot);
