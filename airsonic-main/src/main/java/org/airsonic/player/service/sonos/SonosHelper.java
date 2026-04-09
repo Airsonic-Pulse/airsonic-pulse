@@ -365,36 +365,35 @@ public class SonosHelper {
         List<MediaFile> albums = Collections.emptyList();
         int total = 0;
         switch (albumListType) {
-            case RANDOM:
+            case RANDOM -> {
                 albums = searchService.getRandomAlbums(count, musicFolders);
                 total = mediaFileService.getAlbumCount(musicFolders);
-                break;
-            case NEWEST:
+            }
+            case NEWEST -> {
                 albums = mediaFileService.getNewestAlbums(offset, count, musicFolders);
                 total = mediaFileService.getAlbumCount(musicFolders);
-                break;
-            case STARRED:
+            }
+            case STARRED -> {
                 albums = mediaFileService.getStarredAlbums(offset, count, username, musicFolders);
                 total = mediaFileService.getStarredAlbumCount(username, musicFolders);
-                break;
-            case HIGHEST:
+            }
+            case HIGHEST -> {
                 albums = ratingService.getHighestRatedAlbums(offset, count, musicFolders);
                 total = ratingService.getRatedAlbumCount(username, musicFolders);
-                break;
-            case FREQUENT:
+            }
+            case FREQUENT -> {
                 albums = mediaFileService.getMostFrequentlyPlayedAlbums(offset, count, musicFolders);
                 total = mediaFileService.getPlayedAlbumCount(musicFolders);
-                break;
-            case RECENT:
+            }
+            case RECENT -> {
                 albums = mediaFileService.getMostRecentlyPlayedAlbums(offset, count, musicFolders);
                 total = mediaFileService.getPlayedAlbumCount(musicFolders);
-                break;
-            case ALPHABETICAL:
+            }
+            case ALPHABETICAL -> {
                 albums = mediaFileService.getAlphabeticalAlbums(offset, count, true, musicFolders);
                 total = mediaFileService.getAlbumCount(musicFolders);
-                break;
-            default:
-                break;
+            }
+            default -> { }
         }
         return new AlbumList(albums, total);
     }

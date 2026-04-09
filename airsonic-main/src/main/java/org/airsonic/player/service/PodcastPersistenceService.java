@@ -731,20 +731,18 @@ public class PodcastPersistenceService {
     public void resetEpisode(Integer episodeId) {
         podcastEpisodeRepository.findById(episodeId).ifPresentOrElse(episode -> {
             switch (episode.getStatus()) {
-                case DELETED:
+                case DELETED -> {
                     episode.setLocked(true); // prevent to be deleted again
                     episode.setStatus(PodcastStatus.NEW);
                     episode.setErrorMessage(null);
                     podcastEpisodeRepository.save(episode);
-                    break;
-                case COMPLETED:
+                }
+                case COMPLETED -> {
                     episode.setStatus(PodcastStatus.NEW);
                     episode.setErrorMessage(null);
                     podcastEpisodeRepository.save(episode);
-                    break;
-                default:
-                    LOG.warn("Episode '{}' is not in a state that can be reset", episode.getTitle());
-                    break;
+                }
+                default -> LOG.warn("Episode '{}' is not in a state that can be reset", episode.getTitle());
             }
         }, () -> {
             LOG.warn("Podcast episode with id {} not found", episodeId);

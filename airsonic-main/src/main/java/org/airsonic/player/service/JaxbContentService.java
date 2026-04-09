@@ -174,22 +174,15 @@ public class JaxbContentService {
                 child.setArtistId(String.valueOf(artist.getId()));
             }
             switch (mediaFile.getMediaType()) {
-                case MUSIC:
-                    child.setType(org.subsonic.restapi.MediaType.MUSIC);
-                    break;
-                case PODCAST:
-                    child.setType(org.subsonic.restapi.MediaType.PODCAST);
-                    break;
-                case AUDIOBOOK:
-                    child.setType(org.subsonic.restapi.MediaType.AUDIOBOOK);
-                    break;
-                case VIDEO:
+                case MUSIC -> child.setType(org.subsonic.restapi.MediaType.MUSIC);
+                case PODCAST -> child.setType(org.subsonic.restapi.MediaType.PODCAST);
+                case AUDIOBOOK -> child.setType(org.subsonic.restapi.MediaType.AUDIOBOOK);
+                case VIDEO -> {
                     child.setType(org.subsonic.restapi.MediaType.VIDEO);
                     child.setOriginalWidth(mediaFile.getWidth());
                     child.setOriginalHeight(mediaFile.getHeight());
-                    break;
-                default:
-                    break;
+                }
+                default -> { }
             }
 
             if (transcodingService.isTranscodingRequired(mediaFile, player)) {

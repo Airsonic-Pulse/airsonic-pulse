@@ -177,18 +177,14 @@ public class DatabaseSettingsController {
         if (!bindingResult.hasErrors()) {
             settingsService.resetDatabaseToDefault();
             switch (command.getConfigType()) {
-                case EXTERNAL:
+                case EXTERNAL -> {
                     settingsService.setDatabaseDriver(command.getDriver());
                     settingsService.setDatabasePassword(command.getJdbcPassword());
                     settingsService.setDatabaseUrl(command.getUrl());
                     settingsService.setDatabaseUsername(command.getUsername());
-                    break;
-                case JNDI:
-                    settingsService.setDatabaseJNDIName(command.getJNDIName());
-                    break;
-                case BUILTIN:
-                default:
-                    break;
+                }
+                case JNDI -> settingsService.setDatabaseJNDIName(command.getJNDIName());
+                default -> { }
             }
             if (command.getConfigType() != DataSourceConfigType.BUILTIN) {
                 settingsService.setDatabaseMysqlVarcharMaxlength(command.getMysqlVarcharMaxlength());

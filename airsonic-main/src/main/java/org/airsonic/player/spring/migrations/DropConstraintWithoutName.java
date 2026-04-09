@@ -94,14 +94,11 @@ public class DropConstraintWithoutName implements CustomSqlChange {
             throw new CustomChangeException("No constraint found to drop");
         }
 
-        switch (constraintType) {
-            case "foreign key":
-                return new SqlStatement[] { new DropForeignKeyConstraintStatement(null, null, tableName, constraintName) };
-            case "unique":
-                return new SqlStatement[] { new DropUniqueConstraintStatement(null, null, tableName, constraintName, ColumnConfig.arrayFromNames(columns.stream().collect(joining(",")))) };
-        }
-
-        return null;
+        return switch (constraintType) {
+            case "foreign key" -> new SqlStatement[] { new DropForeignKeyConstraintStatement(null, null, tableName, constraintName) };
+            case "unique" -> new SqlStatement[] { new DropUniqueConstraintStatement(null, null, tableName, constraintName, ColumnConfig.arrayFromNames(columns.stream().collect(joining(",")))) };
+            default -> null;
+        };
     }
 
 }

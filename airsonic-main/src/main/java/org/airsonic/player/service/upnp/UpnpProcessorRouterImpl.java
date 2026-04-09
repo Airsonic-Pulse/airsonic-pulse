@@ -51,27 +51,16 @@ public class UpnpProcessorRouterImpl implements UpnpProcessorRouter {
 
     @Override
     public UpnpContentProcessor<?, ?> findProcessor(ProcessorType type) {
-        switch (type) {
-            case ROOT:
-                return rootUpnpProcessor;
-            case PLAYLIST:
-                return playlistUpnpProcessor;
-            case FOLDER:
-            case MEDIAFILE:
-                return mediaFileUpnpProcessor;
-            case ALBUM:
-                return albumUpnpProcessor;
-            case RECENT:
-                return recentAlbumUpnpProcessor;
-            case ARTIST:
-                return artistUpnpProcessor;
-            case GENRE:
-                return genreUpnpProcessor;
-            case ARTISTALBUM:
-            case UNKNOWN:
-                return null;
-        }
-        return null;
+        return switch (type) {
+            case ROOT -> rootUpnpProcessor;
+            case PLAYLIST -> playlistUpnpProcessor;
+            case FOLDER, MEDIAFILE -> mediaFileUpnpProcessor;
+            case ALBUM -> albumUpnpProcessor;
+            case RECENT -> recentAlbumUpnpProcessor;
+            case ARTIST -> artistUpnpProcessor;
+            case GENRE -> genreUpnpProcessor;
+            case ARTISTALBUM, UNKNOWN -> null;
+        };
     }
 
     @Override

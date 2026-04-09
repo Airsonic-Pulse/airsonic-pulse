@@ -164,23 +164,18 @@ public class CaptionsController {
     }
 
     public static String getForceFormat(String format) {
-        switch (format) {
-            case CAPTION_FORMAT_VTT:
-                return "webvtt";
-            default:
-                return format;
-        }
+        return switch (format) {
+            case CAPTION_FORMAT_VTT -> "webvtt";
+            default -> format;
+        };
     }
 
     public static String getDisplayFormat(String format) {
-        switch (format) {
-            case "webvtt":
-                return CAPTION_FORMAT_VTT;
-            case "subrip":
-                return CAPTION_FORMAT_SRT;
-            default:
-                return format;
-        }
+        return switch (format) {
+            case "webvtt" -> CAPTION_FORMAT_VTT;
+            case "subrip" -> CAPTION_FORMAT_SRT;
+            default -> format;
+        };
     }
 
     @GetMapping("/list")

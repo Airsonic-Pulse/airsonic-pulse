@@ -252,31 +252,29 @@ public class PlayQueue {
         makeBackup();
         MediaFile currentFile = getCurrentFile();
 
-        Comparator<MediaFile> comparator = (a, b) -> {
-            switch (sortOrder) {
-                case TRACK:
-                    Integer trackA = a.getTrackNumber();
-                    Integer trackB = b.getTrackNumber();
-                    if (trackA == null) {
-                        trackA = 0;
-                    }
-                    if (trackB == null) {
-                        trackB = 0;
-                    }
-                    return trackA.compareTo(trackB);
-
-                case ARTIST:
-                    String artistA = StringUtils.trimToEmpty(a.getArtist());
-                    String artistB = StringUtils.trimToEmpty(b.getArtist());
-                    return artistA.compareTo(artistB);
-
-                case ALBUM:
-                    String albumA = StringUtils.trimToEmpty(a.getAlbumName());
-                    String albumB = StringUtils.trimToEmpty(b.getAlbumName());
-                    return albumA.compareTo(albumB);
-                default:
-                    return 0;
+        Comparator<MediaFile> comparator = (a, b) -> switch (sortOrder) {
+            case TRACK -> {
+                Integer trackA = a.getTrackNumber();
+                Integer trackB = b.getTrackNumber();
+                if (trackA == null) {
+                    trackA = 0;
+                }
+                if (trackB == null) {
+                    trackB = 0;
+                }
+                yield trackA.compareTo(trackB);
             }
+            case ARTIST -> {
+                String artistA = StringUtils.trimToEmpty(a.getArtist());
+                String artistB = StringUtils.trimToEmpty(b.getArtist());
+                yield artistA.compareTo(artistB);
+            }
+            case ALBUM -> {
+                String albumA = StringUtils.trimToEmpty(a.getAlbumName());
+                String albumB = StringUtils.trimToEmpty(b.getAlbumName());
+                yield albumA.compareTo(albumB);
+            }
+            default -> 0;
         };
 
         files.sort(comparator);
@@ -474,12 +472,11 @@ public class PlayQueue {
         OFF, TRACK, QUEUE;
 
         public static RepeatStatus getNext(RepeatStatus status) {
-            switch (status) {
-                case OFF: return TRACK;
-                case TRACK: return QUEUE;
-                case QUEUE: return OFF;
-                default: return OFF;
-            }
+            return switch (status) {
+                case OFF -> TRACK;
+                case TRACK -> QUEUE;
+                case QUEUE -> OFF;
+            };
         }
     }
 }

@@ -164,16 +164,12 @@ public class CoverArtService {
         coverArtCache.clear();
         List<CoverArt> expungeCoverArts = coverArtRepository.findAll().stream()
             .filter(art -> {
-                switch (art.getEntityType()) {
-                    case ALBUM:
-                        return art.getAlbum() == null || !art.getAlbum().isPresent();
-                    case ARTIST:
-                        return art.getArtist() == null || !art.getArtist().isPresent();
-                    case MEDIA_FILE:
-                        return art.getMediaFile() == null || !art.getMediaFile().isPresent();
-                    default:
-                        return false;
-                }
+                return switch (art.getEntityType()) {
+                    case ALBUM -> art.getAlbum() == null || !art.getAlbum().isPresent();
+                    case ARTIST -> art.getArtist() == null || !art.getArtist().isPresent();
+                    case MEDIA_FILE -> art.getMediaFile() == null || !art.getMediaFile().isPresent();
+                    default -> false;
+                };
             })
             .toList();
         coverArtRepository.deleteAll(expungeCoverArts);
