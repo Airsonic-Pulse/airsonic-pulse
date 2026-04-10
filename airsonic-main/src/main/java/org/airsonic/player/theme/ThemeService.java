@@ -20,7 +20,6 @@
  */
 package org.airsonic.player.theme;
 
-import org.airsonic.player.domain.Theme;
 import org.airsonic.player.domain.UserSettings;
 import org.airsonic.player.service.PersonalSettingsService;
 import org.airsonic.player.service.SecurityService;
@@ -29,8 +28,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -49,6 +50,13 @@ public class ThemeService {
     @Autowired
     private PersonalSettingsService personalSettingsService;
     private Set<String> themeIds;
+
+    @PostConstruct
+    public void init() {
+        this.themeIds = new HashSet<>(Arrays.stream(this.settingsService.getAvailableThemes())
+                .map(t -> t.id())
+                .toList());
+    }
 
     /**
     * Resolve the current theme name via the given request.
@@ -96,16 +104,7 @@ public class ThemeService {
      * @param themeId The theme ID.
      * @return Whether the theme with the given ID exists.
      */
-    private synchronized boolean themeExists(String themeId) {
-        // Lazily create set of theme IDs.
-        if (themeIds == null) {
-            themeIds = new HashSet<String>();
-            Theme[] themes = settingsService.getAvailableThemes();
-            for (Theme theme : themes) {
-                themeIds.add(theme.id());
-            }
-        }
-
-        return themeIds.contains(themeId);
+    private boolean themeExists(String themeId) {
+        return this.themeIds.contains(themeId);
     }
 }
