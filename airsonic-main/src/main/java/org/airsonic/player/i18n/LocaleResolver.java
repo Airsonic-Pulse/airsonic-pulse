@@ -26,6 +26,7 @@ import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -49,6 +50,11 @@ public class LocaleResolver implements org.springframework.web.servlet.LocaleRes
     @Autowired
     private PersonalSettingsService personalSettingsService;
     private Set<Locale> locales;
+
+    @PostConstruct
+    public void init() {
+        this.locales = new HashSet<>(Arrays.asList(this.settingsService.getAvailableLocales()));
+    }
 
     /**
     * Resolve the current locale via the given request.
@@ -97,13 +103,8 @@ public class LocaleResolver implements org.springframework.web.servlet.LocaleRes
      * @param locale The locale.
      * @return Whether the locale exists.
      */
-    private synchronized boolean localeExists(Locale locale) {
-        // Lazily create set of locales.
-        if (locales == null) {
-            locales = new HashSet<Locale>(Arrays.asList(settingsService.getAvailableLocales()));
-        }
-
-        return locales.contains(locale);
+    private boolean localeExists(Locale locale) {
+        return this.locales.contains(locale);
     }
 
     @Override
