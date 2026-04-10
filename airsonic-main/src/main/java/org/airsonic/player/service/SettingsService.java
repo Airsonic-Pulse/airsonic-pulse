@@ -264,8 +264,8 @@ public class SettingsService {
 
     private static final Logger LOG = LoggerFactory.getLogger(SettingsService.class);
 
-    private List<Theme> themes;
-    private List<Locale> locales;
+    private Theme[] themes;
+    private Locale[] locales;
     @Autowired
     private Environment env;
     @Autowired
@@ -479,7 +479,46 @@ public class SettingsService {
                             .orElseThrow();
                 }
             });
+        themes = loadThemes();
+        locales = loadLocales();
         logServerInfo();
+    }
+
+    private Theme[] loadThemes() {
+        List<Theme> list = new ArrayList<>();
+        try {
+            InputStream in = SettingsService.class.getResourceAsStream(THEMES_FILE);
+            String[] lines = StringUtil.readLines(in);
+            for (String line : lines) {
+                String[] elements = StringUtil.split(line);
+                if (elements.length == 2) {
+                    list.add(new Theme(elements[0], elements[1]));
+                } else if (elements.length == 3) {
+                    list.add(new Theme(elements[0], elements[1], elements[2]));
+                } else {
+                    LOG.warn("Failed to parse theme from line: [" + line + "].");
+                }
+            }
+        } catch (IOException x) {
+            LOG.error("Failed to resolve list of themes.", x);
+            list.add(new Theme("default", "Airsonic default"));
+        }
+        return list.toArray(new Theme[0]);
+    }
+
+    private Locale[] loadLocales() {
+        List<Locale> list = new ArrayList<>();
+        try {
+            InputStream in = SettingsService.class.getResourceAsStream(LOCALES_FILE);
+            String[] lines = StringUtil.readLines(in);
+            for (String line : lines) {
+                list.add(StringUtil.parseLocale(line));
+            }
+        } catch (IOException x) {
+            LOG.error("Failed to resolve list of locales.", x);
+            list.add(Locale.ENGLISH);
+        }
+        return list.toArray(new Locale[0]);
     }
 
     private void logServerInfo() {
@@ -1180,28 +1219,8 @@ public class SettingsService {
      *
      * @return A list of available themes.
      */
-    public synchronized Theme[] getAvailableThemes() {
-        if (themes == null) {
-            themes = new ArrayList<>();
-            try {
-                InputStream in = SettingsService.class.getResourceAsStream(THEMES_FILE);
-                String[] lines = StringUtil.readLines(in);
-                for (String line : lines) {
-                    String[] elements = StringUtil.split(line);
-                    if (elements.length == 2) {
-                        themes.add(new Theme(elements[0], elements[1]));
-                    } else if (elements.length == 3) {
-                        themes.add(new Theme(elements[0], elements[1], elements[2]));
-                    } else {
-                        LOG.warn("Failed to parse theme from line: [" + line + "].");
-                    }
-                }
-            } catch (IOException x) {
-                LOG.error("Failed to resolve list of themes.", x);
-                themes.add(new Theme("default", "Airsonic default"));
-            }
-        }
-        return themes.toArray(new Theme[themes.size()]);
+    public Theme[] getAvailableThemes() {
+        return themes;
     }
 
     /**
@@ -1209,23 +1228,8 @@ public class SettingsService {
      *
      * @return A list of available locales.
      */
-    public synchronized Locale[] getAvailableLocales() {
-        if (locales == null) {
-            locales = new ArrayList<>();
-            try {
-                InputStream in = SettingsService.class.getResourceAsStream(LOCALES_FILE);
-                String[] lines = StringUtil.readLines(in);
-
-                for (String line : lines) {
-                    locales.add(StringUtil.parseLocale(line));
-                }
-
-            } catch (IOException x) {
-                LOG.error("Failed to resolve list of locales.", x);
-                locales.add(Locale.ENGLISH);
-            }
-        }
-        return locales.toArray(new Locale[locales.size()]);
+    public Locale[] getAvailableLocales() {
+        return locales;
     }
 
     /**
