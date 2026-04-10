@@ -27,27 +27,5 @@ import java.util.List;
  * @author Sindre Mehus
  * @version $Id$
  */
-public class ArtistInfo {
-
-    private final List<SimilarArtist> similarArtists;
-    private final ArtistBio artistBio;
-    private final List<MediaFileEntry> topSongs;
-
-    public ArtistInfo(List<SimilarArtist> similarArtists, ArtistBio artistBio, List<MediaFileEntry> topSongs) {
-        this.similarArtists = similarArtists;
-        this.artistBio = artistBio;
-        this.topSongs = topSongs;
-    }
-
-    public List<SimilarArtist> getSimilarArtists() {
-        return similarArtists;
-    }
-
-    public ArtistBio getArtistBio() {
-        return artistBio;
-    }
-
-    public List<MediaFileEntry> getTopSongs() {
-        return topSongs;
-    }
+public record ArtistInfo(List<SimilarArtist> similarArtists, ArtistBio artistBio, List<MediaFileEntry> topSongs) {
 }

@@ -116,7 +116,7 @@ public class ExternalPlayerController {
         List<MediaFileWithUrlInfo> media = getMedia(request, share, player, expires);
         map.put("share", share);
         map.put("media", media);
-        map.put("videoPresent", media.stream().anyMatch(mf -> mf.getFile().isVideo()));
+        map.put("videoPresent", media.stream().anyMatch(mf -> mf.file().isVideo()));
 
         return new ModelAndView("externalPlayer", "model", map);
     }

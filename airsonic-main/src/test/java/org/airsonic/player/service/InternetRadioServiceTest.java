@@ -85,8 +85,8 @@ public class InternetRadioServiceTest {
 
         // then
         assertEquals(2, radioSources.size());
-        assertEquals(TEST_STREAM_URL_1, radioSources.get(0).getStreamUrl());
-        assertEquals(TEST_STREAM_URL_2, radioSources.get(1).getStreamUrl());
+        assertEquals(TEST_STREAM_URL_1, radioSources.get(0).streamUrl());
+        assertEquals(TEST_STREAM_URL_2, radioSources.get(1).streamUrl());
     }
 
     @Test
@@ -114,8 +114,8 @@ public class InternetRadioServiceTest {
 
         // given
         assertEquals(2, radioSources.size());
-        assertEquals(TEST_STREAM_URL_3, radioSources.get(0).getStreamUrl());
-        assertEquals(TEST_STREAM_URL_4, radioSources.get(1).getStreamUrl());
+        assertEquals(TEST_STREAM_URL_3, radioSources.get(0).streamUrl());
+        assertEquals(TEST_STREAM_URL_4, radioSources.get(1).streamUrl());
     }
 
     @Test

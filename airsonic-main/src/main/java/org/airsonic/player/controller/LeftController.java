@@ -107,9 +107,9 @@ public class LeftController {
             map.put("bytes", StringUtil.formatBytes(bytes, locale));
         }
 
-        map.put("indexedArtists", musicFolderContent.getIndexedArtists());
-        map.put("singleSongs", musicFolderContent.getSingleSongs());
-        map.put("indexes", musicFolderContent.getIndexedArtists().keySet());
+        map.put("indexedArtists", musicFolderContent.indexedArtists());
+        map.put("singleSongs", musicFolderContent.singleSongs());
+        map.put("indexes", musicFolderContent.indexedArtists().keySet());
         map.put("user", securityService.getCurrentUser(request));
 
         return new ModelAndView("left","model",map);

@@ -126,33 +126,6 @@ public class SearchCommand {
         this.player = player;
     }
 
-    public static class Match {
-        private MediaFile mediaFile;
-        private String title;
-        private String album;
-        private String artist;
-
-        public Match(MediaFile mediaFile, String title, String album, String artist) {
-            this.mediaFile = mediaFile;
-            this.title = title;
-            this.album = album;
-            this.artist = artist;
-        }
-
-        public MediaFile getMediaFile() {
-            return mediaFile;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public String getAlbum() {
-            return album;
-        }
-
-        public String getArtist() {
-            return artist;
-        }
+    public record Match(MediaFile mediaFile, String title, String album, String artist) {
     }
 }

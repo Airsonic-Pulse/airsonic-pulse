@@ -119,10 +119,10 @@ class LyricsControllerTest {
 
         ModelAndView mav = result.getModelAndView();
         LyricsPage page = (LyricsPage) mav.getModel().get("view");
-        assertEquals("Artist", page.getArtist());
-        assertEquals("Song", page.getSong());
-        assertEquals("Some lyrics", page.getLyrics());
-        assertEquals("source", page.getSource());
+        assertEquals("Artist", page.artist());
+        assertEquals("Song", page.song());
+        assertEquals("Some lyrics", page.lyrics());
+        assertEquals("source", page.source());
     }
 
     @Test
@@ -144,10 +144,10 @@ class LyricsControllerTest {
         LyricsPage page = (LyricsPage) mav.getModel().get("view");
 
         assertNotNull(page);
-        assertEquals("AlbumArtist", page.getArtist());
-        assertEquals("Song", page.getSong());
-        assertNull(page.getLyrics());
-        assertEquals("none", page.getSource());
+        assertEquals("AlbumArtist", page.artist());
+        assertEquals("Song", page.song());
+        assertNull(page.lyrics());
+        assertEquals("none", page.source());
     }
 
     @Test

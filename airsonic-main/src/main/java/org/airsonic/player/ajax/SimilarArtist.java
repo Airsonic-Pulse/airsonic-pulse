@@ -23,21 +23,5 @@ package org.airsonic.player.ajax;
  *
  * @author Sindre Mehus
  */
-public class SimilarArtist {
-
-    private final int mediaFileId;
-    private final String artistName;
-
-    public SimilarArtist(int mediaFileId, String artistName) {
-        this.mediaFileId = mediaFileId;
-        this.artistName = artistName;
-    }
-
-    public int getMediaFileId() {
-        return mediaFileId;
-    }
-
-    public String getArtistName() {
-        return artistName;
-    }
+public record SimilarArtist(int mediaFileId, String artistName) {
 }

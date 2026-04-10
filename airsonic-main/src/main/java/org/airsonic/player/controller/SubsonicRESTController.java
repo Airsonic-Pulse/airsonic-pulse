@@ -250,7 +250,7 @@ public class SubsonicRESTController {
 
         MusicFolderContent musicFolderContent = musicIndexService.getMusicFolderContent(musicFolders, false);
 
-        for (Map.Entry<MusicIndex, List<MusicIndex.SortableArtistWithMediaFiles>> entry : musicFolderContent.getIndexedArtists().entrySet()) {
+        for (Map.Entry<MusicIndex, List<MusicIndex.SortableArtistWithMediaFiles>> entry : musicFolderContent.indexedArtists().entrySet()) {
             Index index = new Index();
             indexes.getIndex().add(index);
             index.setName(entry.getKey().getIndex());
@@ -277,7 +277,7 @@ public class SubsonicRESTController {
         // Add children
         Player player = playerService.getPlayer(request, response, username);
 
-        for (MediaFile singleSong : musicFolderContent.getSingleSongs()) {
+        for (MediaFile singleSong : musicFolderContent.singleSongs()) {
             indexes.getChild().add(jaxbContentService.createJaxbChild(player, singleSong, username));
         }
 
@@ -451,9 +451,9 @@ public class SubsonicRESTController {
         }
         ArtistBio artistBio = lastFmService.getArtistBioByMediaFile(mediaFile, localeResolver.resolveLocale(request));
         if (artistBio != null) {
-            result.setBiography(artistBio.getBiography());
-            result.setMusicBrainzId(artistBio.getMusicBrainzId());
-            result.setLastFmUrl(artistBio.getLastFmUrl());
+            result.setBiography(artistBio.biography());
+            result.setMusicBrainzId(artistBio.musicBrainzId());
+            result.setLastFmUrl(artistBio.lastFmUrl());
         }
         // extract base url
         String baseUrl = NetworkUtil.getBaseUrl(request);
@@ -490,9 +490,9 @@ public class SubsonicRESTController {
         }
         ArtistBio artistBio = lastFmService.getArtistBio(artist, localeResolver.resolveLocale(request));
         if (artistBio != null) {
-            result.setBiography(artistBio.getBiography());
-            result.setMusicBrainzId(artistBio.getMusicBrainzId());
-            result.setLastFmUrl(artistBio.getLastFmUrl());
+            result.setBiography(artistBio.biography());
+            result.setMusicBrainzId(artistBio.musicBrainzId());
+            result.setLastFmUrl(artistBio.lastFmUrl());
         }
         String baseUrl = NetworkUtil.getBaseUrl(request);
         result.setSmallImageUrl(artistService.getArtistImageURL(baseUrl, artist.getName(), 34, username));
@@ -2128,12 +2128,12 @@ public class SubsonicRESTController {
     private AlbumInfo getAlbumInfoInternal(AlbumNotes albumNotes) {
         AlbumInfo result = new AlbumInfo();
         if (albumNotes != null) {
-            result.setNotes(albumNotes.getNotes());
-            result.setMusicBrainzId(albumNotes.getMusicBrainzId());
-            result.setLastFmUrl(albumNotes.getLastFmUrl());
-            result.setSmallImageUrl(albumNotes.getSmallImageUrl());
-            result.setMediumImageUrl(albumNotes.getMediumImageUrl());
-            result.setLargeImageUrl(albumNotes.getLargeImageUrl());
+            result.setNotes(albumNotes.notes());
+            result.setMusicBrainzId(albumNotes.musicBrainzId());
+            result.setLastFmUrl(albumNotes.lastFmUrl());
+            result.setSmallImageUrl(albumNotes.smallImageUrl());
+            result.setMediumImageUrl(albumNotes.mediumImageUrl());
+            result.setLargeImageUrl(albumNotes.largeImageUrl());
         }
         return result;
     }

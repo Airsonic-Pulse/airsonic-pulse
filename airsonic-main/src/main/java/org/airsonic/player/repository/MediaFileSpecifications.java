@@ -24,7 +24,7 @@ public class MediaFileSpecifications {
             predicates.add(cb.isNull(root.get("indexPath"))); // exclude indexed files
 
             // starred conditions
-            boolean joinStarred = criteria.isShowStarredSongs() ^ criteria.isShowUnstarredSongs();
+            boolean joinStarred = criteria.showStarredSongs() ^ criteria.showUnstarredSongs();
             if (joinStarred) {
                 Subquery<StarredMediaFile> subquery = query.subquery(StarredMediaFile.class);
                 Root<StarredMediaFile> starredRoot = subquery.from(StarredMediaFile.class);
@@ -33,16 +33,16 @@ public class MediaFileSpecifications {
                 Predicate userPredicate = cb.equal(starredRoot.get("username"), username);
                 Predicate mediaFilePredicate = cb.equal(starredRoot.get("mediaFile"), root);
 
-                if (criteria.isShowStarredSongs()) {
+                if (criteria.showStarredSongs()) {
                     subquery.where(cb.and(userPredicate, mediaFilePredicate));
                     predicates.add(cb.exists(subquery));
-                } else if (criteria.isShowUnstarredSongs()) {
+                } else if (criteria.showUnstarredSongs()) {
                     subquery.where(cb.and(userPredicate, mediaFilePredicate));
                     predicates.add(cb.not(cb.exists(subquery)));
                 }
             }
             // album rating conditions
-            boolean joinAlbumRating = criteria.getMinAlbumRating() != null || criteria.getMaxAlbumRating() != null;
+            boolean joinAlbumRating = criteria.minAlbumRating() != null || criteria.maxAlbumRating() != null;
             if (joinAlbumRating) {
                 Subquery<String> albumSubquery = query.subquery(String.class);
                 Root<UserRating> ratingRoot = albumSubquery.from(UserRating.class);
@@ -54,11 +54,11 @@ public class MediaFileSpecifications {
                 ratingPredicates.add(cb.equal(albumRoot.get("mediaType"), MediaType.ALBUM));
                 ratingPredicates.add(cb.equal(ratingRoot.get("mediaFileId"), albumRoot.get("id")));
 
-                if (criteria.getMinAlbumRating() != null) {
-                    ratingPredicates.add(cb.greaterThanOrEqualTo(ratingRoot.<Integer>get("rating"), criteria.getMinAlbumRating()));
+                if (criteria.minAlbumRating() != null) {
+                    ratingPredicates.add(cb.greaterThanOrEqualTo(ratingRoot.<Integer>get("rating"), criteria.minAlbumRating()));
                 }
-                if (criteria.getMaxAlbumRating() != null) {
-                    ratingPredicates.add(cb.lessThanOrEqualTo(ratingRoot.<Integer>get("rating"), criteria.getMaxAlbumRating()));
+                if (criteria.maxAlbumRating() != null) {
+                    ratingPredicates.add(cb.lessThanOrEqualTo(ratingRoot.<Integer>get("rating"), criteria.maxAlbumRating()));
                 }
 
                 albumSubquery.where(cb.and(ratingPredicates.toArray(new Predicate[0])));
@@ -67,49 +67,49 @@ public class MediaFileSpecifications {
             }
 
             // folder conditions
-            if (!criteria.getMusicFolders().isEmpty()) {
-                predicates.add(root.get("folder").in(criteria.getMusicFolders()));
+            if (!criteria.musicFolders().isEmpty()) {
+                predicates.add(root.get("folder").in(criteria.musicFolders()));
             }
 
             // genre conditions
-            if (criteria.getGenre() != null) {
-                predicates.add(cb.equal(root.get("genre"), criteria.getGenre()));
+            if (criteria.genre() != null) {
+                predicates.add(cb.equal(root.get("genre"), criteria.genre()));
             }
             // year conditions
-            if (criteria.getFromYear() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("year"), criteria.getFromYear()));
+            if (criteria.fromYear() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("year"), criteria.fromYear()));
             }
-            if (criteria.getToYear() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("year"), criteria.getToYear()));
+            if (criteria.toYear() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("year"), criteria.toYear()));
             }
             // format conditions
-            if (criteria.getFormat() != null) {
-                predicates.add(cb.equal(root.get("format"), criteria.getFormat()));
+            if (criteria.format() != null) {
+                predicates.add(cb.equal(root.get("format"), criteria.format()));
             }
             // last played conditions
-            if (criteria.getMinLastPlayedDate() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("lastPlayed"), criteria.getMinLastPlayedDate()));
+            if (criteria.minLastPlayedDate() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("lastPlayed"), criteria.minLastPlayedDate()));
             }
-            if (criteria.getMaxLastPlayedDate() != null) {
-                if (criteria.getMinLastPlayedDate() == null) {
+            if (criteria.maxLastPlayedDate() != null) {
+                if (criteria.minLastPlayedDate() == null) {
                     predicates.add(cb.or(cb.isNull(root.get("lastPlayed")),
-                            cb.lessThanOrEqualTo(root.get("lastPlayed"), criteria.getMaxLastPlayedDate())));
+                            cb.lessThanOrEqualTo(root.get("lastPlayed"), criteria.maxLastPlayedDate())));
                 } else {
-                    predicates.add(cb.lessThanOrEqualTo(root.get("lastPlayed"), criteria.getMaxLastPlayedDate()));
+                    predicates.add(cb.lessThanOrEqualTo(root.get("lastPlayed"), criteria.maxLastPlayedDate()));
                 }
             }
 
             // play count conditions
-            if (criteria.getMinPlayCount() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("playCount"), criteria.getMinPlayCount()));
+            if (criteria.minPlayCount() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("playCount"), criteria.minPlayCount()));
             }
 
-            if (criteria.getMaxPlayCount() != null) {
-                if (criteria.getMinPlayCount() == null) {
+            if (criteria.maxPlayCount() != null) {
+                if (criteria.minPlayCount() == null) {
                     predicates.add(cb.or(cb.isNull(root.get("playCount")),
-                            cb.lessThanOrEqualTo(root.get("playCount"), criteria.getMaxPlayCount())));
+                            cb.lessThanOrEqualTo(root.get("playCount"), criteria.maxPlayCount())));
                 } else {
-                    predicates.add(cb.lessThanOrEqualTo(root.get("playCount"), criteria.getMaxPlayCount()));
+                    predicates.add(cb.lessThanOrEqualTo(root.get("playCount"), criteria.maxPlayCount()));
                 }
             }
             String randomFunctionName = switch (databaseType.toLowerCase()) {

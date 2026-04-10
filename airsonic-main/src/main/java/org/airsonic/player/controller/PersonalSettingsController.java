@@ -113,7 +113,7 @@ public class PersonalSettingsController {
         Theme[] themes = settingsService.getAvailableThemes();
         command.setThemes(themes);
         for (int i = 0; i < themes.length; i++) {
-            if (themes[i].getId().equals(currentThemeId)) {
+            if (themes[i].id().equals(currentThemeId)) {
                 command.setThemeIndex(String.valueOf(i));
                 break;
             }
@@ -145,7 +145,7 @@ public class PersonalSettingsController {
         int themeIndex = Integer.parseInt(command.getThemeIndex());
         String themeId = null;
         if (themeIndex != -1) {
-            themeId = settingsService.getAvailableThemes()[themeIndex].getId();
+            themeId = settingsService.getAvailableThemes()[themeIndex].id();
         }
 
         String username = command.getUser().getUsername();

@@ -102,7 +102,7 @@ public class ThemeService {
             themeIds = new HashSet<String>();
             Theme[] themes = settingsService.getAvailableThemes();
             for (Theme theme : themes) {
-                themeIds.add(theme.getId());
+                themeIds.add(theme.id());
             }
         }
 

@@ -349,9 +349,9 @@ public class LastFmServiceTest {
             mockedStaticArtist.when(() -> Artist.getInfo(eq("testArtist"), anyString())).thenReturn(mockedInfoArtist);
             // verify
             ArtistBio artistBio = lastFmService.getArtistBioByMediaFile(mockedMediaFile, Locale.ENGLISH);
-            assertEquals("testSummary", artistBio.getBiography());
-            assertEquals("testMbid", artistBio.getMusicBrainzId());
-            assertEquals("testUrl", artistBio.getLastFmUrl());
+            assertEquals("testSummary", artistBio.biography());
+            assertEquals("testMbid", artistBio.musicBrainzId());
+            assertEquals("testUrl", artistBio.lastFmUrl());
             verifyNoMoreInteractions(mockedInfoArtist);
         }
     }
@@ -372,9 +372,9 @@ public class LastFmServiceTest {
             mockedStaticArtist.when(() -> Artist.getInfo(eq("testArtist"), anyString())).thenReturn(mockedInfoArtist);
             // verify
             ArtistBio artistBio = lastFmService.getArtistBio(mockedArtist, Locale.ENGLISH);
-            assertEquals("testSummary", artistBio.getBiography());
-            assertEquals("testMbid", artistBio.getMusicBrainzId());
-            assertEquals("testUrl", artistBio.getLastFmUrl());
+            assertEquals("testSummary", artistBio.biography());
+            assertEquals("testMbid", artistBio.musicBrainzId());
+            assertEquals("testUrl", artistBio.lastFmUrl());
             verifyNoMoreInteractions(mockedInfoArtist);
         }
     }
@@ -494,12 +494,12 @@ public class LastFmServiceTest {
             mockedStaticAlbum.when(() -> Album.getInfo(eq("testArtist"), eq("testAlbum"), anyString())).thenReturn(mockedInfoAlbum);
             // verify
             AlbumNotes albumNotes = lastFmService.getAlbumNotesByMediaFile(mockedMediaFile);
-            assertEquals("testSummary", albumNotes.getNotes());
-            assertEquals("testMbid", albumNotes.getMusicBrainzId());
-            assertEquals("testUrl", albumNotes.getLastFmUrl());
-            assertEquals("testMegaImageURL", albumNotes.getLargeImageUrl());
-            assertEquals("testLargeImageURL", albumNotes.getMediumImageUrl());
-            assertEquals("testMediumImageURL", albumNotes.getSmallImageUrl());
+            assertEquals("testSummary", albumNotes.notes());
+            assertEquals("testMbid", albumNotes.musicBrainzId());
+            assertEquals("testUrl", albumNotes.lastFmUrl());
+            assertEquals("testMegaImageURL", albumNotes.largeImageUrl());
+            assertEquals("testLargeImageURL", albumNotes.mediumImageUrl());
+            assertEquals("testMediumImageURL", albumNotes.smallImageUrl());
         }
     }
 
@@ -524,12 +524,12 @@ public class LastFmServiceTest {
             mockedStaticAlbum.when(() -> Album.getInfo(eq("testArtist"), eq("testAlbum"), anyString())).thenReturn(mockedInfoAlbum);
             // verify
             AlbumNotes albumNotes = lastFmService.getAlbumNotesByAlbum(mockedAlbum);
-            assertEquals("testSummary", albumNotes.getNotes());
-            assertEquals("testMbid", albumNotes.getMusicBrainzId());
-            assertEquals("testUrl", albumNotes.getLastFmUrl());
-            assertEquals("testMegaImageURL", albumNotes.getLargeImageUrl());
-            assertEquals("testLargeImageURL", albumNotes.getMediumImageUrl());
-            assertEquals("testMediumImageURL", albumNotes.getSmallImageUrl());
+            assertEquals("testSummary", albumNotes.notes());
+            assertEquals("testMbid", albumNotes.musicBrainzId());
+            assertEquals("testUrl", albumNotes.lastFmUrl());
+            assertEquals("testMegaImageURL", albumNotes.largeImageUrl());
+            assertEquals("testLargeImageURL", albumNotes.mediumImageUrl());
+            assertEquals("testMediumImageURL", albumNotes.smallImageUrl());
         }
     }
 

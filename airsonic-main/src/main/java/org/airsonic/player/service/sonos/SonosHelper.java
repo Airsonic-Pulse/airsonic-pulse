@@ -142,7 +142,7 @@ public class SonosHelper {
         AlbumList albumList = createAlbumList(albumListType, 0, 40, username);
 
         List<MediaFile> songs = new ArrayList<MediaFile>();
-        for (MediaFile album : albumList.getAlbums()) {
+        for (MediaFile album : albumList.albums()) {
             songs.addAll(filterMusic(mediaFileService.getVisibleChildrenOf(album, false, false)));
         }
         Collections.shuffle(songs);
@@ -196,14 +196,14 @@ public class SonosHelper {
             }
 
             MusicFolderContent musicFolderContent = musicIndexService.getMusicFolderContent(Arrays.asList(musicFolder), false);
-            for (List<MusicIndex.SortableArtistWithMediaFiles> artists : musicFolderContent.getIndexedArtists().values()) {
+            for (List<MusicIndex.SortableArtistWithMediaFiles> artists : musicFolderContent.indexedArtists().values()) {
                 for (MusicIndex.SortableArtistWithMediaFiles artist : artists) {
                     for (MediaFile artistMediaFile : artist.getMediaFiles()) {
                         result.add(forDirectory(artistMediaFile, request, username));
                     }
                 }
             }
-            for (MediaFile song : musicFolderContent.getSingleSongs()) {
+            for (MediaFile song : musicFolderContent.singleSongs()) {
                 if (song.isAudio()) {
                     result.add(forSong(song, username, request));
                 }
@@ -350,13 +350,13 @@ public class SonosHelper {
         }
 
         AlbumList albumList = createAlbumList(albumListType, offset - (includeShuffle ? 0 : 1), count, username);
-        for (MediaFile album : albumList.getAlbums()) {
+        for (MediaFile album : albumList.albums()) {
             mediaList.getMediaCollectionOrMediaMetadata().add(forDirectory(album, request, username));
         }
 
         mediaList.setIndex(offset);
         mediaList.setCount(mediaList.getMediaCollectionOrMediaMetadata().size());
-        mediaList.setTotal(albumList.getTotal() + 1);
+        mediaList.setTotal(albumList.total() + 1);
         return mediaList;
     }
 

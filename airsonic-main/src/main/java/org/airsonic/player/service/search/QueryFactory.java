@@ -202,10 +202,10 @@ public class QueryFactory {
         // Unanalyzed field
         query.add(new TermQuery(new Term(FieldNames.MEDIA_TYPE, MediaType.MUSIC.name())), Occur.MUST);
 
-        if (!isEmpty(criteria.getGenre())) {
+        if (!isEmpty(criteria.genre())) {
 
             // Unanalyzed field, but performs filtering according to id3 tag parser.
-            try (TokenStream stream = analyzer.tokenStream(FieldNames.GENRE, criteria.getGenre())) {
+            try (TokenStream stream = analyzer.tokenStream(FieldNames.GENRE, criteria.genre())) {
                 stream.reset();
                 if (stream.incrementToken()) {
                     String token = stream.getAttribute(CharTermAttribute.class).toString();
@@ -214,11 +214,11 @@ public class QueryFactory {
             }
         }
 
-        if (!(isEmpty(criteria.getFromYear()) && isEmpty(criteria.getToYear()))) {
-            query.add(toYearRangeQuery.apply(criteria.getFromYear(), criteria.getToYear()), Occur.MUST);
+        if (!(isEmpty(criteria.fromYear()) && isEmpty(criteria.toYear()))) {
+            query.add(toYearRangeQuery.apply(criteria.fromYear(), criteria.toYear()), Occur.MUST);
         }
 
-        query.add(toFolderQuery.apply(false, criteria.getMusicFolders()), Occur.MUST);
+        query.add(toFolderQuery.apply(false, criteria.musicFolders()), Occur.MUST);
 
         return query.build();
     }

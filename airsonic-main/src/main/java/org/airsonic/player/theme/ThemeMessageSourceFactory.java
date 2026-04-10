@@ -57,8 +57,8 @@ public class ThemeMessageSourceFactory {
         messageSource.setFallbackToSystemLocale(false);
 
         Theme theme = findTheme(themeId);
-        if (theme != null && theme.getParent() != null) {
-            MessageSource parentMessageSource = createThemeMessageSource(theme.getParent());
+        if (theme != null && theme.parent() != null) {
+            MessageSource parentMessageSource = createThemeMessageSource(theme.parent());
             if (parentMessageSource != null) {
                 messageSource.setParentMessageSource(parentMessageSource);
             }
@@ -74,7 +74,7 @@ public class ThemeMessageSourceFactory {
     @Nullable
     private Theme findTheme(String themeId) {
         for (Theme theme : settingsService.getAvailableThemes()) {
-            if (theme.getId().equals(themeId)) {
+            if (theme.id().equals(themeId)) {
                 return theme;
             }
         }

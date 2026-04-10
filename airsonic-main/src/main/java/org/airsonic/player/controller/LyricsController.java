@@ -101,7 +101,7 @@ public class LyricsController {
                 lyrics != null ? lyrics.getLyrics() : null,
                 lyrics != null ? lyrics.getSource() : "none");
         model.addAttribute("view", lyricsPage);
-        model.addAttribute("form", new LyricsUpdate(id, lyricsPage.getLyrics()));
+        model.addAttribute("form", new LyricsUpdate(id, lyricsPage.lyrics()));
         return "lyricsEdit";
 
     }

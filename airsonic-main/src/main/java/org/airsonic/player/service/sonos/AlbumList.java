@@ -27,21 +27,5 @@ import java.util.List;
  * @author Sindre Mehus
  * @version $Id$
  */
-class AlbumList {
-
-    private final List<MediaFile> albums;
-    private final int total;
-
-    public AlbumList(List<MediaFile> albums, int total) {
-        this.albums = albums;
-        this.total = total;
-    }
-
-    public List<MediaFile> getAlbums() {
-        return albums;
-    }
-
-    public int getTotal() {
-        return total;
-    }
+record AlbumList(List<MediaFile> albums, int total) {
 }

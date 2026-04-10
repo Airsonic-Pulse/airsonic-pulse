@@ -159,7 +159,7 @@ public class SearchServiceImpl implements SearchService {
         try {
 
             Query query = queryFactory.getRandomSongs(criteria);
-            return createRandomDocsList(criteria.getCount(), searcher, query,
+            return createRandomDocsList(criteria.count(), searcher, query,
                 (dist, id) -> util.addMediaFileIgnoreNull(dist, SONG, id));
 
         } catch (IOException e) {

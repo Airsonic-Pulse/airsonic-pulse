@@ -729,10 +729,10 @@ public class MediaFileService {
      */
     @Transactional(isolation = Isolation.READ_COMMITTED)
     public List<MediaFile> getRandomSongs(RandomSearchCriteria criteria, String username) {
-        if (criteria == null || CollectionUtils.isEmpty(criteria.getMusicFolders())) {
+        if (criteria == null || CollectionUtils.isEmpty(criteria.musicFolders())) {
             return Collections.emptyList();
         }
-        return mediaFileRepository.findAll(MediaFileSpecifications.matchCriteria(criteria, username, settingsService.getDatabaseType()), Pageable.ofSize(criteria.getCount()));
+        return mediaFileRepository.findAll(MediaFileSpecifications.matchCriteria(criteria, username, settingsService.getDatabaseType()), Pageable.ofSize(criteria.count()));
     }
 
     /**

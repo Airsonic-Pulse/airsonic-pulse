@@ -80,7 +80,7 @@ public class GeneralSettingsController {
         command.setThemes(themes);
         String currentThemeId = settingsService.getThemeId();
         for (int i = 0; i < themes.length; i++) {
-            if (currentThemeId.equals(themes[i].getId())) {
+            if (currentThemeId.equals(themes[i].id())) {
                 command.setThemeIndex(String.valueOf(i));
                 break;
             }
@@ -138,7 +138,7 @@ public class GeneralSettingsController {
         settingsService.setWelcomeMessage(command.getWelcomeMessage());
         settingsService.setLoginMessage(command.getLoginMessage());
         settingsService.setSessionDuration(command.getSessionDuration());
-        settingsService.setThemeId(theme.getId());
+        settingsService.setThemeId(theme.id());
         settingsService.setLocale(locale);
         settingsService.save();
 

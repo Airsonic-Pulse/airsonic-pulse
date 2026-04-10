@@ -584,7 +584,7 @@ public class PlayQueueService {
             // Fake entry id so that the source can be selected in the UI
             int streamId = -(1 + entries.size());
             Integer streamDiscNumber = entries.size();
-            String streamUrl = streamSource.getStreamUrl();
+            String streamUrl = streamSource.streamUrl();
             int i = 1;
             entries.add(new MediaFileEntry(streamId, // Entry id
                     i++, // Track number
