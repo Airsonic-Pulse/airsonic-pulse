@@ -142,7 +142,7 @@ public final class StringUtil {
      * @param locale    The locale used for formatting.
      * @return The formatted string.
      */
-    public static synchronized String formatBytes(Long byteCount, Locale locale) {
+    public static String formatBytes(Long byteCount, Locale locale) {
 
         if (byteCount == null) {
             return null;
