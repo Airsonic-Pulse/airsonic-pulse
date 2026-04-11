@@ -27,6 +27,7 @@ import org.airsonic.player.domain.dto.GitHubRelease;
 import org.apache.commons.lang3.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
@@ -34,7 +35,10 @@ import org.springframework.http.converter.json.MappingJackson2HttpMessageConvert
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
+import jakarta.annotation.PostConstruct;
+
 import java.io.*;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -58,9 +62,12 @@ public class VersionService {
 
     private final Properties build;
 
+    @Autowired(required = false)
+    private TaskSchedulingService taskSchedulingService;
+
     private Version localVersion;
-    private Version latestFinalVersion;
-    private Version latestBetaVersion;
+    private volatile Version latestFinalVersion;
+    private volatile Version latestBetaVersion;
     private Instant localBuildDate;
     private String localBuildNumber;
 
@@ -71,12 +78,28 @@ public class VersionService {
     /**
      * Time when latest version was fetched (in milliseconds).
      */
-    private long lastVersionFetched;
+    private volatile long lastVersionFetched;
 
     /**
      * Only fetch last version this often (in milliseconds.).
      */
     private static final long LAST_VERSION_FETCH_INTERVAL = 7L * 24L * 3600L * 1000L; // One week
+
+    /**
+     * Schedules periodic background refresh of the latest available version.
+     */
+    @PostConstruct
+    public void init() {
+        if (this.taskSchedulingService != null) {
+            this.taskSchedulingService.scheduleAtFixedRate(
+                "version-refresh",
+                this::refreshLatestVersion,
+                Instant.now().plusMillis(LAST_VERSION_FETCH_INTERVAL),
+                Duration.ofMillis(LAST_VERSION_FETCH_INTERVAL),
+                false
+            );
+        }
+    }
 
     /**
      * Returns the version number for the locally installed Airsonic version.
@@ -101,9 +124,9 @@ public class VersionService {
      * @return The version number for the latest available Airsonic final version, or <code>null</code>
      *         if the version number can't be resolved.
      */
-    public synchronized Version getLatestFinalVersion() {
+    public Version getLatestFinalVersion() {
         refreshLatestVersion();
-        return latestFinalVersion;
+        return this.latestFinalVersion;
     }
 
     /**
@@ -112,9 +135,9 @@ public class VersionService {
      * @return The version number for the latest available Airsonic beta version, or <code>null</code>
      *         if the version number can't be resolved.
      */
-    public synchronized Version getLatestBetaVersion() {
+    public Version getLatestBetaVersion() {
         refreshLatestVersion();
-        return latestBetaVersion;
+        return this.latestBetaVersion;
     }
 
     /**
