@@ -36,6 +36,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -49,8 +50,8 @@ public class ListenBrainzScrobbler {
     private static final Logger LOG = LoggerFactory.getLogger(ListenBrainzScrobbler.class);
     private static final int MAX_PENDING_REGISTRATION = 2000;
 
-    private RegistrationThread thread;
-    private final LinkedBlockingQueue<RegistrationData> queue = new LinkedBlockingQueue<RegistrationData>();
+    private final AtomicReference<RegistrationThread> thread = new AtomicReference<>();
+    private final LinkedBlockingQueue<RegistrationData> queue = new LinkedBlockingQueue<>(MAX_PENDING_REGISTRATION);
 
     /**
      * Registers the given media file at listenbrainz.org. This method returns
@@ -62,15 +63,12 @@ public class ListenBrainzScrobbler {
      * @param submission Whether this is a submission or a now playing notification.
      * @param time       Event time, or {@code null} to use current time.
      */
-    public synchronized void register(MediaFile mediaFile, String url, String token, boolean submission, Instant time) {
-        if (thread == null) {
-            thread = new RegistrationThread();
-            thread.start();
-        }
-
-        if (queue.size() >= MAX_PENDING_REGISTRATION) {
-            LOG.warn("ListenBrainz scrobbler queue is full. Ignoring '{}'", mediaFile.getTitle());
-            return;
+    public void register(MediaFile mediaFile, String url, String token, boolean submission, Instant time) {
+        if (this.thread.get() == null) {
+            RegistrationThread t = new RegistrationThread();
+            if (this.thread.compareAndSet(null, t)) {
+                t.start();
+            }
         }
 
         RegistrationData registrationData = createRegistrationData(mediaFile, url, token, submission, time);
@@ -78,10 +76,8 @@ public class ListenBrainzScrobbler {
             return;
         }
 
-        try {
-            queue.put(registrationData);
-        } catch (InterruptedException x) {
-            LOG.warn("Interrupted while queuing ListenBrainz scrobble", x);
+        if (!this.queue.offer(registrationData)) {
+            LOG.warn("ListenBrainz scrobbler queue is full. Ignoring '{}'", mediaFile.getTitle());
         }
     }
 
