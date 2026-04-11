@@ -78,21 +78,29 @@ public class PlayQueue {
      *
      * @return The current song in the playlist, or <code>null</code> if no current song exists.
      */
-    public synchronized MediaFile getCurrentFile() {
-        if (index == -1 || index == 0 && size() == 0) {
-            setStatus(Status.STOPPED);
-            return null;
-        } else {
-            MediaFile file = files.get(index);
-
-            // Remove file from playlist if it doesn't exist.
-            if (!Files.exists(file.getFullPath())) {
-                files.remove(index);
-                index = Math.max(0, Math.min(index, size() - 1));
-                return getCurrentFile();
+    public MediaFile getCurrentFile() {
+        while (true) {
+            MediaFile file;
+            synchronized (this) {
+                if (index == -1 || index == 0 && size() == 0) {
+                    setStatus(Status.STOPPED);
+                    return null;
+                }
+                file = files.get(index);
             }
 
-            return file;
+            // Check file existence outside the lock to avoid pinning virtual threads.
+            if (Files.exists(file.getFullPath())) {
+                return file;
+            }
+
+            // Remove missing file from playlist under lock.
+            synchronized (this) {
+                if (index < size() && files.get(index) == file) {
+                    files.remove(index);
+                    index = Math.max(0, Math.min(index, size() - 1));
+                }
+            }
         }
     }
 
