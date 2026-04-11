@@ -44,6 +44,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.LinkedBlockingQueue;
 
 /**
@@ -57,8 +58,8 @@ public class LastFMScrobbler {
     private static final Logger LOG = LoggerFactory.getLogger(LastFMScrobbler.class);
     private static final int MAX_PENDING_REGISTRATION = 2000;
 
-    private RegistrationThread thread;
-    private final LinkedBlockingQueue<RegistrationData> queue = new LinkedBlockingQueue<RegistrationData>();
+    private final AtomicReference<RegistrationThread> thread = new AtomicReference<>();
+    private final LinkedBlockingQueue<RegistrationData> queue = new LinkedBlockingQueue<>(MAX_PENDING_REGISTRATION);
     private final RequestConfig requestConfig = RequestConfig.custom()
             .setConnectTimeout(15000)
             .setSocketTimeout(15000)
@@ -75,15 +76,12 @@ public class LastFMScrobbler {
      * @param submission Whether this is a submission or a now playing notification.
      * @param time       Event time, or {@code null} to use current time.
      */
-    public synchronized void register(MediaFile mediaFile, String username, String password, boolean submission, Instant time) {
-        if (thread == null) {
-            thread = new RegistrationThread();
-            thread.start();
-        }
-
-        if (queue.size() >= MAX_PENDING_REGISTRATION) {
-            LOG.warn("Last.fm scrobbler queue is full. Ignoring " + mediaFile);
-            return;
+    public void register(MediaFile mediaFile, String username, String password, boolean submission, Instant time) {
+        if (this.thread.get() == null) {
+            RegistrationThread t = new RegistrationThread();
+            if (this.thread.compareAndSet(null, t)) {
+                t.start();
+            }
         }
 
         RegistrationData registrationData = createRegistrationData(mediaFile, username, password, submission, time);
@@ -91,10 +89,8 @@ public class LastFMScrobbler {
             return;
         }
 
-        try {
-            queue.put(registrationData);
-        } catch (InterruptedException x) {
-            LOG.warn("Interrupted while queuing Last.fm scrobble: " + x.toString());
+        if (!this.queue.offer(registrationData)) {
+            LOG.warn("Last.fm scrobbler queue is full. Ignoring " + mediaFile);
         }
     }
 
