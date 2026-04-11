@@ -71,12 +71,16 @@ public class PodcastManagementService {
         }
     }
 
-    public synchronized void schedule() {
-        // schedule for podcasts with rules
-        podcastPersistenceService.getAllChannelRules().forEach(this::schedule);
+    public void schedule() {
+        // DB query outside the lock to avoid holding the monitor during I/O.
+        List<PodcastChannelRule> rules = podcastPersistenceService.getAllChannelRules();
+        synchronized (this) {
+            // schedule for podcasts with rules
+            rules.forEach(this::schedule);
 
-        // default refresh for rest of the podcasts
-        scheduleDefault();
+            // default refresh for rest of the podcasts
+            scheduleDefault();
+        }
     }
 
     private synchronized void schedule(PodcastChannelRule r) {
