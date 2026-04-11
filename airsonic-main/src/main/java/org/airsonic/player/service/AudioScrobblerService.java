@@ -58,7 +58,7 @@ public class AudioScrobblerService {
      * @param time       Event time, or {@code null} to use current time.
      */
 
-    public synchronized void register(MediaFile mediaFile, String username, boolean submission, Instant time) {
+    public void register(MediaFile mediaFile, String username, boolean submission, Instant time) {
         if (mediaFile == null || mediaFile.isVideo()) {
             return;
         }
