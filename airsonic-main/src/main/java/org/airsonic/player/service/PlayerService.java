@@ -125,7 +125,7 @@ public class PlayerService {
         return getPlayer(request, response, null, username, remoteControlEnabled, isStreamRequest);
     }
 
-    public synchronized Player getPlayer(HttpServletRequest request, HttpServletResponse response,
+    public Player getPlayer(HttpServletRequest request, HttpServletResponse response,
             Integer playerId, String username, boolean remoteControlEnabled, boolean isStreamRequest) throws Exception {
         return getPlayer(request, response, playerId, username, request.getHeader("user-agent"), remoteControlEnabled, isStreamRequest, false);
     }
@@ -144,9 +144,10 @@ public class PlayerService {
      * @param isWebSocketRequest   Whether the HTTP request is a request for a WebSocket.
      * @return The player associated with the given HTTP request. Never <code>null</code>.
      */
-    public synchronized Player getPlayer(HttpServletRequest request, HttpServletResponse response,
+    public Player getPlayer(HttpServletRequest request, HttpServletResponse response,
             Integer playerId, String username, String userAgent, boolean remoteControlEnabled, boolean isStreamRequest, boolean isWebSocketRequest) throws Exception {
 
+        // All DB reads outside the synchronized block.
         Player player = getPlayerById(playerId);
 
         // Find by 'player' request parameter.
@@ -177,12 +178,19 @@ public class PlayerService {
             player = getNonRestPlayerByIpAddressAndUsername(request.getRemoteAddr(), username);
         }
 
-        // If no player was found, create it.
         if (player == null) {
-            player = new Player();
-            player.setLastSeen(Instant.now());
-            populatePlayer(player, username, request.getRemoteAddr(), userAgent, isStreamRequest);
-            player = createPlayer(player);
+            // Narrow synchronized section: check-then-act to avoid duplicate player creation.
+            synchronized (this) {
+                player = getNonRestPlayerByIpAddressAndUsername(request.getRemoteAddr(), username);
+                if (player == null) {
+                    player = new Player();
+                    player.setLastSeen(Instant.now());
+                    populatePlayer(player, username, request.getRemoteAddr(), userAgent, isStreamRequest);
+                    player = createPlayer(player);
+                } else if (populatePlayer(player, username, request.getRemoteAddr(), userAgent, isStreamRequest)) {
+                    updatePlayer(player);
+                }
+            }
         } else if (populatePlayer(player, username, request.getRemoteAddr(), userAgent, isStreamRequest)) {
             updatePlayer(player);
         }
