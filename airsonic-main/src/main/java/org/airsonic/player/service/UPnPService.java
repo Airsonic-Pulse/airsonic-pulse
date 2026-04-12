@@ -52,6 +52,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Sindre Mehus
@@ -77,6 +78,7 @@ public class UPnPService {
     private CustomContentDirectory dispatchingContentDirectory;
 
     private AtomicReference<Boolean> running = new AtomicReference<>(false);
+    private final ReentrantLock createServiceLock = new ReentrantLock();
 
     @PostConstruct
     public void init() {
@@ -124,13 +126,17 @@ public class UPnPService {
         }
     }
 
-    private synchronized void createService() {
-        upnpService = new UpnpServiceImpl(new ApacheUpnpServiceConfiguration(settingsService.getUPnpPort()));
+    private void createService() {
+        this.createServiceLock.lock();
+        try {
+            this.upnpService = new UpnpServiceImpl(new ApacheUpnpServiceConfiguration(settingsService.getUPnpPort()));
 
-        // Asynch search for other devices (most importantly UPnP-enabled routers for
-        // port-mapping)
-        upnpService.getControlPoint().search();
-
+            // Asynch search for other devices (most importantly UPnP-enabled routers for
+            // port-mapping)
+            this.upnpService.getControlPoint().search();
+        } finally {
+            this.createServiceLock.unlock();
+        }
     }
 
     public void setMediaServerEnabled(boolean enabled) {
