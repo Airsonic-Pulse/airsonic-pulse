@@ -60,12 +60,14 @@ import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @EnableAsync(mode = AdviceMode.ASPECTJ)
 public class PodcastDownloadClient {
 
     private final Logger LOG = LoggerFactory.getLogger(PodcastDownloadClient.class);
+    private final ReentrantLock createEpisodeLock = new ReentrantLock();
 
     @Autowired
     private MediaFileService mediaFileService;
@@ -204,37 +206,42 @@ public class PodcastDownloadClient {
     }
 
 
-    private synchronized Pair<Path, MusicFolder> createEpisodeFile(PodcastChannel channel, PodcastEpisode episode) {
-        String filename = StringUtil.getUrlFile(PodcastUtil.sanitizeUrl(episode.getUrl(), true));
-        if (filename == null) {
-            filename = episode.getTitle();
-        }
-        filename = StringUtil.fileSystemSafe(filename);
-        String extension = FilenameUtils.getExtension(filename);
-        filename = FilenameUtils.removeExtension(filename);
-        if (StringUtils.isBlank(extension)) {
-            extension = "mp3";
-        }
-
-        MediaFile channelMediaFile = channel.getMediaFile();
-        MusicFolder folder = channelMediaFile.getFolder();
-        Path channelDir = channelMediaFile.getFullPath();
-
-        Path file = channelDir.resolve(filename + "." + extension);
-        for (int i = 0; Files.exists(file); i++) {
-            file = channelDir.resolve(filename + i + "." + extension);
-        }
-        Path relativeFile = folder.getPath().relativize(file);
-        if (!securityService.isWriteAllowed(relativeFile, folder)) {
-            throw new SecurityException("Access denied to file " + file);
-        }
+    private Pair<Path, MusicFolder> createEpisodeFile(PodcastChannel channel, PodcastEpisode episode) {
+        this.createEpisodeLock.lock();
         try {
-            Files.createFile(file);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to create file " + file, e);
-        }
+            String filename = StringUtil.getUrlFile(PodcastUtil.sanitizeUrl(episode.getUrl(), true));
+            if (filename == null) {
+                filename = episode.getTitle();
+            }
+            filename = StringUtil.fileSystemSafe(filename);
+            String extension = FilenameUtils.getExtension(filename);
+            filename = FilenameUtils.removeExtension(filename);
+            if (StringUtils.isBlank(extension)) {
+                extension = "mp3";
+            }
 
-        return Pair.of(relativeFile, folder);
+            MediaFile channelMediaFile = channel.getMediaFile();
+            MusicFolder folder = channelMediaFile.getFolder();
+            Path channelDir = channelMediaFile.getFullPath();
+
+            Path file = channelDir.resolve(filename + "." + extension);
+            for (int i = 0; Files.exists(file); i++) {
+                file = channelDir.resolve(filename + i + "." + extension);
+            }
+            Path relativeFile = folder.getPath().relativize(file);
+            if (!securityService.isWriteAllowed(relativeFile, folder)) {
+                throw new SecurityException("Access denied to file " + file);
+            }
+            try {
+                Files.createFile(file);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to create file " + file, e);
+            }
+
+            return Pair.of(relativeFile, folder);
+        } finally {
+            this.createEpisodeLock.unlock();
+        }
     }
 
 }
