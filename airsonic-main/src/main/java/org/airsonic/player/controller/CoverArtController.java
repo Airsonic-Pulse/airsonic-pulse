@@ -54,7 +54,9 @@ import java.awt.image.BufferedImage;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Controller which produces cover art images.
@@ -90,6 +92,8 @@ public class CoverArtController {
     private AirsonicHomeConfig homeConfig;
 
     private Semaphore semaphore;
+    private final ConcurrentHashMap<String, ReentrantLock> coverArtLocks = new ConcurrentHashMap<>();
+    private final ReentrantLock cacheDirectoryLock = new ReentrantLock();
 
     @PostConstruct
     public void init() {
@@ -210,8 +214,10 @@ public class CoverArtController {
         String encoding = request.getCoverArt() != null ? "jpeg" : "png";
         Path cachedImage = getImageCacheDirectory(size).resolve(hash + "." + encoding);
 
-        // Synchronize to avoid concurrent writing to the same file.
-        synchronized (hash.intern()) {
+        // Use per-hash lock so different cover art hashes don't block each other.
+        ReentrantLock hashLock = this.coverArtLocks.computeIfAbsent(hash, k -> new ReentrantLock());
+        hashLock.lock();
+        try {
 
             // Is cache missing or obsolete?
             if (!Files.exists(cachedImage) || request.lastModified().isAfter(FileUtil.lastModified(cachedImage))) {
@@ -259,20 +265,27 @@ public class CoverArtController {
 //                LOG.info("Cache HIT - " + request + " (" + size + ")");
             }
             return cachedImage;
+        } finally {
+            hashLock.unlock();
         }
     }
 
-    private synchronized Path getImageCacheDirectory(int size) {
-        Path dir = homeConfig.getAirsonicHome().resolve("thumbs").resolve(String.valueOf(size));
-        if (!Files.exists(dir)) {
-            try {
-                dir = Files.createDirectories(dir);
-                LOG.info("Created thumbnail cache {}", dir);
-            } catch (Exception e) {
-                LOG.error("Failed to create thumbnail cache {}", dir, e);
+    private Path getImageCacheDirectory(int size) {
+        this.cacheDirectoryLock.lock();
+        try {
+            Path dir = homeConfig.getAirsonicHome().resolve("thumbs").resolve(String.valueOf(size));
+            if (!Files.exists(dir)) {
+                try {
+                    dir = Files.createDirectories(dir);
+                    LOG.info("Created thumbnail cache {}", dir);
+                } catch (Exception e) {
+                    LOG.error("Failed to create thumbnail cache {}", dir, e);
+                }
             }
-        }
 
-        return dir;
+            return dir;
+        } finally {
+            this.cacheDirectoryLock.unlock();
+        }
     }
 }
