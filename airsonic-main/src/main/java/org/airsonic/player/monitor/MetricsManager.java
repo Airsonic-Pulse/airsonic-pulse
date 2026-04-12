@@ -7,6 +7,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Created by remi on 17/01/17.
@@ -21,7 +22,7 @@ public class MetricsManager {
     private static final MetricRegistry metrics = new MetricRegistry();
 
     private static volatile Boolean metricsActivatedByConfiguration = null;
-    private static Object _lock = new Object();
+    private static final ReentrantLock _lock = new ReentrantLock();
 
     // Potential metrics reporters
     private static JmxReporter reporter;
@@ -43,10 +44,13 @@ public class MetricsManager {
 
     private boolean metricsActivatedByConfiguration() {
         if (metricsActivatedByConfiguration == null) {
-            synchronized (_lock) {
+            _lock.lock();
+            try {
                 if (metricsActivatedByConfiguration == null) {
                     configureMetricsActivation();
                 }
+            } finally {
+                _lock.unlock();
             }
         }
         return metricsActivatedByConfiguration;
