@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Plays music on the local audio device.
@@ -66,6 +67,8 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
         this.transcodingService = transcodingService;
     }
 
+    private final ReentrantLock lock = new ReentrantLock();
+
     private AudioPlayer audioPlayer;
     private Player player;
     private TransferStatus status;
@@ -80,84 +83,109 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
      * @param player The player in question.
      * @param offset Start playing after this many seconds into the track.
      */
-    public synchronized void updateJukebox(Player player, int offset) {
-        User user = securityService.getUserByName(player.getUsername());
-        if (!user.isJukeboxRole()) {
-            LOG.warn(user.getUsername() + " is not authorized for jukebox playback.");
-            return;
-        }
+    public void updateJukebox(Player player, int offset) {
+        this.lock.lock();
+        try {
+            User user = securityService.getUserByName(player.getUsername());
+            if (!user.isJukeboxRole()) {
+                LOG.warn(user.getUsername() + " is not authorized for jukebox playback.");
+                return;
+            }
 
-        if (player.getPlayQueue().getStatus() == PlayQueue.Status.PLAYING) {
-            this.player = player;
-            MediaFile result;
-            synchronized (player.getPlayQueue()) {
-                result = player.getPlayQueue().getCurrentFile();
+            if (player.getPlayQueue().getStatus() == PlayQueue.Status.PLAYING) {
+                this.player = player;
+                MediaFile result;
+                synchronized (player.getPlayQueue()) {
+                    result = player.getPlayQueue().getCurrentFile();
+                }
+                play(result, offset);
+            } else {
+                if (audioPlayer != null) {
+                    audioPlayer.pause();
+                }
             }
-            play(result, offset);
-        } else {
-            if (audioPlayer != null) {
-                audioPlayer.pause();
-            }
+        } finally {
+            this.lock.unlock();
         }
     }
 
-    private synchronized void play(MediaFile file, int offset) {
-        InputStream in = null;
+    private void play(MediaFile file, int offset) {
+        this.lock.lock();
         try {
+            InputStream in = null;
+            try {
 
-            // Resume if possible.
-            boolean sameFile = file != null && file.equals(currentPlayingFile);
-            boolean paused = audioPlayer != null && audioPlayer.getState() == AudioPlayer.State.PAUSED;
-            if (sameFile && paused && offset == 0) {
-                audioPlayer.play();
-            } else {
-                this.offset = offset;
-                if (audioPlayer != null) {
-                    audioPlayer.close();
-                    if (currentPlayingFile != null) {
-                        onSongEnd(currentPlayingFile);
+                // Resume if possible.
+                boolean sameFile = file != null && file.equals(currentPlayingFile);
+                boolean paused = audioPlayer != null && audioPlayer.getState() == AudioPlayer.State.PAUSED;
+                if (sameFile && paused && offset == 0) {
+                    audioPlayer.play();
+                } else {
+                    this.offset = offset;
+                    if (audioPlayer != null) {
+                        audioPlayer.close();
+                        if (currentPlayingFile != null) {
+                            onSongEnd(currentPlayingFile);
+                        }
+                    }
+
+                    if (file != null) {
+                        double duration = file.getDuration() == null ? 0 : file.getDuration() - offset;
+                        TranscodingService.Parameters parameters = new TranscodingService.Parameters(file, new VideoTranscodingSettings(0, 0, offset, duration));
+                        String command = settingsService.getJukeboxCommand();
+                        parameters.setTranscoding(new Transcoding(null, "Jukebox", null, null, command, null, null, false));
+                        in = transcodingService.getTranscodedInputStream(parameters);
+                        audioPlayer = audioPlayerFactory.createAudioPlayer(in, this);
+                        audioPlayer.setGain(gain);
+                        audioPlayer.play();
+                        onSongStart(file);
                     }
                 }
 
-                if (file != null) {
-                    double duration = file.getDuration() == null ? 0 : file.getDuration() - offset;
-                    TranscodingService.Parameters parameters = new TranscodingService.Parameters(file, new VideoTranscodingSettings(0, 0, offset, duration));
-                    String command = settingsService.getJukeboxCommand();
-                    parameters.setTranscoding(new Transcoding(null, "Jukebox", null, null, command, null, null, false));
-                    in = transcodingService.getTranscodedInputStream(parameters);
-                    audioPlayer = audioPlayerFactory.createAudioPlayer(in, this);
-                    audioPlayer.setGain(gain);
-                    audioPlayer.play();
-                    onSongStart(file);
-                }
+                currentPlayingFile = file;
+
+            } catch (Exception x) {
+                LOG.error("Error in jukebox: " + x, x);
+                FileUtil.closeQuietly(in);
             }
-
-            currentPlayingFile = file;
-
-        } catch (Exception x) {
-            LOG.error("Error in jukebox: " + x, x);
-            FileUtil.closeQuietly(in);
+        } finally {
+            this.lock.unlock();
         }
     }
 
     @Override
-    public synchronized void stateChanged(AudioPlayer audioPlayer, AudioPlayer.State state) {
-        if (state == AudioPlayer.State.EOM) {
-            player.getPlayQueue().next();
-            MediaFile result;
-            synchronized (player.getPlayQueue()) {
-                result = player.getPlayQueue().getCurrentFile();
+    public void stateChanged(AudioPlayer audioPlayer, AudioPlayer.State state) {
+        this.lock.lock();
+        try {
+            if (state == AudioPlayer.State.EOM) {
+                player.getPlayQueue().next();
+                MediaFile result;
+                synchronized (player.getPlayQueue()) {
+                    result = player.getPlayQueue().getCurrentFile();
+                }
+                play(result, 0);
             }
-            play(result, 0);
+        } finally {
+            this.lock.unlock();
         }
     }
 
-    public synchronized float getGain() {
-        return gain;
+    public float getGain() {
+        this.lock.lock();
+        try {
+            return gain;
+        } finally {
+            this.lock.unlock();
+        }
     }
 
-    public synchronized int getPosition() {
-        return audioPlayer == null ? 0 : offset + audioPlayer.getPosition();
+    public int getPosition() {
+        this.lock.lock();
+        try {
+            return audioPlayer == null ? 0 : offset + audioPlayer.getPosition();
+        } finally {
+            this.lock.unlock();
+        }
     }
 
     /**
@@ -199,10 +227,15 @@ public class JukeboxLegacySubsonicService implements AudioPlayer.Listener {
         }
     }
 
-    public synchronized void setGain(float gain) {
-        this.gain = gain;
-        if (audioPlayer != null) {
-            audioPlayer.setGain(gain);
+    public void setGain(float gain) {
+        this.lock.lock();
+        try {
+            this.gain = gain;
+            if (audioPlayer != null) {
+                audioPlayer.setGain(gain);
+            }
+        } finally {
+            this.lock.unlock();
         }
     }
 
