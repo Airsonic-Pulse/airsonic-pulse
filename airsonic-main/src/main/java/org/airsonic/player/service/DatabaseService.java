@@ -79,6 +79,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
@@ -103,6 +104,8 @@ public class DatabaseService {
     private TaskSchedulingService taskService;
     @Autowired
     private AirsonicHomeConfig homeConfig;
+
+    private final ReentrantLock dbOperationLock = new ReentrantLock();
 
     @PostConstruct
     public void init() {
@@ -140,46 +143,56 @@ public class DatabaseService {
         LOG.info("Completed scheduled DB backup");
     };
 
-    public synchronized void backup() {
-        brokerTemplate.convertAndSend("/topic/backupStatus", "started");
+    public void backup() {
+        this.dbOperationLock.lock();
+        try {
+            brokerTemplate.convertAndSend("/topic/backupStatus", "started");
 
-        if (backuppable()) {
-            try {
-                String dbPath = StringUtils.substringBetween(settingsService.getDatabaseUrl(), "jdbc:hsqldb:file:",
-                        ";");
-                Path backupLocation = LegacyHsqlMigrationUtil.performHsqlDbBackup(dbPath);
-                LOG.info("Backed up DB to location: {}", backupLocation);
-                brokerTemplate.convertAndSend("/topic/backupStatus", "location: " + backupLocation);
-                deleteObsoleteBackups(backupLocation);
-            } catch (Exception e) {
-                throw new RuntimeException("Failed to backup HSQLDB database", e);
+            if (backuppable()) {
+                try {
+                    String dbPath = StringUtils.substringBetween(settingsService.getDatabaseUrl(), "jdbc:hsqldb:file:",
+                            ";");
+                    Path backupLocation = LegacyHsqlMigrationUtil.performHsqlDbBackup(dbPath);
+                    LOG.info("Backed up DB to location: {}", backupLocation);
+                    brokerTemplate.convertAndSend("/topic/backupStatus", "location: " + backupLocation);
+                    deleteObsoleteBackups(backupLocation);
+                } catch (Exception e) {
+                    throw new RuntimeException("Failed to backup HSQLDB database", e);
+                }
+            } else {
+                LOG.info("DB unable to be backed up via these means");
             }
-        } else {
-            LOG.info("DB unable to be backed up via these means");
+            brokerTemplate.convertAndSend("/topic/backupStatus", "ended");
+        } finally {
+            this.dbOperationLock.unlock();
         }
-        brokerTemplate.convertAndSend("/topic/backupStatus", "ended");
     }
 
-    private synchronized void deleteObsoleteBackups(Path backupLocation) {
-        AtomicInteger backupCount = new AtomicInteger(settingsService.getDbBackupRetentionCount());
-        if (backupCount.get() == -1) {
-            return;
-        }
+    private void deleteObsoleteBackups(Path backupLocation) {
+        this.dbOperationLock.lock();
+        try {
+            AtomicInteger backupCount = new AtomicInteger(settingsService.getDbBackupRetentionCount());
+            if (backupCount.get() == -1) {
+                return;
+            }
 
-        String backupNamePattern = StringUtils.substringBeforeLast(backupLocation.getFileName().toString(), ".");
-        try (Stream<Path> backups = Files.list(backupLocation.getParent());) {
-            backups.filter(p -> p.getFileName().toString().startsWith(backupNamePattern))
-                    .sorted(Comparator.comparing(
-                            LambdaUtils.<Path, FileTime, Exception>uncheckFunction(
-                                    p -> Files.readAttributes(p, BasicFileAttributes.class).creationTime()),
-                            Comparator.reverseOrder()))
-                    .forEach(p -> {
-                        if (backupCount.getAndDecrement() <= 0) {
-                            FileUtil.delete(p);
-                        }
-                    });
-        } catch (Exception e) {
-            LOG.warn("Could not clean up DB backups", e);
+            String backupNamePattern = StringUtils.substringBeforeLast(backupLocation.getFileName().toString(), ".");
+            try (Stream<Path> backups = Files.list(backupLocation.getParent());) {
+                backups.filter(p -> p.getFileName().toString().startsWith(backupNamePattern))
+                        .sorted(Comparator.comparing(
+                                LambdaUtils.<Path, FileTime, Exception>uncheckFunction(
+                                        p -> Files.readAttributes(p, BasicFileAttributes.class).creationTime()),
+                                Comparator.reverseOrder()))
+                        .forEach(p -> {
+                            if (backupCount.getAndDecrement() <= 0) {
+                                FileUtil.delete(p);
+                            }
+                        });
+            } catch (Exception e) {
+                LOG.warn("Could not clean up DB backups", e);
+            }
+        } finally {
+            this.dbOperationLock.unlock();
         }
     }
 
@@ -194,22 +207,27 @@ public class DatabaseService {
     Function<Path, Consumer<Connection>> importFunction = p -> LambdaUtils.uncheckConsumer(
             connection -> runLiquibaseUpdate(connection, p));
 
-    public synchronized Path exportDB() throws Exception {
-        brokerTemplate.convertAndSend("/topic/exportStatus", "started");
-        Path fPath = getChangeLogFolder();
-        Path zPath = null;
+    public Path exportDB() throws Exception {
+        this.dbOperationLock.lock();
         try {
-            databaseDao.exportDB(fPath, exportFunction);
-            zPath = zip(fPath);
-            brokerTemplate.convertAndSend("/topic/exportStatus", "Local DB extraction complete, compressing...");
-        } catch (Exception e) {
-            LOG.info("DB Export failed!", e);
-            brokerTemplate.convertAndSend("/topic/exportStatus", "Error with local DB extraction, check logs...");
-            cleanup(fPath);
-        }
+            brokerTemplate.convertAndSend("/topic/exportStatus", "started");
+            Path fPath = getChangeLogFolder();
+            Path zPath = null;
+            try {
+                databaseDao.exportDB(fPath, exportFunction);
+                zPath = zip(fPath);
+                brokerTemplate.convertAndSend("/topic/exportStatus", "Local DB extraction complete, compressing...");
+            } catch (Exception e) {
+                LOG.info("DB Export failed!", e);
+                brokerTemplate.convertAndSend("/topic/exportStatus", "Error with local DB extraction, check logs...");
+                cleanup(fPath);
+            }
 
-        brokerTemplate.convertAndSend("/topic/exportStatus", "ended");
-        return zPath;
+            brokerTemplate.convertAndSend("/topic/exportStatus", "ended");
+            return zPath;
+        } finally {
+            this.dbOperationLock.unlock();
+        }
     }
 
     public void cleanup(Path p) {
@@ -236,18 +254,23 @@ public class DatabaseService {
         return zipName;
     }
 
-    public synchronized void importDB(Path p) {
-        brokerTemplate.convertAndSend("/topic/importStatus", "started");
-        if (Files.notExists(p) || !Files.isDirectory(p) || p.toFile().list().length == 0) {
-            brokerTemplate.convertAndSend("/topic/importStatus", "Nothing imported");
-        } else {
-            backup();
-            brokerTemplate.convertAndSend("/topic/importStatus", "Importing XML");
-            databaseDao.importDB(importFunction.apply(p));
-            brokerTemplate.convertAndSend("/topic/importStatus", "Import complete. Cleaning up...");
-            cleanup(p);
+    public void importDB(Path p) {
+        this.dbOperationLock.lock();
+        try {
+            brokerTemplate.convertAndSend("/topic/importStatus", "started");
+            if (Files.notExists(p) || !Files.isDirectory(p) || p.toFile().list().length == 0) {
+                brokerTemplate.convertAndSend("/topic/importStatus", "Nothing imported");
+            } else {
+                backup();
+                brokerTemplate.convertAndSend("/topic/importStatus", "Importing XML");
+                databaseDao.importDB(importFunction.apply(p));
+                brokerTemplate.convertAndSend("/topic/importStatus", "Import complete. Cleaning up...");
+                cleanup(p);
+            }
+            brokerTemplate.convertAndSend("/topic/importStatus", "ended");
+        } finally {
+            this.dbOperationLock.unlock();
         }
-        brokerTemplate.convertAndSend("/topic/importStatus", "ended");
     }
 
     private void runLiquibaseUpdate(Connection connection, Path p) throws Exception {
