@@ -57,6 +57,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 
 import static java.util.stream.Collectors.toSet;
@@ -85,6 +86,7 @@ public class PodcastPersistenceService {
     private final SettingsService settingsService;
 
     private Predicate<PodcastEpisode> filterAllowed;
+    private final ReentrantLock deleteObsoleteLock = new ReentrantLock();
 
     public PodcastPersistenceService(
         SecurityService securityService,
@@ -651,30 +653,35 @@ public class PodcastPersistenceService {
      * @param channel The Podcast channel.
      */
     @Transactional
-    public synchronized void deleteObsoleteEpisodes(@Nullable PodcastChannel channel) {
-        int episodeCount = Optional.ofNullable(channel)
-                .flatMap(ch -> podcastRuleRepository.findById(ch.getId()))
-                .map(cr -> cr.getRetentionCount())
-                .orElse(settingsService.getPodcastEpisodeRetentionCount());
-        if (episodeCount == -1) {
-            return;
-        }
+    public void deleteObsoleteEpisodes(@Nullable PodcastChannel channel) {
+        this.deleteObsoleteLock.lock();
+        try {
+            int episodeCount = Optional.ofNullable(channel)
+                    .flatMap(ch -> podcastRuleRepository.findById(ch.getId()))
+                    .map(cr -> cr.getRetentionCount())
+                    .orElse(settingsService.getPodcastEpisodeRetentionCount());
+            if (episodeCount == -1) {
+                return;
+            }
 
-        // Get all unlocked episodes of the channel
-        List<PodcastEpisode> episodes = getUnlockedEpisodes(channel);
+            // Get all unlocked episodes of the channel
+            List<PodcastEpisode> episodes = getUnlockedEpisodes(channel);
 
-        // Don't do anything if other episodes of the same channel is currently
-        // downloading.
-        if (episodes.parallelStream().anyMatch(episode -> episode.getStatus() == PodcastStatus.DOWNLOADING)) {
-            return;
-        }
+            // Don't do anything if other episodes of the same channel is currently
+            // downloading.
+            if (episodes.parallelStream().anyMatch(episode -> episode.getStatus() == PodcastStatus.DOWNLOADING)) {
+                return;
+            }
 
-        int numEpisodes = episodes.size();
-        int episodesToDelete = Math.max(0, numEpisodes - episodeCount);
-        // Delete in reverse to get chronological order (oldest episodes first).
-        for (int i = 0; i < episodesToDelete; i++) {
-            deleteEpisode(episodes.get(numEpisodes - 1 - i), true);
-            LOG.info("Deleted old Podcast episode {}", episodes.get(numEpisodes - 1 - i).getUrl());
+            int numEpisodes = episodes.size();
+            int episodesToDelete = Math.max(0, numEpisodes - episodeCount);
+            // Delete in reverse to get chronological order (oldest episodes first).
+            for (int i = 0; i < episodesToDelete; i++) {
+                deleteEpisode(episodes.get(numEpisodes - 1 - i), true);
+                LOG.info("Deleted old Podcast episode {}", episodes.get(numEpisodes - 1 - i).getUrl());
+            }
+        } finally {
+            this.deleteObsoleteLock.unlock();
         }
     }
 
