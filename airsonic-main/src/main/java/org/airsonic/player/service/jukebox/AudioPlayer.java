@@ -31,6 +31,7 @@ import javax.sound.sampled.SourceDataLine;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 import static org.airsonic.player.service.jukebox.AudioPlayer.State.*;
 
@@ -52,6 +53,7 @@ public class AudioPlayer implements AutoCloseable {
     private final SourceDataLine line;
     private final AtomicReference<State> state = new AtomicReference<State>(PAUSED);
     private FloatControl gainControl;
+    private final ReentrantLock playerLock = new ReentrantLock();
 
     public AudioPlayer(InputStream in, Listener listener) throws Exception {
         this.in = in;
@@ -79,10 +81,15 @@ public class AudioPlayer implements AutoCloseable {
      * Starts (or resumes) the player.  This only has effect if the current state is
      * {@link State#PAUSED}.
      */
-    public synchronized void play() {
-        if (state.get() == PAUSED) {
-            line.start();
-            setState(PLAYING);
+    public void play() {
+        this.playerLock.lock();
+        try {
+            if (state.get() == PAUSED) {
+                line.start();
+                setState(PLAYING);
+            }
+        } finally {
+            this.playerLock.unlock();
         }
     }
 
@@ -90,11 +97,16 @@ public class AudioPlayer implements AutoCloseable {
      * Pauses the player.  This only has effect if the current state is
      * {@link State#PLAYING}.
      */
-    public synchronized void pause() {
-        if (state.get() == PLAYING) {
-            setState(PAUSED);
-            line.stop();
-            line.flush();
+    public void pause() {
+        this.playerLock.lock();
+        try {
+            if (state.get() == PLAYING) {
+                setState(PAUSED);
+                line.stop();
+                line.flush();
+            }
+        } finally {
+            this.playerLock.unlock();
         }
     }
 
@@ -103,25 +115,30 @@ public class AudioPlayer implements AutoCloseable {
      * {@link State#CLOSED} (unless the current state is {@link State#EOM}).
      */
     @Override
-    public synchronized void close() {
-        if (state.get() != CLOSED && state.get() != EOM) {
-            setState(CLOSED);
-        }
-
+    public void close() {
+        this.playerLock.lock();
         try {
-            line.stop();
-        } catch (Throwable x) {
-            LOG.warn("Failed to stop player: " + x, x);
-        }
-        try {
-            if (line.isOpen()) {
-                line.close();
-                LOG.debug("Closed line " + line);
+            if (state.get() != CLOSED && state.get() != EOM) {
+                setState(CLOSED);
             }
-        } catch (Throwable x) {
-            LOG.warn("Failed to close player: " + x, x);
+
+            try {
+                line.stop();
+            } catch (Throwable x) {
+                LOG.warn("Failed to stop player: " + x, x);
+            }
+            try {
+                if (line.isOpen()) {
+                    line.close();
+                    LOG.debug("Closed line " + line);
+                }
+            } catch (Throwable x) {
+                LOG.warn("Failed to close player: " + x, x);
+            }
+            FileUtil.closeQuietly(in);
+        } finally {
+            this.playerLock.unlock();
         }
-        FileUtil.closeQuietly(in);
     }
 
     /**
