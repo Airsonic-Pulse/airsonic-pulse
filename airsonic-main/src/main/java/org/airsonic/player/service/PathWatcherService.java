@@ -34,7 +34,7 @@ public class PathWatcherService {
     private static final Logger LOG = LoggerFactory.getLogger(PathWatcherService.class);
 
     private final ExecutorService watcherThread = Executors.newSingleThreadExecutor(Util.getDaemonThreadfactory("path-watcher-thread-"));
-    private final ExecutorService watcherFunctionThreadPool = Executors.newCachedThreadPool(Util.getDaemonThreadfactory("path-watcher-function-thread-"));
+    private final ExecutorService watcherFunctionThreadPool = Executors.newVirtualThreadPerTaskExecutor();
 
     private final Map<WatchKey, Map<Kind<? extends Object>, BiConsumer<Path, WatchEvent<Path>>>> watchFunctions = new ConcurrentHashMap<>();
     private final Map<String, WatchKey> watchNames = new ConcurrentHashMap<>();
