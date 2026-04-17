@@ -130,10 +130,10 @@ public class SearchServiceImpl implements SearchService {
             int count, IndexSearcher searcher, Query query, BiConsumer<List<D>, Integer> id2ListCallBack)
             throws IOException {
 
-        List<Integer> docs = Arrays
+        List<Integer> docs = new ArrayList<>(Arrays
                 .stream(searcher.search(query, Integer.MAX_VALUE).scoreDocs)
                 .map(sd -> sd.doc)
-                .toList();
+                .toList());
 
         List<D> result = new ArrayList<>();
         StoredFields storedFields = searcher.storedFields();
