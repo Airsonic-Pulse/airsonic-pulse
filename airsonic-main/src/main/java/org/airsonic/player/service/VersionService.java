@@ -60,7 +60,12 @@ public class VersionService {
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmmss").withZone(ZoneId.of("UTC"));
 
+    private static final String GITHUB_API_RELEASES_PATH = "https://api.github.com/repos/%s/releases";
+    private static final String GITHUB_HOST = "https://github.com/";
+
     private final Properties build;
+    private final String projectUrl;
+    private final String versionUrl;
 
     @Autowired(required = false)
     private TaskSchedulingService taskSchedulingService;
@@ -73,6 +78,19 @@ public class VersionService {
 
     public VersionService() throws IOException {
         build = PropertiesLoaderUtils.loadAllProperties("build.properties");
+        projectUrl = build.getProperty("projectUrl", "https://github.com/litebito/airsonic-pulse");
+        String ownerRepo = projectUrl.startsWith(GITHUB_HOST)
+                ? projectUrl.substring(GITHUB_HOST.length())
+                : "litebito/airsonic-pulse";
+        versionUrl = String.format(GITHUB_API_RELEASES_PATH, ownerRepo);
+    }
+
+    public String getProjectUrl() {
+        return this.projectUrl;
+    }
+
+    public String getIssueTrackerUrl() {
+        return this.projectUrl + "/issues";
     }
 
     /**
@@ -224,7 +242,6 @@ public class VersionService {
         }
     }
 
-    private static final String VERSION_URL = "https://api.github.com/repos/kagemomiji/airsonic-advanced/releases";
 
     private static Function<GitHubRelease, Version> releaseToVersionMapper = r ->
             new Version(
@@ -263,7 +280,7 @@ public class VersionService {
                 converters.clear();
                 converters.add(converter);
             })
-            .baseUrl(VERSION_URL)
+            .baseUrl(this.versionUrl)
             .requestFactory(factory)
             .build();
         List<GitHubRelease> releases = new ArrayList<>();

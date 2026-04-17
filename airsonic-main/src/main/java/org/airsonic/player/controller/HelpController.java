@@ -101,6 +101,8 @@ public class HelpController {
         List<String> latestLogEntries = getLatestLogEntries(logFile);
         map.put("logEntries", latestLogEntries);
         map.put("logFile", logFile);
+        map.put("projectUrl", versionService.getProjectUrl());
+        map.put("issueTrackerUrl", versionService.getIssueTrackerUrl());
 
         return new ModelAndView("help","model",map);
     }

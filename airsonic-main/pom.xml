@@ -679,6 +679,9 @@
                 <attach>true</attach>
                 <!--make it available for jar/war classpath resource -->
                 <addOutputDirectoryToResources>true</addOutputDirectoryToResources>
+                <properties>
+                  <projectUrl>${project.url}</projectUrl>
+                </properties>
               </configuration>
             </plugin>
             <!-- <plugin>
