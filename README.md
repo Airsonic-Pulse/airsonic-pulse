@@ -1,3 +1,5 @@
+[![CI](https://github.com/litebito/airsonic-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/litebito/airsonic-pulse/actions/workflows/ci.yml)
+
 Airsonic-Pulse
 ==============
 (this readme is being rewritten)
