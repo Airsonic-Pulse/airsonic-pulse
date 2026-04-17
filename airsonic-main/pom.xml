@@ -680,7 +680,7 @@
                 <!--make it available for jar/war classpath resource -->
                 <addOutputDirectoryToResources>true</addOutputDirectoryToResources>
                 <properties>
-                  <projectUrl>${project.url}</projectUrl>
+                  <projectUrl>${airsonic.project.url}</projectUrl>
                 </properties>
               </configuration>
             </plugin>

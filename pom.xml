@@ -29,7 +29,8 @@
         <snakeyaml.version>2.4</snakeyaml.version>
         <lucene.version>10.2.2</lucene.version>
         <logback.version>1.5.18</logback.version>
-        <docker.container.repo>ghcr.io/litebito/airsonic-pulse</docker.container.repo>        
+        <docker.container.repo>ghcr.io/litebito/airsonic-pulse</docker.container.repo>
+        <airsonic.project.url>https://github.com/litebito/airsonic-pulse</airsonic.project.url>        
     </properties>
 
 
