@@ -1,0 +1,85 @@
+# Airsonic-Pulse systemd service unit
+#
+# Install:
+#   sudo cp airsonic.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now airsonic
+#
+# Override defaults without editing this file:
+#   sudo systemctl edit airsonic          (drop-in, survives package updates)
+#   or use /etc/sysconfig/airsonic        (environment overrides, loaded automatically)
+#
+# Java 21 / virtual threads note:
+#   The SystemCallFilter includes `mincore` explicitly.  This syscall is used by
+#   Lucene's MMapDirectory when memory-mapping index files, and is blocked by
+#   systemd's default @system-service set on some kernels.  Without it, Lucene
+#   will throw AccessControlException on startup when virtual threads are enabled
+#   (spring.threads.virtual.enabled=true).
+
+[Unit]
+Description=Airsonic-Pulse media server
+After=remote-fs.target network.target
+AssertPathExists=/var/airsonic
+
+[Service]
+Type=simple
+
+# --- Paths and ports ---------------------------------------------------------
+Environment="JAVA_JAR=/var/airsonic/airsonic.war"
+Environment="AIRSONIC_HOME=/var/airsonic"
+Environment="PORT=4040"
+Environment="CONTEXT_PATH=/"
+
+# --- JVM tuning --------------------------------------------------------------
+# Increase -Xmx for large libraries (>50k tracks consider 2048m or more).
+Environment="JAVA_OPTS=-Xmx1024m -Xms512m"
+
+# --- Extra application arguments (optional) ----------------------------------
+Environment="JAVA_ARGS="
+
+# Site-specific overrides (PORT, JAVA_OPTS, etc.) go in /etc/sysconfig/airsonic.
+# The file is optional; a missing file is silently ignored.
+EnvironmentFile=-/etc/sysconfig/airsonic
+
+ExecStart=/usr/bin/java \
+          $JAVA_OPTS \
+          -Dairsonic.home=${AIRSONIC_HOME} \
+          -Dserver.servlet.context-path=${CONTEXT_PATH} \
+          -Dserver.port=${PORT} \
+          -Dfile.encoding=UTF-8 \
+          -Dserver.forward-headers-strategy=framework \
+          -Dsun.jnu.encoding=UTF-8 \
+          -jar ${JAVA_JAR} $JAVA_ARGS
+
+User=airsonic
+Group=airsonic
+
+# --- Sandboxing / hardening --------------------------------------------------
+DevicePolicy=closed
+NoNewPrivileges=yes
+PrivateDevices=yes
+PrivateTmp=yes
+PrivateUsers=yes
+ProtectControlGroups=yes
+ProtectKernelModules=yes
+ProtectKernelTunables=yes
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+RestrictNamespaces=yes
+RestrictRealtime=yes
+
+# mincore is required: Lucene MMapDirectory uses it for index file advising.
+# Removing it will cause startup failures when virtual threads are enabled.
+SystemCallFilter=@basic-io @file-system @chown @network-io @sync @timer @signal @process @system-service mincore
+
+ProtectSystem=full
+
+# --- Writable paths ----------------------------------------------------------
+# Always include AIRSONIC_HOME.  Add each media folder the server needs to
+# read transcoded output from or write uploads/podcasts to.
+#
+# Example (uncomment and adjust):
+#   ReadWritePaths=/var/airsonic /srv/music /srv/podcasts
+ReadWritePaths=/var/airsonic
+
+[Install]
+WantedBy=multi-user.target
