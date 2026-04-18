@@ -330,9 +330,9 @@ public class MediaFileService {
      * @return All children media files which pass this::showMediaFile
      */
     public List<MediaFile> getVisibleChildrenOf(MediaFile parent, boolean includeDirectories, boolean sort) {
-        return getChildrenOf(parent, true, includeDirectories, sort).stream()
+        return new ArrayList<>(getChildrenOf(parent, true, includeDirectories, sort).stream()
                 .filter(this::showMediaFile)
-                .toList();
+                .toList());
     }
 
     /**
