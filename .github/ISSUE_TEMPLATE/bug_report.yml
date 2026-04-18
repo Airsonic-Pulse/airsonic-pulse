@@ -113,6 +113,10 @@ body:
     attributes:
       label: Configuration
       description: Paste your configuration parameters here. **Do not include passwords, secrets, or API keys.**
+      placeholder: |
+        spring.datasource.url=...
+        server.port=4040
+        airsonic.home=/var/airsonic
     validations:
       required: true
 
