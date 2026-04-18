@@ -4,10 +4,14 @@
 #
 # Project-wide gitignores
 #
-#
 # Sourced from https://github.com/github/gitignore/
 # Redistributed under GPLv3+, as allowed by LICENSE found there
 # Copyright (c) 2014 Github, Inc.
+
+# AI assistant files
+CLAUDE.md
+.claude/
+
 #
 ## Windows.gitignore
 # Windows image file caches
@@ -157,3 +161,6 @@ local.properties
 .recommenders/
 
 tmp-home/
+
+# Local dev machine scripts
+deploy-test.sh
