@@ -20,15 +20,17 @@
 
 package org.airsonic.player.domain;
 
+import jakarta.annotation.Nullable;
+
 /**
  * @author Sindre Mehus
  * @version $Id$
  */
 public record AlbumNotes(
-        String notes,
-        String musicBrainzId,
-        String lastFmUrl,
-        String smallImageUrl,
-        String mediumImageUrl,
-        String largeImageUrl) {
+        @Nullable String notes,
+        @Nullable String musicBrainzId,
+        @Nullable String lastFmUrl,
+        @Nullable String smallImageUrl,
+        @Nullable String mediumImageUrl,
+        @Nullable String largeImageUrl) {
 }

@@ -20,6 +20,7 @@
 package org.airsonic.player.domain;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.SortedMap;
 
 /**
@@ -29,4 +30,9 @@ import java.util.SortedMap;
 public record MusicFolderContent(
         SortedMap<MusicIndex, List<MusicIndex.SortableArtistWithMediaFiles>> indexedArtists,
         List<MediaFile> singleSongs) {
+
+    public MusicFolderContent {
+        Objects.requireNonNull(indexedArtists, "indexedArtists");
+        Objects.requireNonNull(singleSongs, "singleSongs");
+    }
 }

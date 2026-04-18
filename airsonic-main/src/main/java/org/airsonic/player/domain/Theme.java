@@ -19,12 +19,14 @@
  */
 package org.airsonic.player.domain;
 
+import jakarta.annotation.Nullable;
+
 /**
  * Contains the ID and name for a theme.
  *
  * @author Sindre Mehus
  */
-public record Theme(String id, String name, String parent) {
+public record Theme(String id, String name, @Nullable String parent) {
 
     public Theme(String id, String name) {
         this(id, name, null);
