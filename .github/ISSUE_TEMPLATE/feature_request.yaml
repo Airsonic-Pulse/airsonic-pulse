@@ -17,6 +17,7 @@ body:
       multiple: false
       options:
         - "GUI"
+        - "Settings"
         - "RestfulAPI"
         - "Expand contents support"
         - "Other"
