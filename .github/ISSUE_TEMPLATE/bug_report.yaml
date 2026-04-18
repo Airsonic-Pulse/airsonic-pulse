@@ -35,21 +35,22 @@ body:
       label: Version
       description: What version of our software are you running?
       options:
-        - 11.1.5-SNAPSHOT (Edge)
-        - 11.1.4 (Stable)
-        - 11.1.3 (Stable)
-        - 11.1.2 (Stable)
-        - 11.1.1 (Stable)
-        - 11.1.0 (Stable)
-        - 11.0.2 (Stable)
+        - 12.0.0 (initial release)
+        - 13.0.0 (Alpha)
+        - 13.0.0 (Beta)
+        - 13.0.0 (RC)
+        - 13.0.0 (Stable)
+        - 14.0.0 (Alpha)
+        - 14.0.0 (Beta)
+        - 14.0.0 (RC)
     validations:
       required: true
   - type: input
     id: version-detail
     attributes:
       label: Version Detail
-      description: If you choose Edge version, please write edge release version
-      placeholder: 11.x.x-SNAPSHOT.xxxxxxxxxxxxx
+      description: If you choose Alpha version, please write Alpha snapshot release version
+      placeholder: 13.x.x-SNAPSHOT.xxxxxxxxxxxxx
     validations:
       required: false
   - type: input
@@ -74,6 +75,7 @@ body:
       label: Database
       description: What database are you use?
       options:
+        - HSQLDB (Built-in database)
         - PostgreSQL 13.x
         - PostgreSQL 14.x
         - MariaDB 8.x
@@ -118,6 +120,7 @@ body:
         - "English (United Kingdom)"
         - "English (United States)"
         - "French"
+        - "Dutch"
         - "Spanish"
         - "Catalan"
         - "Portuguese"
