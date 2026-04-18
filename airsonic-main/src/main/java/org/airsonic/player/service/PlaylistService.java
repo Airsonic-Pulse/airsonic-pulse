@@ -175,10 +175,10 @@ public class PlaylistService {
 
     @Transactional(readOnly = true)
     public List<MediaFile> getFilesInPlaylist(int id, boolean includeNotPresent) {
-        return playlistMediaFileRepository.findMediaFilesByPlaylistId(id).stream()
+        return new ArrayList<>(playlistMediaFileRepository.findMediaFilesByPlaylistId(id).stream()
                 .filter(Objects::nonNull)
                 .filter(x -> x.isPresent() || includeNotPresent)
-                .toList();
+                .toList());
     }
 
     private List<MediaFile> filterNoDurationFiles(List<MediaFile> files) {
