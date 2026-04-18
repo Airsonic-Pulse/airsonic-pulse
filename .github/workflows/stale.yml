@@ -1,0 +1,61 @@
+name: Mark and close stale issues and PRs
+
+on:
+  schedule:
+    - cron: '30 2 * * *'  # 02:30 UTC daily
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v10
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+          # --- Staleness thresholds ---
+          days-before-stale: 90
+          days-before-close: 75
+
+          # --- Labels ---
+          stale-issue-label: stale
+          stale-pr-label: stale
+          close-issue-label: ''
+          close-pr-label: ''
+
+          # --- Exempt labels (issues and PRs with these labels are never marked stale) ---
+          exempt-issue-labels: 'security,release,pinned'
+          exempt-pr-labels: 'pinned'
+
+          # --- Exempt issues assigned to a milestone or assignee ---
+          exempt-all-milestones: true
+          exempt-all-assignees: true
+
+          # --- Operations cap per run ---
+          operations-per-run: 30
+
+          # --- Messages: issues ---
+          stale-issue-message: >
+            This issue has been automatically marked as stale after 90 days without
+            activity. If this is still relevant, please leave a comment or remove the
+            `stale` label to keep it open. It will be closed in 75 days if no further
+            activity occurs.
+
+          close-issue-message: >
+            This issue has been closed due to inactivity. If it is still relevant,
+            please reopen it with updated information.
+
+          # --- Messages: pull requests ---
+          stale-pr-message: >
+            This pull request has been automatically marked as stale after 90 days
+            without activity. If it is still in progress or relevant, please leave a
+            comment or remove the `stale` label to keep it open. It will be closed in
+            75 days if no further activity occurs.
+
+          close-pr-message: >
+            This pull request has been closed due to inactivity. If it is still
+            relevant, please reopen it or open a new PR with updated changes.
