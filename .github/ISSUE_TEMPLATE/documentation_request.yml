@@ -1,0 +1,69 @@
+name: Documentation Request
+description: Request new documentation, or report that existing documentation is missing, outdated, or unclear
+title: "[Docs]: "
+labels: ["documentation"]
+body:
+  - type: dropdown
+    id: type
+    attributes:
+      label: Request Type
+      description: What kind of documentation change is needed?
+      options:
+        - "Something is missing — needs to be written"
+        - "Something is incorrect or outdated"
+        - "Something is unclear or hard to follow"
+        - "New section needed"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: section
+    attributes:
+      label: Section
+      description: Which area of documentation does this relate to?
+      options:
+        - "Getting Started"
+        - "Installation"
+        - "First Start / Initial Configuration"
+        - "Configuration Reference"
+        - "Upgrading"
+        - "Reverse Proxy"
+        - "Database"
+        - "Media Library"
+        - "Compatible Apps / Clients"
+        - "Developer Guide"
+        - "API / Subsonic Compatibility"
+        - "Contributing"
+        - "Other / New Section"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: location
+    attributes:
+      label: Where Should It Live?
+      description: Where should this documentation be added or updated?
+      options:
+        - "README.md"
+        - "GitHub Wiki"
+        - "Inline code comments / Javadoc"
+        - "CONTRIBUTING.md"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What Is Missing or Unclear?
+      description: Describe what you expected to find, what you found instead, or what is confusing.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Content
+      description: If you have a draft or specific wording in mind, share it here.
+    validations:
+      required: false

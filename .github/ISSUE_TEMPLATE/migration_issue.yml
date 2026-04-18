@@ -1,0 +1,102 @@
+name: Migration / Upgrade Issue
+description: Report a problem encountered when upgrading Airsonic-Pulse or migrating from Airsonic-Advanced
+title: "[Migration]: "
+labels: ["migration", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template if you encountered a problem while upgrading Airsonic-Pulse or migrating from Airsonic-Advanced.
+
+  - type: input
+    id: source-version
+    attributes:
+      label: Source Version
+      description: The version you are upgrading from. Include the project name if migrating from Airsonic-Advanced.
+      placeholder: "e.g. Airsonic-Advanced 11.1.5 or Airsonic-Pulse 11.0.0"
+    validations:
+      required: true
+
+  - type: input
+    id: target-version
+    attributes:
+      label: Target Version
+      description: The version you are upgrading to.
+      placeholder: "e.g. 12.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: migration-type
+    attributes:
+      label: Migration Type
+      description: What kind of upgrade or migration is this?
+      options:
+        - "Airsonic-Advanced → Airsonic-Pulse"
+        - "Airsonic-Pulse version upgrade"
+        - "Database migration (e.g. HSQLDB → PostgreSQL)"
+        - "Other"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: db
+    attributes:
+      label: Database
+      description: Database in use after the migration.
+      options:
+        - "HSQLDB (built-in)"
+        - "PostgreSQL 13.x"
+        - "PostgreSQL 14.x"
+        - "PostgreSQL 15.x"
+        - "MySQL 8.x"
+        - "MariaDB 10.x"
+        - "MariaDB 11.x"
+        - "Other"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Operating System
+      description: OS running the Airsonic-Pulse server.
+    validations:
+      required: true
+
+  - type: input
+    id: java-version
+    attributes:
+      label: Java Version
+      description: Java version used to run Airsonic-Pulse.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-taken
+    attributes:
+      label: Migration Steps Taken
+      description: Describe the steps you followed to perform the migration or upgrade.
+      placeholder: |
+        1. Stopped the running service
+        2. Replaced the WAR file
+        3. Started the service
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-broke
+    attributes:
+      label: What Broke
+      description: Describe what stopped working or what error occurred after the migration.
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output
+      description: Paste any relevant log output from startup or the point of failure. This will be automatically formatted as code.
+      render: console
+    validations:
+      required: false

@@ -1,0 +1,52 @@
+name: Release Preparation
+description: Track tasks needed to prepare a release
+title: "[Release] - Release Preparation for vX.X.X"
+labels:
+  - "release"
+  - "task"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## Release Preparation Checklist
+
+        Complete all tasks below before proceeding to the release. Check off each item as it is done.
+
+  - type: checkboxes
+    id: pre_release
+    attributes:
+      label: Pre-Release Tasks
+      description: Tasks to complete before starting the release process.
+      options:
+        - label: "Ensure README.md is updated"
+        - label: "Ensure CHANGELOG.md is updated"
+        - label: "Verify all dependencies are up to date"
+        - label: "Ensure no critical bugs are present"
+        - label: "CI is green on main"
+        - label: "Test deployment verified on local instance"
+
+  - type: checkboxes
+    id: release
+    attributes:
+      label: Release Tasks
+      description: Tasks to complete during the release process.
+      options:
+        - label: "Version bumped in pom.xml"
+        - label: "Release tag created"
+        - label: "GitHub Release created and published"
+
+  - type: checkboxes
+    id: post_release
+    attributes:
+      label: Post-Release Tasks
+      description: Tasks to complete after the release is published.
+      options:
+        - label: "Version bumped to next SNAPSHOT in pom.xml"
+        - label: "Open issues assigned to next milestone"
+
+  - type: input
+    id: additional_notes
+    attributes:
+      label: Additional Notes
+      description: Any other comments or tasks specific to this release.
+      placeholder: "Enter additional release-related notes here"

@@ -1,5 +1,5 @@
 name: Bug Report
-description: bug report
+description: Report a bug in Airsonic-Pulse
 title: "[Bug]: "
 labels: ["bug", "triage"]
 body:
@@ -7,33 +7,44 @@ body:
     attributes:
       value: |
         Thanks for taking the time to fill out this bug report!
+
   - type: textarea
     id: what-happened
     attributes:
-      label: What happened?
+      label: What Happened?
+      description: Describe the actual behavior you observed.
       placeholder: Tell us what you see.
     validations:
       required: true
-  
+
+  - type: textarea
+    id: expected-behavior
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen instead?
+    validations:
+      required: true
+
   - type: textarea
     id: steps-to-reproduce
     attributes:
-      label: Steps to reproduce
+      label: Steps to Reproduce
       description: |
-         Describe how somebody else could observe the same behavior you do.
-         If possible,include relevant configuration or files that cause the problem. 
-         If sharing media files, ensure you are legally permitted to share copies!
+        Describe how somebody else could observe the same behavior.
+        If possible, include relevant configuration or files that cause the problem.
+        If sharing media files, ensure you are legally permitted to share copies.
       placeholder: |
-        1. Frobnicate the Quux widget
-        2. Enable the turbo encabulator
-        3. Wait between 5 and 30 minutes for it to crash
+        1. Go to...
+        2. Click on...
+        3. Observe...
     validations:
       required: true
+
   - type: dropdown
     id: version
     attributes:
       label: Version
-      description: What version of our software are you running?
+      description: What version of Airsonic-Pulse are you running?
       options:
         - 12.0.0 (initial release)
         - 13.0.0 (Alpha)
@@ -45,76 +56,85 @@ body:
         - 14.0.0 (RC)
     validations:
       required: true
+
   - type: input
     id: version-detail
     attributes:
       label: Version Detail
-      description: If you choose Alpha version, please write Alpha snapshot release version
-      placeholder: 13.x.x-SNAPSHOT.xxxxxxxxxxxxx
+      description: If you selected an Alpha version, enter the full snapshot version here.
+      placeholder: "e.g. 13.x.x-SNAPSHOT.xxxxxxxxxxxxx"
     validations:
       required: false
+
   - type: input
     id: os
     attributes:
       label: Operating System
       description: |
-        the operating system you're running Airsonic on.
-        Linux, what distribution; Windows or Mac, what version?
+        The operating system running Airsonic-Pulse.
+        For Linux, include the distribution; for Windows or macOS, include the version.
     validations:
       required: true
+
   - type: input
     id: java-version
     attributes:
       label: Java Version
-      description: the Java version you are using to run Airsonic
+      description: The Java version used to run Airsonic-Pulse.
     validations:
       required: true
+
   - type: dropdown
     id: db
     attributes:
       label: Database
-      description: What database are you use?
+      description: Which database are you using?
       options:
-        - HSQLDB (Built-in database)
+        - HSQLDB (built-in database)
         - PostgreSQL 13.x
         - PostgreSQL 14.x
-        - MariaDB 8.x
-        - Mysql 10.x
+        - PostgreSQL 15.x
+        - MySQL 8.x
+        - MariaDB 10.x
+        - MariaDB 11.x
         - Other
       multiple: true
     validations:
       required: true
+
   - type: input
     id: db-detail
     attributes:
-      label: DB Detail
-      description: If you choose `Other`, please input your DB information.
+      label: Database Detail
+      description: If you selected Other, provide your database name and version.
+
   - type: textarea
     id: configuration
     attributes:
-      label: Configuration paramter
-      description: Pleasse copy and paset your configuration. **Don't write your secret parameter!** 
+      label: Configuration
+      description: Paste your configuration parameters here. **Do not include passwords, secrets, or API keys.**
     validations:
       required: true
-      
+
   - type: input
     id: proxy-server
     attributes:
       label: Proxy Server
-      description: if running Airsonic behind a proxy, what server and version? Otherwise, None
+      description: If running Airsonic-Pulse behind a reverse proxy, which server and version? Otherwise, leave blank.
     validations:
       required: false
+
   - type: input
     id: client
     attributes:
-      label: client detail
-      description: What browsers or applicationis are you seeing the problem on?
+      label: Client
+      description: Which browser or Subsonic-compatible application are you seeing the problem with?
+
   - type: dropdown
     id: language
     attributes:
-      label: language
-      description: which langauge/internationalization is in use
-      multiple: false
+      label: Language
+      description: Which language / locale is configured in Airsonic-Pulse?
       options:
         - "English"
         - "English (United Kingdom)"
@@ -144,9 +164,10 @@ body:
         - "Finnish"
         - "Icelandic"
         - "Estonian"
+
   - type: textarea
     id: logs
     attributes:
-      label: Relevant log output
-      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks.
-      render: console     
+      label: Relevant Log Output
+      description: Paste any relevant log output here. This will be automatically formatted as code.
+      render: console

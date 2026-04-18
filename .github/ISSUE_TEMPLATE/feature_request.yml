@@ -1,0 +1,53 @@
+name: Feature Request
+description: Suggest an idea for Airsonic-Pulse
+title: "[Feature Request]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your idea!
+
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      description: Which area of the project does your idea relate to?
+      options:
+        - "Web UI"
+        - "Settings / Configuration"
+        - "REST API / Subsonic Compatibility"
+        - "Media Library / Scanning"
+        - "Transcoding / Streaming"
+        - "Subsonic Client Support"
+        - "UPnP / DLNA"
+        - "Sonos"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-problem
+    attributes:
+      label: Problem Statement
+      description: |
+        Explain your use case, context, and rationale. What problem are you trying to solve?
+        What is the end-user experience you want to enable?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the solution you would like. Be as specific as you can.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative approaches or workarounds? Why are they insufficient?
+    validations:
+      required: false

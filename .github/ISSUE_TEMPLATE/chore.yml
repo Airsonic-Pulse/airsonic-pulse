@@ -1,0 +1,57 @@
+name: Chore / Technical Debt
+description: Internal cleanup, dependency updates, refactoring, or other non-user-facing improvements
+title: "[Chore]: "
+labels: ["chore"]
+body:
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area of Codebase
+      description: Which part of the project does this task affect?
+      multiple: true
+      options:
+        - "Build / Maven"
+        - "CI / GitHub Actions"
+        - "Dependencies"
+        - "Database / Liquibase"
+        - "Search / Lucene"
+        - "Transcoding"
+        - "Security"
+        - "API (REST / Subsonic)"
+        - "Frontend / Thymeleaf"
+        - "UPnP / DLNA"
+        - "Sonos"
+        - "Tests"
+        - "Issue / PR Templates"
+        - "Documentation"
+        - "Other"
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: Why does this work need to happen? Describe the problem or technical debt being addressed.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed-approach
+    attributes:
+      label: Proposed Approach
+      description: How should this be done? Include any constraints or approaches to avoid.
+    validations:
+      required: false
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: Acceptance Criteria
+      description: How will we know this task is complete?
+      placeholder: |
+        - All tests pass
+        - Dependency X upgraded to version Y
+        - No regressions in affected area
+    validations:
+      required: true
