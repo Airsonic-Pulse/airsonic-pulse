@@ -19,14 +19,16 @@
 
 package org.airsonic.player.domain;
 
+import jakarta.annotation.Nullable;
+
 /**
  * @author Sindre Mehus
  * @version $Id$
  */
 public record ArtistBio(
-        String biography,
-        String musicBrainzId,
-        String lastFmUrl,
+        @Nullable String biography,
+        @Nullable String musicBrainzId,
+        @Nullable String lastFmUrl,
         @Deprecated String smallImageUrl,
         @Deprecated String mediumImageUrl,
         @Deprecated String largeImageUrl) {

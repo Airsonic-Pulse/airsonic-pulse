@@ -10,6 +10,8 @@ import org.springframework.messaging.simp.annotation.SendToUser;
 import org.springframework.messaging.simp.annotation.SubscribeMapping;
 import org.springframework.stereotype.Controller;
 
+import jakarta.annotation.Nullable;
+
 import java.security.Principal;
 import java.time.Instant;
 import java.util.Collections;
@@ -71,7 +73,7 @@ public class BookmarksWSController {
             MediaFileEntry mediaFileEntry,
             Instant changed,
             Instant created,
-            String comment,
+            @Nullable String comment,
             long positionMillis) {
     }
 

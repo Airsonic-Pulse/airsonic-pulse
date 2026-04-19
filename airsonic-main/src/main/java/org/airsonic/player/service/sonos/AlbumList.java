@@ -22,10 +22,15 @@ package org.airsonic.player.service.sonos;
 import org.airsonic.player.domain.MediaFile;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Sindre Mehus
  * @version $Id$
  */
 record AlbumList(List<MediaFile> albums, int total) {
+
+    AlbumList {
+        Objects.requireNonNull(albums, "albums");
+    }
 }

@@ -21,11 +21,19 @@ package org.airsonic.player.ajax;
 
 import org.airsonic.player.domain.ArtistBio;
 
+import jakarta.annotation.Nullable;
+
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Sindre Mehus
  * @version $Id$
  */
-public record ArtistInfo(List<SimilarArtist> similarArtists, ArtistBio artistBio, List<MediaFileEntry> topSongs) {
+public record ArtistInfo(List<SimilarArtist> similarArtists, @Nullable ArtistBio artistBio, List<MediaFileEntry> topSongs) {
+
+    public ArtistInfo {
+        Objects.requireNonNull(similarArtists, "similarArtists");
+        Objects.requireNonNull(topSongs, "topSongs");
+    }
 }

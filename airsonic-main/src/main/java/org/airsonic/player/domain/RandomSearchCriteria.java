@@ -21,8 +21,11 @@ package org.airsonic.player.domain;
 
 import org.airsonic.player.service.SearchService;
 
+import jakarta.annotation.Nullable;
+
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Defines criteria used when generating random playlists.
@@ -32,19 +35,23 @@ import java.util.List;
  */
 public record RandomSearchCriteria(
         int count,
-        String genre,
-        Integer fromYear,
-        Integer toYear,
+        @Nullable String genre,
+        @Nullable Integer fromYear,
+        @Nullable Integer toYear,
         List<MusicFolder> musicFolders,
-        Instant minLastPlayedDate,
-        Instant maxLastPlayedDate,
-        Integer minAlbumRating,
-        Integer maxAlbumRating,
-        Integer minPlayCount,
-        Integer maxPlayCount,
+        @Nullable Instant minLastPlayedDate,
+        @Nullable Instant maxLastPlayedDate,
+        @Nullable Integer minAlbumRating,
+        @Nullable Integer maxAlbumRating,
+        @Nullable Integer minPlayCount,
+        @Nullable Integer maxPlayCount,
         boolean showStarredSongs,
         boolean showUnstarredSongs,
-        String format) {
+        @Nullable String format) {
+
+    public RandomSearchCriteria {
+        Objects.requireNonNull(musicFolders, "musicFolders");
+    }
 
     /**
      * Creates a new instance with default optional parameters.
