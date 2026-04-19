@@ -68,9 +68,8 @@ public class MonitoredMultipartFile implements MultipartFile {
 
     @Override
     public void transferTo(File dest) throws IOException, IllegalStateException {
-        InputStream inputStream = file.getInputStream();
-        FileOutputStream outputStream = new FileOutputStream(dest);
-        MonitoredOutputStream monitoredOutputStream = new MonitoredOutputStream(outputStream, listener);
-        FileCopyUtils.copy(inputStream, monitoredOutputStream);
+        try (InputStream inputStream = file.getInputStream()) {
+            FileCopyUtils.copy(inputStream, new MonitoredOutputStream(new FileOutputStream(dest), listener));
+        }
     }
 }
