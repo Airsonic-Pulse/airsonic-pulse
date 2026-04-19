@@ -91,6 +91,8 @@ public class FFmpegParser extends MetaDataParser {
             try (InputStream in = process.getInputStream();
                 BufferedInputStream bin = new BufferedInputStream(in); ) {
                 result = Util.getObjectMapper().readTree(bin);
+            } finally {
+                process.destroy();
             }
 
             metaData.setDuration(result.at("/format/duration").asDouble());
