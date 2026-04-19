@@ -33,6 +33,7 @@ import org.springframework.core.io.support.PropertiesLoaderUtils;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClient;
 
 import jakarta.annotation.PostConstruct;
@@ -286,6 +287,7 @@ public class VersionService {
         List<GitHubRelease> releases = new ArrayList<>();
         int maxRetries = 3;
         long backoffMillis = 2000;
+        outer:
         for (int i = 1; i <= 5; i++) { // Limit to 5 pages to avoid infinite loops
             final int pageNum = i;
             int attempt = 0;
@@ -299,10 +301,26 @@ public class VersionService {
                         .retrieve()
                         .body(new ParameterizedTypeReference<List<GitHubRelease>>() {});
                     if (response.isEmpty()) {
-                        break;
+                        break outer;
                     }
                     releases.addAll(response);
                     break; // Success, exit retry loop
+                } catch (HttpClientErrorException e) {
+                    if (e.getStatusCode().value() == 404) {
+                        // 404 means no more pages (or no releases at all) — stop paginating
+                        break outer;
+                    }
+                    attempt++;
+                    if (attempt >= maxRetries) {
+                        LOG.warn("Failed to fetch page {} from GitHub after {} attempts: {}", pageNum, attempt, e.getMessage());
+                        break;
+                    }
+                    try {
+                        Thread.sleep(backoffMillis);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        break outer;
+                    }
                 } catch (Exception e) {
                     attempt++;
                     if (attempt >= maxRetries) {
@@ -313,7 +331,7 @@ public class VersionService {
                         Thread.sleep(backoffMillis);
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
-                        break;
+                        break outer;
                     }
                 }
             }
