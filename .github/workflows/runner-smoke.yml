@@ -1,0 +1,19 @@
+name: runner-smoke
+
+on:
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  smoke:
+    runs-on: [self-hosted, linux, x64, repo-airsonic-pulse]
+    steps:
+      - uses: actions/checkout@v5
+      - name: Show runtime
+        run: |
+          id
+          hostname
+          uname -a
+          pwd
+          ls -la
