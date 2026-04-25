@@ -40,6 +40,7 @@ Environment="JAVA_ARGS="
 # Site-specific overrides (PORT, JAVA_OPTS, etc.) go in /etc/sysconfig/airsonic.
 # The file is optional; a missing file is silently ignored.
 EnvironmentFile=-/etc/sysconfig/airsonic
+EnvironmentFile=-/etc/default/airsonic
 
 ExecStart=/usr/bin/java \
           $JAVA_OPTS \
