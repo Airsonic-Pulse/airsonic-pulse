@@ -7,17 +7,79 @@ on:
       - "**.md"
       - "*.txt"
 
+env:
+  DEFAULT_MUSIC_FOLDER: /tmp/music
+
 jobs:
   build-and-test:
     runs-on: [self-hosted, linux, x64, repo-airsonic-pulse]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - db: hsqldb
+            maven-args: ""
+          - db: postgres
+            maven-args: "-DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory"
+          - db: mariadb
+            maven-args: "-DexcludedGroups=org.airsonic.player.util.EmbeddedTestCategory"
+
+    name: "build-and-test (${{ matrix.db }})"
+
+    services:
+      postgres:
+        image: ${{ matrix.db == 'postgres' && 'postgres:16-alpine' || '' }}
+        ports:
+          - 5432:5432
+        env:
+          POSTGRES_DB: airsonic
+          POSTGRES_USER: airsonic
+          POSTGRES_PASSWORD: airsonic
+        options: >-
+          --health-cmd "pg_isready -U airsonic"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      mariadb:
+        image: ${{ matrix.db == 'mariadb' && 'mariadb:11-jammy' || '' }}
+        ports:
+          - 3306:3306
+        env:
+          MARIADB_DATABASE: airsonic
+          MARIADB_USER: airsonic
+          MARIADB_PASSWORD: airsonic
+          MARIADB_ROOT_PASSWORD: airsonic
+        options: >-
+          --health-cmd "healthcheck.sh --connect --innodb_initialized"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      spring_datasource_url: >-
+        ${{ matrix.db == 'postgres'
+            && 'jdbc:postgresql://localhost:5432/airsonic?stringtype=unspecified&raiseExceptionOnSilentRollback=false'
+            || matrix.db == 'mariadb'
+            && 'jdbc:mariadb://localhost:3306/airsonic'
+            || '' }}
+      spring_datasource_username: ${{ matrix.db != 'hsqldb' && 'airsonic' || '' }}
+      spring_datasource_password: ${{ matrix.db != 'hsqldb' && 'airsonic' || '' }}
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+
       - name: Verify environment
         run: |
           java -version
           mvn --version
           ffmpeg -version
+
       - name: Create music directory
-        run: mkdir -p /tmp/music
+        run: mkdir -p ${{ env.DEFAULT_MUSIC_FOLDER }}
+
       - name: Build and test
-        run: mvn clean verify
+        run: >-
+          mvn clean verify
+          -Ddocker.testing.default-music-folder=${{ env.DEFAULT_MUSIC_FOLDER }}
+          ${{ matrix.maven-args }}
