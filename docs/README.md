@@ -1,7 +1,8 @@
-# Airsonic Advanced Documents
+# Airsonic Pulse Documents
 
 ## Contents
 
+- [Installation](./installation.md)
 - [First start](./first_start/README.md)
 - [WebUI](./webui/README.md)
   - [Media](./webui/media.md)
