@@ -8,7 +8,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -31,7 +31,7 @@ func main() {
 		}
 
 		// Read file data
-		data, err := ioutil.ReadAll(f)
+		data, err := io.ReadAll(f)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -46,7 +46,7 @@ func main() {
 		// If any changes where made write them to file
 		if string(data) != out {
 			fmt.Printf("Changes where made for %s\n", path)
-			if err := ioutil.WriteFile(path, []byte(out), 0644); err != nil {
+			if err := os.WriteFile(path, []byte(out), 0644); err != nil {
 				log.Fatal(err)
 			}
 		}

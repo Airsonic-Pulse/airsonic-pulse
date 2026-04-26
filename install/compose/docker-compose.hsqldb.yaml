@@ -2,9 +2,9 @@ version: "3"
 
 services:
 
-  airsonic-advanced:
-    image: ghcr.io/kagemomiji/airsonic-advanced
-    container_name: airsonic-advanced
+  airsonic-pulse:
+    image: ghcr.io/litebito/airsonic-pulse
+    container_name: airsonic-pulse
     environment:
       - PUID=1000
       - PGID=1000

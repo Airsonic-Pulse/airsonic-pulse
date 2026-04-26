@@ -54,8 +54,8 @@ for (( ; ; )) do
     -e delete \
     $dirs
 
-  info "Event received, waiting 10 minutes before triggering new scan"
-  sleep 3600 # Wait 10 minutes before triggering the scan
+  info "Event received, waiting 60 minutes before triggering new scan"
+  sleep 3600 # Wait 60 minutes before triggering the scan
   trigger_scan
   sleep 5
 done
