@@ -1,0 +1,20 @@
+name: "Push to Main CI"
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: [self-hosted, linux, x64, repo-airsonic-pulse]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify environment
+        run: |
+          java -version
+          mvn --version
+          ffmpeg -version
+      - name: Create music directory
+        run: mkdir -p /tmp/music
+      - name: Build and test
+        run: mvn clean verify

@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   stale:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux, x64, repo-airsonic-pulse]
     steps:
       - uses: actions/stale@v10
         with:
