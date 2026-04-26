@@ -48,8 +48,11 @@ jobs:
     - if: matrix.language == 'java'
       name: Build
       run: mvn package -DskipTests -Dcheckstyle.skip=true
-        
+      env:
+        MAVEN_OPTS: "-Xmx2048m"
+
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
         category: "/language:${{matrix.language}}"
+        ram: 4096
