@@ -235,6 +235,8 @@ public class SecurityService implements UserDetailsService {
         userRepository.findByUsername(username).ifPresentOrElse(u -> {
             u.setLdapAuthenticated(false);
             userRepository.save(u);
+            List<UserCredential> existing = userCredentialRepository.findByUserUsernameAndApp(username, App.AIRSONIC);
+            userCredentialRepository.deleteAll(existing);
             createAirsonicCredentialToUser(u, password, comment);
         }, () -> {
                 LOG.warn("Can't recover credential for a non-existent user {}", username);
