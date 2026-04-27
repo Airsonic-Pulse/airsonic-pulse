@@ -213,9 +213,11 @@ public class SecurityServiceTest {
         verify(userRepository).save(any(User.class));
         verify(userCredentialRepository).save(any(UserCredential.class));
 
-        UserCredential actual = userCredentialRepository.findByUserUsernameAndApp(TEST_USER_NAME, App.AIRSONIC).get(0);
-        assertEquals("hex", actual.getEncoder());
-        assertEquals(PasswordEncoderConfig.ENCODERS.get("hex").encode("testPassword"), actual.getCredential());
+        List<UserCredential> credentials = userCredentialRepository.findByUserUsernameAndApp(TEST_USER_NAME, App.AIRSONIC);
+        assertEquals(1, credentials.size());
+        UserCredential actual = credentials.get(0);
+        assertEquals("bcrypt", actual.getEncoder());
+        assertTrue(PasswordEncoderConfig.ENCODERS.get("bcrypt").matches("testPassword", actual.getCredential()));
 
         User actualUser = userRepository.findByUsername(TEST_USER_NAME).get();
         assertFalse(actualUser.isLdapAuthenticated());
