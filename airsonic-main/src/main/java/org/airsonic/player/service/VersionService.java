@@ -104,6 +104,17 @@ public class VersionService {
      */
     private static final long LAST_VERSION_FETCH_INTERVAL = 7L * 24L * 3600L * 1000L; // One week
 
+    // Package-private setters for testing — inject known versions without a network call.
+    void setLatestFinalVersion(Version version) {
+        this.latestFinalVersion = version;
+        this.lastVersionFetched = System.currentTimeMillis();
+    }
+
+    void setLatestBetaVersion(Version version) {
+        this.latestBetaVersion = version;
+        this.lastVersionFetched = System.currentTimeMillis();
+    }
+
     /**
      * Schedules periodic background refresh of the latest available version.
      */
