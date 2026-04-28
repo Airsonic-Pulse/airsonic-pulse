@@ -55,7 +55,7 @@ public class VersionServiceTest {
         properties.put("revision", COMMIT);
         properties.put("timestamp", TIMESTAMP);
         properties.put("name", NAME);
-        properties.put("projectUrl", "https://github.com/kagemomiji/airsonic-advanced");
+        properties.put("projectUrl", "https://github.com/litebito/airsonic-pulse");
         propertiesLoaderUtilsMockedStatic.when(() -> PropertiesLoaderUtils.loadAllProperties("build.properties")).thenReturn(properties);
     }
 
@@ -88,12 +88,14 @@ public class VersionServiceTest {
     @Test
     public void testIsNewFinalVersionAvailable() throws Exception {
         VersionService versionService = new VersionService();
+        versionService.setLatestFinalVersion(new Version("11.0.0"));
         assertTrue(versionService.isNewFinalVersionAvailable());
     }
 
     @Test
     public void testIsNewBetaVersionAvailable() throws Exception {
         VersionService versionService = new VersionService();
+        versionService.setLatestBetaVersion(new Version("11.0.0-SNAPSHOT"));
         assertTrue(versionService.isNewBetaVersionAvailable());
     }
 }
