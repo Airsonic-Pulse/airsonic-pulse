@@ -1,24 +1,25 @@
 services:
 
-  postgres:
-    image: postgres
+  mariadb:
+    image: mariadb:11
     environment:
-      - POSTGRES_DB=airsonicdb
-      - POSTGRES_USER=airsonic
-      - POSTGRES_PASSWORD=passwd
+      - MARIADB_DATABASE=airsonicdb
+      - MARIADB_USER=airsonic
+      - MARIADB_PASSWORD=passwd
+      - MARIADB_ROOT_PASSWORD=passwd
     volumes:
-      - ./data/postgres:/var/lib/postgresql/data
+      - ./data/mariadb:/var/lib/mysql
     restart: on-failure
 
   airsonic-pulse:
     depends_on:
-      - postgres
+      - mariadb
     image: ghcr.io/litebito/airsonic-pulse
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=Etc/UTC
-      - spring_datasource_url=jdbc:postgresql://postgres:5432/airsonicdb?stringtype=unspecified
+      - spring_datasource_url=jdbc:mariadb://mariadb:3306/airsonicdb
       - spring_datasource_username=airsonic
       - spring_datasource_password=passwd
       # - CONTEXT_PATH= #optional

@@ -1,5 +1,3 @@
-version: "3"
-
 services:
 
   airsonic-pulse:
@@ -22,4 +20,3 @@ services:
     # devices:
     #   - /dev/snd:/dev/snd #optional
     restart: unless-stopped
-    

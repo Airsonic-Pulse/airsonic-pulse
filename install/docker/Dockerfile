@@ -15,9 +15,11 @@ RUN mv WEB-INF/classes/META-INF cMETA-INF
 RUN mv WEB-INF/classes/liquibase cliquibase
 
 FROM eclipse-temurin:${IMAGE_JAVA_VERSION}-jre-jammy
+ARG VERSION=dev
 
 LABEL description="Airsonic-Pulse is a free, web-based media streamer, providing ubiquitous access to your music." \
-      url="https://github.com/litebito/airsonic-pulse"
+      url="https://github.com/litebito/airsonic-pulse" \
+      org.opencontainers.image.version=${VERSION}
 
 ENV AIRSONIC_PORT=4040 AIRSONIC_DIR=/var CONTEXT_PATH=/ UPNP_PORT=4041 PUID=0 PGID=0
 
@@ -54,10 +56,15 @@ EXPOSE $AIRSONIC_PORT
 EXPOSE $UPNP_PORT
 EXPOSE 1900/udp
 
+RUN mkdir -p /var/airsonic/transcode /var/music /var/playlists /var/podcasts \
+    && chmod 775 /var/airsonic /var/airsonic/transcode /var/music /var/playlists /var/podcasts \
+    && ln -sf /usr/bin/ffmpeg /var/airsonic/transcode/ffmpeg \
+    && ln -sf /usr/bin/lame /var/airsonic/transcode/lame
+
 USER ${PUID}:${PGID}
 
 VOLUME $AIRSONIC_DIR/airsonic $AIRSONIC_DIR/music $AIRSONIC_DIR/playlists $AIRSONIC_DIR/podcasts
 
-HEALTHCHECK --interval=15s --timeout=3s CMD curl -f http://localhost:"$AIRSONIC_PORT""$CONTEXT_PATH"rest/ping || false
+HEALTHCHECK --interval=15s --timeout=3s CMD wget -q -O /dev/null http://localhost:"$AIRSONIC_PORT""$CONTEXT_PATH"rest/ping || false
 
 ENTRYPOINT ["entry.sh"]
