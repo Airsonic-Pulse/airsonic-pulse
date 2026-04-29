@@ -3,6 +3,13 @@ name: "CI - Push to Main"
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "*.txt"
+      - "docs/**"
+      - "contrib/**"
+      - ".github/**"
+      - "!.github/workflows/pm_ci.yml"
 
 jobs:
   build-and-test:
