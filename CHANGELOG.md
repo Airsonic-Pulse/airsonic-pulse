@@ -1,6 +1,6 @@
 # Changelog
 
-## [12.0.0-edge.1] — 2026-04-08
+## [12.0.0] — 2026-04-08
 
 ### Added
 - GitHub Actions CI workflow
