@@ -18,3 +18,4 @@
   - [Cover Art/ Artist Image](./media/coverart.md)
   - [Jukebox](./media/jukebox.md)
 - [TroubleShooting](./troubleshooting.md)
+- [History](./HISTORY.md)
