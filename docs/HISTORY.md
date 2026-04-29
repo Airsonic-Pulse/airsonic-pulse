@@ -18,7 +18,7 @@ In addition to being a streaming media server, Airsonic works very well as a loc
 
 Written in Java, Airsonic runs on most platforms, including Windows, Mac, Linux and Unix variants.
 
-![Screenshot](contrib/assets/screenshot.png)
+![Screenshot](https://github.com/litebito/airsonic-pulse/blob/main/contrib/assets/screenshot.png)
 
 [History] Feature Enhancements (inherited from Airsonic-Advanced):
 ------------------------------------------------------------------
