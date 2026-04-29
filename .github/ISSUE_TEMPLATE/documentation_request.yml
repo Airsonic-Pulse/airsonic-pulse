@@ -47,7 +47,7 @@ body:
         - "README.md"
         - "GitHub Wiki"
         - "Inline code comments / Javadoc"
-        - "CONTRIBUTING.md"
+        - "./docs"
         - "Not sure"
     validations:
       required: true
