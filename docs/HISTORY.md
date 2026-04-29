@@ -1,51 +1,5 @@
-[![CI](https://github.com/litebito/airsonic-pulse/actions/workflows/ci.yml/badge.svg)](https://github.com/litebito/airsonic-pulse/actions/workflows/ci.yml)
 
-Airsonic-Pulse
-==============
-(this readme is being rewritten)
-
-What is Airsonic-Pulse?
------------------------
-Airsonic-Pulse is a continuation of Kagemomiji's [Airsonic-Advanced](https://github.com/kagemomiji/airsonic-advanced), a free, web-based media streamer providing ubiquitous access to your music. Airsonic-Pulse picks up where Airsonic-Advanced left off, with a focus on modernization, stability, and long-term maintenance.
-
-**Fork lineage:** Subsonic → Airsonic → Airsonic-Advanced → **Airsonic-Pulse**
-
-### Why Airsonic-Pulse?
-Several Airsonic-Advanced forks are seemingly abandoned by their maintainers. Airsonic-Pulse is an attempt to continue the project with:
-- Active maintenance and security updates
-- Modernization of the Java platform (Java 21+)
-- Planned frontend overhaul
-- Planned new features
-- Continued Subsonic API compatibility
-
-Usage of Airsonic Pulse
------------------------
-Airsonic-Pulse v12.x.x series are intercompatible with Kagemomiji's [Airsonic-Advanced](https://github.com/kagemomiji/airsonic-advanced).
-However, this is no longer the case with vanilla Airsonic 10.6.x series, and may not necessarily be the case with 11.x versions of original Airsonic-Advanced (https://github.com/airsonic-advanced/airsonic-advanced).
-
-Also note that Airsonic-Pulse versions 13.x and higher (and its snapshots) are *breaking* (non-backwards-compatible) version changes. You will not be able to revert back to 10.x.x or 11.x.x versions after upgrading (the system _does_ create a backup of the DB in case such revert is necessary, but it must be manually restored).
-
-### Stand-alone binaries
-Airsonic-Pulse can be downloaded from
-[GitHub](https://github.com/litebito/airsonic-pulse/releases).
-
-You need a _minimum_ Java Runtime Environment (JRE) of 17 for 12.x onwards (including snapshots).
-- For 12.x releases -> Java 17
-- For 13.x releases -> Java 21
-
-Airsonic-Pulse is run similarly to (and in lieu of) vanilla Airsonic or Airsonic-Advanced.
-
-
-Feature Enhancements in Airsonic-Pulse:
----------------------------------------------------------
-The following is an incomplete list of features that are enhanced from Airsonic-Advanced:
-More modern base frameworks and libraries
-  - Spring Boot 3.x (instead of 2.x), Spring Framework 6.x (instead of 5.x). Plus all the additional dependency upgrades due to the base libaries being upgraded (including EhCache, upgraded SQL connectors etc.)
-  - Moving to Java 21, dropping support for Java 17
-  - (... more to come...)
-
-
-Part of the readme below is kept for historical reasons (those sections are prefixed with [History])
+This is the readme from Kagemomiji's [Airsonic-Advanced](https://github.com/kagemomiji/airsonic-advanced) repo, kept for historical reasons
 
 [History] What is Airsonic-Advanced?
 ------------------------------------
@@ -65,8 +19,6 @@ In addition to being a streaming media server, Airsonic works very well as a loc
 Written in Java, Airsonic runs on most platforms, including Windows, Mac, Linux and Unix variants.
 
 ![Screenshot](contrib/assets/screenshot.png)
-
-
 
 [History] Feature Enhancements (inherited from Airsonic-Advanced):
 ------------------------------------------------------------------
