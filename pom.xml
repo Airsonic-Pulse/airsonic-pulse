@@ -5,11 +5,11 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>org.airsonic.player</groupId>
     <artifactId>airsonic</artifactId>
-    <version>13.0.0-SNAPSHOT</version>
-    <name>Airsonic</name>
+    <version>13.0.0</version>
+    <name>Airsonic-Pulse</name>
     <packaging>pom</packaging>
     <organization>
-        <name>Airsonic</name>
+        <name>Airsonic-Pulse</name>
         <url>https://github.com/litebito/airsonic-pulse</url>
     </organization>
     <inceptionYear>2016</inceptionYear>

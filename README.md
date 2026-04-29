@@ -31,7 +31,7 @@ Written in Java, Airsonic runs on most platforms, including Windows, Mac, Linux 
 
 ![Screenshot](contrib/assets/screenshot.png)
 
-## 2. Usage of Airsonic Pulse
+## 2. Usage of Airsonic-Pulse
 Airsonic-Pulse v12.x.x series are intercompatible with Kagemomiji's [Airsonic-Advanced](https://github.com/kagemomiji/airsonic-advanced).
 However, this is no longer the case with vanilla Airsonic 10.6.x series, and may not necessarily be the case with 11.x versions of original Airsonic-Advanced (https://github.com/airsonic-advanced/airsonic-advanced).
 
@@ -70,7 +70,7 @@ Also note that the Docker image will by default run as user root (0), group root
   - Specifying `--user` when invoking the `docker run` command, and providing it with one or both in the format `uid:gid`
   - Specifying the `PUID` or `PGID` environment variables to the container image when invoking the `docker run` command (`-e PUID=uid -e PGID=gid`)
 
-Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic Pulse shares similar running instructions unless stated otherwise. 
+Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Pulse shares similar running instructions unless stated otherwise. 
 Notable exceptions will be available in the /docs folder (and if you think something is missing in the documentaion, please raise a documentation issue).
 
 ### Docker Compose

@@ -5,18 +5,18 @@
     <parent>
         <relativePath>../../pom.xml</relativePath>
         <artifactId>airsonic</artifactId>
-        <version>13.0.0-SNAPSHOT</version>
+        <version>13.0.0</version>
         <groupId>org.airsonic.player</groupId>
     </parent>
     <packaging>pom</packaging>
     <artifactId>airsonic-docker</artifactId>
-    <name>Airsonic Docker Image</name>
+    <name>Airsonic-Pulse Docker Image</name>
 
     <dependencies>
         <dependency>
             <groupId>org.airsonic.player</groupId>
             <artifactId>airsonic-main</artifactId>
-            <version>13.0.0-SNAPSHOT</version>
+            <version>13.0.0</version>
             <type>war</type>
         </dependency>
     </dependencies>
