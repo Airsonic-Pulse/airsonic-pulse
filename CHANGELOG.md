@@ -1,7 +1,5 @@
 # Changelog
 
-<<<<<<< HEAD
-=======
 ## [13.0.0] — 2026-04-29
 
 ### Breaking
@@ -47,7 +45,6 @@
 - Audit records conversion for null safety (#15)
 - Audit `Stream.toList()` / `List.of()` / `Collections.unmodifiable` for mutation safety (#14)
 
->>>>>>> 603a81ad (docs: updating documentation)
 ## [12.0.0] — 2026-04-08
 
 ### Added
