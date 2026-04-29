@@ -1,6 +1,0 @@
-{
-    "java.jdt.ls.java.home": "/home/kagerou/.sdkman/candidates/java/current",
-    "maven.terminal.useJavaHome": true,
-    "java.compile.nullAnalysis.mode": "automatic",
-    "java.configuration.updateBuildConfiguration": "automatic"
-}
