@@ -167,6 +167,22 @@ See the [Configuration](https://github.com/kagemomiji/airsonic-advanced/blob/mai
 Compatibility Notes:
 ------
 
+The following properties are new in Airsonic-Advanced:
+  - `MediaScannerParallelism(<= 11.1.2)`: (default: number of available processors + 1) The parallelism to use when scanning media
+  - `AIRSONIC_SCAN_PARALLELISM(> 11.1.2)`: (default: number of available processors + 1) The parallelism to use when scanning media
+  - `ClearFullScanSettingAfterScan`: (default: false) Whether to clear FullScan setting after the next SUCCESSFUL scan (useful for doing full scan once and then reverting to default scan)
+
+The following property names are different between Airsonic and Airsonic-Advanced:
+  - `UPNP_PORT` -> `UPnpPort`
+  - `server.context-path` -> `server.servlet.context-path` (Airsonic will use the latter from 11.0 onwards)
+  - `IgnoreFileTimestamps` -> `FullScan`
+
+Note that Airsonic-Advanced communicates with its Web UI via websockets. If you're behind a proxy, you need to enable websockets and allow UPGRADE http requests through the proxy. A sample configuration is posted here: [nginx sample](https://github.com/airsonic-advanced/airsonic-advanced/issues/145).
+
+Additionally, if placed behind a proxy, the Airsonic server needs to forward headers, for which the following property is necessary (either in `/path/to/airsonic-data/airsonic.properties` or as a jvm argument):
+  - After and including *Edge Release 11.0.0-SNAPSHOT.20210117214044*: `server.forward-headers-strategy=native`
+  - Prior to *Edge Release 11.0.0-SNAPSHOT.20210117214044*: `server.use-forward-headers=true`
+
 ### 11.x series
 Certain property names have been changed from 10.6 to recent snapshots of 11.0 and will be _automigrated_. When modifying properties, use the modern name.
   - `DatabaseConfigEmbedDriver` -> `spring.datasource.driver-class-name`
