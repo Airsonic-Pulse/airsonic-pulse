@@ -119,14 +119,12 @@ Airsonic-Advanced snapshots are generally pretty stable and recommended for use 
 
 ### Stand-alone binaries
 Airsonic-Advanced can be downloaded from
-[GitHub]([https://github.com/litebito/airsonic-pulse/releases]).
+[GitHub]([(https://github.com/kagemomiji/airsonic-advanced)]).
 
 You need a _minimum_ Java Runtime Environment (JRE) of 1.8 for 10.6.x series, and 11 for 11.x onwards (including snapshots).
 - For 11.x releases and onwards -> Java 17
 
 Airsonic-Advanced is run similarly to (and in lieu of) vanilla Airsonic.
-
-For Airsonic-Pulse information, read [Usage of Airsonic Pulse](#usage-of-airsonic-pulse)
 
 Read the [compatibility notes](#compatibility-notes).
 
@@ -160,33 +158,14 @@ You may compile the code yourself by using Maven. A sample invocation would be (
 ```
 mvn clean package
 ```
-Requires Java 21 and Maven 3.9+. The WAR file will be at `airsonic-main/target/airsonic.war`.
+The WAR file will be at `airsonic-main/target/airsonic.war`.
 
 ### Configuration
 
-See the [Configuration](./docs/configures/README.md)
+See the [Configuration](https://github.com/kagemomiji/airsonic-advanced/blob/main/docs/configures/README.md)
 
 Compatibility Notes:
 ------
-
-### Airsonic-Pulse 12.x
-Version 12.0.0 is the initial Airsonic-Pulse release. It is based on the final version of kagemomiji/airsonic-advanced (11.1.4) and remains fully compatible with it. Future 13.x releases will modernize the codebase (Java 21 exclusively) and may introduce breaking changes. Migration notes will be documented here when applicable.
-
-The following properties are new in Airsonic-Advanced:
-  - `MediaScannerParallelism(<= 11.1.2)`: (default: number of available processors + 1) The parallelism to use when scanning media
-  - `AIRSONIC_SCAN_PARALLELISM(> 11.1.2)`: (default: number of available processors + 1) The parallelism to use when scanning media
-  - `ClearFullScanSettingAfterScan`: (default: false) Whether to clear FullScan setting after the next SUCCESSFUL scan (useful for doing full scan once and then reverting to default scan)
-
-The following property names are different between Airsonic and Airsonic-Advanced:
-  - `UPNP_PORT` -> `UPnpPort`
-  - `server.context-path` -> `server.servlet.context-path` (Airsonic will use the latter from 11.0 onwards)
-  - `IgnoreFileTimestamps` -> `FullScan`
-
-Note that Airsonic-Advanced communicates with its Web UI via websockets. If you're behind a proxy, you need to enable websockets and allow UPGRADE http requests through the proxy. A sample configuration is posted here: [nginx sample](https://github.com/airsonic-advanced/airsonic-advanced/issues/145).
-
-Additionally, if placed behind a proxy, the Airsonic server needs to forward headers, for which the following property is necessary (either in `/path/to/airsonic-data/airsonic.properties` or as a jvm argument):
-  - After and including *Edge Release 11.0.0-SNAPSHOT.20210117214044*: `server.forward-headers-strategy=native`
-  - Prior to *Edge Release 11.0.0-SNAPSHOT.20210117214044*: `server.use-forward-headers=true`
 
 ### 11.x series
 Certain property names have been changed from 10.6 to recent snapshots of 11.0 and will be _automigrated_. When modifying properties, use the modern name.
@@ -211,10 +190,6 @@ First migration to 11.x will create a backup DB next to the DB folder. It will b
 > If you use HSQLDB for 10.6.0, DB migration must fails.
 > First upgrade to 11.0.0-SNAPSHOT.20221224143241 then upgrade to latest release.
 
-Troubleshooting
-------
-
-See the [Troubleshooting](./docs/troubleshooting.md)
 
 History
 -----
@@ -236,14 +211,12 @@ Around November 2019, Airsonic-Advanced was forked off the base Airsonic fork du
 
 December 2022, this repository forked from Airsonic-Advanced.
 
-In April 2026, Airsonic-Pulse was created as a continuation of kagemomiji/airsonic-advanced, which had become inactive. Airsonic-Pulse aims to modernize the codebase while maintaining the project's core mission as a free, open-source, self-hosted media server.
-
 Pull Requests are always welcome. All Pull Requests are reviewed before being merged to ensure we continue to meet our goals.
 
 License
 -------
 
-Airsonic-Pulse, Airsonic-Advanced, and Airsonic are free software and licensed under the [GNU General Public License version 3](http://www.gnu.org/copyleft/gpl.html). The code in this repository (and associated binaries) are free of any "license key" or other restrictions. If you wish to thank the maintainer of this repository, please consider a donation to the [Electronic Frontier Foundation](https://supporters.eff.org/donate).
+Airsonic-Advanced, and Airsonic are free software and licensed under the [GNU General Public License version 3](http://www.gnu.org/copyleft/gpl.html). The code in this repository (and associated binaries) are free of any "license key" or other restrictions. If you wish to thank the maintainer of this repository, please consider a donation to the [Electronic Frontier Foundation](https://supporters.eff.org/donate).
 
 The [Subsonic source code](https://github.com/airsonic/subsonic-svn) was released under the GPLv3 through version 6.0-beta1. Beginning with 6.0-beta2, source is no longer provided. Binaries of Subsonic are only available under a commercial license. There is a [Subsonic Premium](http://www.subsonic.org/pages/premium.jsp) service which adds functionality not available in Airsonic. Subsonic also offers RPM, Deb, Exe, and other pre-built packages that Airsonic [currently does not](https://github.com/airsonic/airsonic/issues/65).
 
@@ -255,8 +228,6 @@ and are licensed under [MIT license](https://github.com/feathericons/feather/blo
 
 The cover art functionality supporting multiple image file formats is powered by the [TwelveMonkeys](https://github.com/haraldk/TwelveMonkeys) library, which is released under the [BSD3 License](https://github.com/haraldk/TwelveMonkeys/blob/main/LICENSE.md).  
 
-Community
----------
-Bugs, feature requests, and discussions for Airsonic-Pulse can be raised as issues on the [Airsonic-Pulse GitHub page](https://github.com/litebito/airsonic-pulse).
+
 
 For historical context, the upstream project is archived at [kagemomiji/airsonic-advanced](https://github.com/kagemomiji/airsonic-advanced).
