@@ -58,35 +58,41 @@ More modern base frameworks and libraries
 For a long (but non-exhaustive) list of features inherited from Airsonic-Advanced, read the "Feature Enhancements" section in [History.md](https://github.com/litebito/airsonic-pulse/blob/main/docs/HISTORY.md)
 
 ## 4. Docker
-[GHCR](https://ghcr.io/litebito/airsonic-pulse). Docker releases are recently multiplatform, which means ARM64 is also released to Dockerhub. However, automated testing for those archs is not currently done in the CI/CD pipeline (only Linux platform is tested).
 
-Please note that for Docker images, the volume mounting points have changed and are different from Airsonic. Airsonic mount points are at `/airsonic/*` inside the container. Airsonic-Advanced tries to use the same volume locations as the default war image at `/var/*` in order to remain consistent if people want to switch between the containers and non-containers.
-  - `Music:/airsonic/music` -> `Music:/var/music`
-  - `Podcasts:/airsonic/podcast` -> `Podcasts:/var/podcast`
-  - `Playlists:/airsonic/playlists` -> `Playlists:/var/playlists`
-  - `/airsonic/data` -> `/var/airsonic`
+The Airsonic-Pulse Docker image is published to the GitHub Container Registry:
+```
+ghcr.io/litebito/airsonic-pulse
+```
+Supported architectures: `linux/amd64`, `linux/arm64`.
 
-Also note that the Docker image will by default run as user root (0), group root (0), and so any files created in the external volume will be owned as such. You may change the user running the internal process in one of two ways:
-  - Specifying `--user` when invoking the `docker run` command, and providing it with one or both in the format `uid:gid`
-  - Specifying the `PUID` or `PGID` environment variables to the container image when invoking the `docker run` command (`-e PUID=uid -e PGID=gid`)
+**Quick start:**
+
+```bash
+docker run -d \
+  --name airsonic-pulse \
+  -p 4040:4040 \
+  -v ./data/airsonic:/var/airsonic \
+  -v ./data/music:/var/music \
+  -e PUID=1000 \
+  -e PGID=1000 \
+  ghcr.io/litebito/airsonic-pulse:latest
+```
+
+The image runs as root by default and uses `PUID`/`PGID` to create a non-root user at startup. Volume mount points are at `/var/*` to remain consistent with the standalone WAR deployment.
+
+Docker Compose files for HSQLDB, PostgreSQL, and MariaDB are provided in [`install/compose/`](./install/compose).
+
+For full Docker documentation, see [docs/docker/](./docs/docker/README.md).
+
+
+[GHCR](https://ghcr.io/litebito/airsonic-pulse). Docker releases are multiplatform, which means ARM64 is also released to Dockerhub. However, automated testing for those archs is not currently done in the CI/CD pipeline (only Linux platform is tested).
+
 
 Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Pulse shares similar running instructions unless stated otherwise. 
 Notable exceptions will be available in the /docs folder (and if you think something is missing in the documentaion, please raise a documentation issue).
 
-### Docker Compose
-(to rewrite/update)
 
-To evaluate Airsonic in Docker Compose try our compose files in [install/compose](./install/compose) directory. There are 3 variants: 
-- embedded database (HSQLDB),
-- PostgreSQL
-- MariaDB
-
-You can run from within directory by command:
-```shell
-docker compose -p airsonic-hsqldb -f docker-compose.hsqldb.yaml up
-```
-
-### Building/Compiling
+## 5. Building/Compiling
 (to rewrite/update)
 
 You may compile the code yourself by using Maven. A sample invocation would be (in the root):
@@ -95,26 +101,26 @@ mvn clean package
 ```
 Requires Java 21 and Maven 3.9+. The WAR file will be at `airsonic-main/target/airsonic.war`.
 
-### Configuration
+## 6. Configuration
 
-See the [Configuration](./docs/configures/README.md)
+See the [Configuration](./docs/configuration/README.md)
 
-## Documentation
+## 7. Documentation
 
 For Airsonic-Pulse-specific documentation, see the [`docs/`](./docs/README.md)
 directory in this repository.
 
-## Compatibility Notes:
+## 8. Compatibility Notes:
 
 ### Airsonic-Pulse 12.x
 Version 12.0.0 is the initial Airsonic-Pulse release. It is based on the final version of kagemomiji/airsonic-advanced (11.1.4) and remains fully compatible with it. Future 13.x releases will modernize the codebase (Java 21 exclusively) and may introduce breaking changes. Migration notes will be documented here when applicable.
 
 **WARNING: Always take backups before trying new versions!**
 
-## Troubleshooting
+## 9. Troubleshooting
 See the [Troubleshooting](./docs/troubleshooting.md)
 
-## History
+## 10. History
 
 The original [Subsonic](http://www.subsonic.org/) is developed by [Sindre Mehus](mailto:sindre@activeobjects.no). Subsonic was open source through version 6.0-beta1, and closed-source from then onwards.
 

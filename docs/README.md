@@ -17,5 +17,6 @@
   - [Rule](./media/rule.md)
   - [Cover Art/ Artist Image](./media/coverart.md)
   - [Jukebox](./media/jukebox.md)
+- [Docker](./docker/README.md)
 - [TroubleShooting](./troubleshooting.md)
 - [History](./HISTORY.md)
