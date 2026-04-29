@@ -99,8 +99,12 @@ Requires Java 21 and Maven 3.9+. The WAR file will be at `airsonic-main/target/a
 
 See the [Configuration](./docs/configures/README.md)
 
-Compatibility Notes:
-------
+## Documentation
+
+For Airsonic-Pulse-specific documentation, see the [`docs/`](./docs/README.md)
+directory in this repository.
+
+## Compatibility Notes:
 
 ### Airsonic-Pulse 12.x
 Version 12.0.0 is the initial Airsonic-Pulse release. It is based on the final version of kagemomiji/airsonic-advanced (11.1.4) and remains fully compatible with it. Future 13.x releases will modernize the codebase (Java 21 exclusively) and may introduce breaking changes. Migration notes will be documented here when applicable.
