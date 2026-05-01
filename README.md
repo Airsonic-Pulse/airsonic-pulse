@@ -112,8 +112,27 @@ directory in this repository.
 
 ## 8. Compatibility Notes:
 
-### Airsonic-Pulse 12.x
+### Airsonic-Pulse 12.x (released)
 Version 12.0.0 is the initial Airsonic-Pulse release. It is based on the final version of kagemomiji/airsonic-advanced (11.1.4) and remains fully compatible with it. Future 13.x releases will modernize the codebase (Java 21 exclusively) and may introduce breaking changes. Migration notes will be documented here when applicable.
+
+### Airsonic-Pulse 13.x
+
+#### Airsonic-Pulse 13.0.x (released)
+
+13.x releases will modernize the codebase:
+- Java 21 exclusively, java 17 support is dropped
+- may introduce breaking changes. 
+Migration notes will be documented here when applicable.
+
+#### Airsonic-Pulse 13.1.x (planned)
+
+13.1.0 releases will further refactor the codebase:
+- refactoring of the Subsonic API
+- implementation of the OpenSubsonic API
+- update settings pages (ffmpeg path, some reset options)
+- removal of legacy (unsecure) authentication. (WARNING: before upgrading to 13.1.x or higher, make sure none of the userid's still use any legacy authentication)
+Migration notes will be documented here when applicable.
+**WARNING: before upgrading to 13.1.x or higher, make sure none of the userid's still use any legacy authentication**
 
 **WARNING: Always take backups before trying new versions!**
 

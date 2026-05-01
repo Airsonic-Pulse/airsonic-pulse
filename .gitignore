@@ -8,6 +8,9 @@
 # Redistributed under GPLv3+, as allowed by LICENSE found there
 # Copyright (c) 2014 Github, Inc.
 
+# Other directories
+
+
 # AI assistant files
 CLAUDE.md
 .claude/
