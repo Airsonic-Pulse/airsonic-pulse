@@ -1983,7 +1983,7 @@ public class SubsonicRESTController {
         command.setCommentRole(getBooleanParameter(request, "commentRole", u.isCommentRole()));
         command.setCoverArtRole(getBooleanParameter(request, "coverArtRole", u.isCoverArtRole()));
         command.setDownloadRole(getBooleanParameter(request, "downloadRole", u.isDownloadRole()));
-        command.setStreamRole(getBooleanParameter(request, "streamRole", u.isDownloadRole()));
+        command.setStreamRole(getBooleanParameter(request, "streamRole", u.isStreamRole()));
         command.setUploadRole(getBooleanParameter(request, "uploadRole", u.isUploadRole()));
         command.setJukeboxRole(getBooleanParameter(request, "jukeboxRole", u.isJukeboxRole()));
         command.setPodcastRole(getBooleanParameter(request, "podcastRole", u.isPodcastRole()));
