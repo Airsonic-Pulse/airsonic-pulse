@@ -21,6 +21,7 @@ package org.airsonic.player.controller;
 
 import com.google.common.net.MediaType;
 import org.airsonic.player.controller.SubsonicRESTController.APIException;
+import org.airsonic.player.service.VersionService;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang3.tuple.Pair;
 import org.eclipse.persistence.jaxb.MarshallerProperties;
@@ -28,6 +29,8 @@ import org.jdom2.Attribute;
 import org.jdom2.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.subsonic.restapi.Error;
 import org.subsonic.restapi.ObjectFactory;
 import org.subsonic.restapi.Response;
@@ -56,6 +59,7 @@ import static org.springframework.web.bind.ServletRequestUtils.getStringParamete
  * @author Sindre Mehus
  * @version $Id$
  */
+@Component
 public class JAXBWriter {
 
     private static final Logger LOG = LoggerFactory.getLogger(JAXBWriter.class);
@@ -65,8 +69,11 @@ public class JAXBWriter {
     private static final String restProtocolVersion = parseRESTProtocolVersion();
 
     private final String SERVER_TYPE = "Airsonic-Pulse";
+    private final VersionService versionService;
 
-    public JAXBWriter() {
+    @Autowired
+    public JAXBWriter(VersionService versionService) {
+        this.versionService = versionService;
         Map<String, Object> properties = Map.of(JAXBContext.JAXB_CONTEXT_FACTORY, "org.eclipse.persistence.jaxb.JAXBContextFactory");
         Class<?>[] classes = {Response.class};
         try {

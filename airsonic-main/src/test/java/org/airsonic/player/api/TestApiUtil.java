@@ -1,6 +1,7 @@
 package org.airsonic.player.api;
 
 import org.airsonic.player.controller.JAXBWriter;
+import org.airsonic.player.service.VersionService;
 import org.subsonic.restapi.AlbumID3;
 import org.subsonic.restapi.AlbumWithSongsID3;
 import org.subsonic.restapi.Artist;
@@ -11,10 +12,14 @@ import org.subsonic.restapi.NowPlayingEntry;
 
 import java.time.Instant;
 
+import static org.mockito.Mockito.mock;
+
 public class TestApiUtil {
 
+    private static final JAXBWriter JAXB_WRITER = new JAXBWriter(mock(VersionService.class));
 
-    // 標準的な音楽ファイル(MUSIC)のChildを生成
+
+    // Generates a Child version of a standard music file (MUSIC).
     public static Child createTestMusicChild() {
         Child child = new Child();
         child.setId("1");
@@ -37,7 +42,7 @@ public class TestApiUtil {
         return child;
     }
 
-    // ポッドキャスト(PODCAST)のChildを生成
+    // Generate a child for a podcast.
     public static Child createTestPodcastChild() {
         Child child = createTestMusicChild();
         child.setId("2");
@@ -48,7 +53,7 @@ public class TestApiUtil {
         return child;
     }
 
-    // オーディオブック(AUDIOBOOK)のChildを生成
+    // Generate a Child for audiobooks.
     public static Child createTestAudiobookChild() {
         Child child = createTestMusicChild();
         child.setId("3");
@@ -59,7 +64,7 @@ public class TestApiUtil {
         return child;
     }
 
-    // ビデオ(VIDEO)のChildを生成
+    // Generate a child for the video.
     public static Child createTestVideoChild() {
         Child child = createTestMusicChild();
         child.setId("4");
@@ -73,7 +78,7 @@ public class TestApiUtil {
         return child;
     }
 
-    // ディレクトリ(フォルダ)のChildを生成
+    // Create a child for the directory (folder).
     public static Child createTestDirectoryChild() {
         Child child = new Child();
         child.setId("5");
@@ -91,7 +96,7 @@ public class TestApiUtil {
      * @return AlbumID3 object with all fields set.
      */
     public static AlbumWithSongsID3 createTestAlbumWithSongsID3Full(Integer id) {
-        JAXBWriter jaxbWriter = new JAXBWriter();
+        JAXBWriter jaxbWriter = JAXB_WRITER;
         AlbumWithSongsID3 album = new AlbumWithSongsID3();
         album.setId(id.toString());
         album.setName("Full Album");
@@ -116,7 +121,7 @@ public class TestApiUtil {
      * @return AlbumWithSongsID3 object with minimal fields set.
      */
     public static AlbumWithSongsID3 createTestAlbumWithSongsID3Minimum(Integer id) {
-        JAXBWriter jaxbWriter = new JAXBWriter();
+        JAXBWriter jaxbWriter = JAXB_WRITER;
         AlbumWithSongsID3 album = new AlbumWithSongsID3();
         album.setId(id.toString());
         album.setName("Minimal Album");
@@ -133,7 +138,7 @@ public class TestApiUtil {
      * @return AlbumID3 object with fields set to typical test values.
      */
     public static AlbumID3 createTestAlbumID3() {
-        JAXBWriter jaxbWriter = new JAXBWriter();
+        JAXBWriter jaxbWriter = JAXB_WRITER;
         AlbumID3 album = new AlbumID3();
         album.setId("10");
         album.setName("Test Album 10");
@@ -155,7 +160,7 @@ public class TestApiUtil {
      * @return ArtistID3 object with preset values.
      */
     public static ArtistID3 createTestArtistID3Full(String name) {
-        JAXBWriter jaxbWriter = new JAXBWriter();
+        JAXBWriter jaxbWriter = JAXB_WRITER;
         ArtistID3 artist = new ArtistID3();
         artist.setId("1");
         artist.setName(name);
@@ -184,7 +189,7 @@ public class TestApiUtil {
      * @return Artist object with preset values.
      */
     public static Artist createTestArtist(String name) {
-        JAXBWriter jaxbWriter = new JAXBWriter();
+        JAXBWriter jaxbWriter = JAXB_WRITER;
         Artist artist = new Artist();
         artist.setId("3");
         artist.setName(name);
@@ -200,7 +205,7 @@ public class TestApiUtil {
      * @return ArtistWithAlbumsID3 object with preset values.
      */
     public static ArtistWithAlbumsID3 createTestArtistWithAlbumsID3Full(String name) {
-        JAXBWriter jaxbWriter = new JAXBWriter();
+        JAXBWriter jaxbWriter = JAXB_WRITER;
         ArtistWithAlbumsID3 artist = new ArtistWithAlbumsID3();
         artist.setId("4");
         artist.setName(name);

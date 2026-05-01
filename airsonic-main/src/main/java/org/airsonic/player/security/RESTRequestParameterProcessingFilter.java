@@ -62,15 +62,15 @@ public class RESTRequestParameterProcessingFilter extends AbstractAuthentication
     private static final RequestMatcher requiresAuthenticationRequestMatcher = new RegexRequestMatcher("/rest/.+", null);
     private static final Version serverVersion = new Version(JAXBWriter.getRestProtocolVersion());
 
-    protected RESTRequestParameterProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher) {
+    protected RESTRequestParameterProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher, JAXBWriter jaxbWriter) {
         super(requiresAuthenticationRequestMatcher);
-        setAuthenticationFailureHandler(new RESTAuthenticationFailureHandler());
+        setAuthenticationFailureHandler(new RESTAuthenticationFailureHandler(jaxbWriter));
         setAuthenticationSuccessHandler((req, res, auth) -> {
         });
     }
 
-    public RESTRequestParameterProcessingFilter() {
-        this(requiresAuthenticationRequestMatcher);
+    public RESTRequestParameterProcessingFilter(JAXBWriter jaxbWriter) {
+        this(requiresAuthenticationRequestMatcher, jaxbWriter);
     }
 
     @Override
@@ -151,7 +151,11 @@ public class RESTRequestParameterProcessingFilter extends AbstractAuthentication
     }
 
     public static class RESTAuthenticationFailureHandler implements AuthenticationFailureHandler {
-        private static final JAXBWriter jaxbWriter = new JAXBWriter();
+        private final JAXBWriter jaxbWriter;
+
+        public RESTAuthenticationFailureHandler(JAXBWriter jaxbWriter) {
+            this.jaxbWriter = jaxbWriter;
+        }
 
         @Override
         public void onAuthenticationFailure(HttpServletRequest request, HttpServletResponse response,
@@ -166,7 +170,7 @@ public class RESTRequestParameterProcessingFilter extends AbstractAuthentication
             sendErrorXml(request, response, errorCode);
         }
 
-        private static void sendErrorXml(HttpServletRequest request, HttpServletResponse response,
+        private void sendErrorXml(HttpServletRequest request, HttpServletResponse response,
                 SubsonicRESTController.ErrorCode errorCode) {
             try {
                 jaxbWriter.writeErrorResponse(request, response, errorCode, errorCode.getMessage());
