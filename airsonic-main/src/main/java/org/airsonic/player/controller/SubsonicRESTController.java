@@ -161,7 +161,6 @@ public class SubsonicRESTController {
 
     private final JAXBWriter jaxbWriter = new JAXBWriter();
 
-    private static final String NOT_YET_IMPLEMENTED = "Not yet implemented";
     private static final String NO_LONGER_SUPPORTED = "No longer supported";
 
     @ExceptionHandler(MissingServletRequestParameterException.class)
@@ -2139,13 +2138,15 @@ public class SubsonicRESTController {
     }
 
     @RequestMapping({"/getVideoInfo", "/getVideoInfo.view"})
-    public ResponseEntity<String> getVideoInfo() {
-        return ResponseEntity.status(HttpStatus.SC_NOT_IMPLEMENTED).body(NOT_YET_IMPLEMENTED);
+    public void getVideoInfo(HttpServletRequest request, HttpServletResponse response) {
+        request = wrapRequest(request);
+        error(request, response, ErrorCode.GENERIC, "getVideoInfo is not yet implemented");
     }
 
     @RequestMapping({"/getCaptions", "/getCaptions.view"})
-    public ResponseEntity<String> getCaptions() {
-        return ResponseEntity.status(HttpStatus.SC_NOT_IMPLEMENTED).body(NOT_YET_IMPLEMENTED);
+    public void getCaptions(HttpServletRequest request, HttpServletResponse response) {
+        request = wrapRequest(request);
+        error(request, response, ErrorCode.GENERIC, "getCaptions is not yet implemented");
     }
 
     @RequestMapping({"/startScan", "/startScan.view"})
