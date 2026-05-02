@@ -59,6 +59,8 @@
         <xs:attribute name="status" type="sub:ResponseStatus" use="required"/>
         <xs:attribute name="version" type="sub:Version" use="required"/>
         <xs:attribute name="type" type="xs:string" use="required"/>
+        <xs:attribute name="openSubsonic" type="xs:boolean" use="optional"/>
+        <xs:attribute name="serverVersion" type="xs:string" use="optional"/>
     </xs:complexType>
 
     <xs:simpleType name="ResponseStatus">

@@ -68,7 +68,7 @@ public class JAXBWriter {
     private final DatatypeFactory datatypeFactory;
     private static final String restProtocolVersion = parseRESTProtocolVersion();
 
-    private final String SERVER_TYPE = "Airsonic-Pulse";
+    private static final String SERVER_TYPE = "airsonic-pulse";
     private final VersionService versionService;
 
     @Autowired
@@ -129,6 +129,8 @@ public class JAXBWriter {
         response.setStatus(ok ? ResponseStatus.OK : ResponseStatus.FAILED);
         response.setVersion(restProtocolVersion);
         response.setType(SERVER_TYPE);
+        response.setOpenSubsonic(true);
+        response.setServerVersion(versionService.getLocalVersion().toString());
         return response;
     }
 
