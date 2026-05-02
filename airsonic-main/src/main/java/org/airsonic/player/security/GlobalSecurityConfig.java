@@ -1,5 +1,6 @@
 package org.airsonic.player.security;
 
+import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
@@ -54,6 +55,9 @@ public class GlobalSecurityConfig {
 
     @Autowired
     private SonosJWTVerification sonosJwtVerification;
+
+    @Autowired
+    private JAXBWriter jaxbWriter;
 
     @EventListener
     public void loginFailureListener(AbstractAuthenticationFailureEvent event) {
@@ -132,7 +136,7 @@ public class GlobalSecurityConfig {
     @Order(2)
     public DefaultSecurityFilterChain webSecurityFilterChain(HttpSecurity http, AuthenticationManager authenticationManager) throws Exception {
 
-        RESTRequestParameterProcessingFilter restAuthenticationFilter = new RESTRequestParameterProcessingFilter();
+        RESTRequestParameterProcessingFilter restAuthenticationFilter = new RESTRequestParameterProcessingFilter(jaxbWriter);
         restAuthenticationFilter.setAuthenticationManager(authenticationManager);
 
         // Try to load the 'remember me' key.

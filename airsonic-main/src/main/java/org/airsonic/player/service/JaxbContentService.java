@@ -37,7 +37,7 @@ import java.util.Objects;
 @Service
 public class JaxbContentService {
 
-    private final JAXBWriter jaxbWriter = new JAXBWriter();
+    private final JAXBWriter jaxbWriter;
     private final ArtistService artistService;
     private final CoverArtService coverArtService;
     private final PlaylistService playlistService;
@@ -47,6 +47,7 @@ public class JaxbContentService {
     private final RatingService ratingService;
 
     JaxbContentService(
+            JAXBWriter jaxbWriter,
             ArtistService artistService,
             CoverArtService coverArtService,
             PlaylistService playlistService,
@@ -54,6 +55,7 @@ public class JaxbContentService {
             MediaFileService mediaFileService,
             TranscodingService transcodingService,
             RatingService ratingService) {
+        this.jaxbWriter = jaxbWriter;
         this.artistService = artistService;
         this.coverArtService = coverArtService;
         this.playlistService = playlistService;

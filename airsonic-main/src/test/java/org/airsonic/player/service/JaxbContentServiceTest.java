@@ -19,6 +19,7 @@
 package org.airsonic.player.service;
 
 import org.airsonic.player.controller.CoverArtController;
+import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.Artist;
 import org.airsonic.player.domain.CoverArt;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.subsonic.restapi.AlbumID3;
 import org.subsonic.restapi.ArtistID3;
@@ -49,6 +51,8 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class JaxbContentServiceTest {
+    @Spy
+    private JAXBWriter jaxbWriter = new JAXBWriter(mock(VersionService.class));
     @Mock
     private ArtistService artistService;
     @Mock

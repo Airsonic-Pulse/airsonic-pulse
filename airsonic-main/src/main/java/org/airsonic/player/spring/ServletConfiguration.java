@@ -1,6 +1,7 @@
 package org.airsonic.player.spring;
 
 import org.airsonic.player.config.AirsonicHomeConfig;
+import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.controller.PodcastController;
 import org.airsonic.player.filter.BootstrapVerificationFilter;
 import org.airsonic.player.filter.MetricsFilter;
@@ -30,6 +31,9 @@ public class ServletConfiguration implements WebMvcConfigurer {
 
     @Autowired
     private AirsonicHomeConfig homeConfig;
+
+    @Autowired
+    private JAXBWriter jaxbWriter;
 
     @Bean
     public ServletRegistrationBean<Servlet> cxfServletBean() {
@@ -76,7 +80,7 @@ public class ServletConfiguration implements WebMvcConfigurer {
 
     @Bean
     public RESTFilter restFilter() {
-        return new RESTFilter();
+        return new RESTFilter(jaxbWriter);
     }
 
     @Bean

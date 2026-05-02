@@ -159,7 +159,8 @@ public class SubsonicRESTController {
     private JaxbContentService jaxbContentService;
 
 
-    private final JAXBWriter jaxbWriter = new JAXBWriter();
+    @Autowired
+    private JAXBWriter jaxbWriter;
 
     private static final String NO_LONGER_SUPPORTED = "No longer supported";
 
