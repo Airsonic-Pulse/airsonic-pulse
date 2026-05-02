@@ -55,6 +55,7 @@
             <xs:element name="topSongs" type="sub:TopSongs" minOccurs="1" maxOccurs="1"/>
             <xs:element name="scanStatus" type="sub:ScanStatus" minOccurs="1" maxOccurs="1"/>
             <xs:element name="error" type="sub:Error" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="openSubsonicExtensions" type="sub:OpenSubsonicExtensions" minOccurs="1" maxOccurs="1"/>
         </xs:choice>
         <xs:attribute name="status" type="sub:ResponseStatus" use="required"/>
         <xs:attribute name="version" type="sub:Version" use="required"/>
@@ -638,6 +639,19 @@
     <xs:complexType name="Error">
         <xs:attribute name="code" type="xs:int" use="required"/>
         <xs:attribute name="message" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="OpenSubsonicExtensions">
+        <xs:sequence>
+            <xs:element name="openSubsonicExtension" type="sub:OpenSubsonicExtension" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="OpenSubsonicExtension">
+        <xs:sequence>
+            <xs:element name="versions" type="xs:int" minOccurs="1" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string" use="required"/>
     </xs:complexType>
 
 </xs:schema>

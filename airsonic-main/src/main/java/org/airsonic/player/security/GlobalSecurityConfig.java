@@ -162,7 +162,8 @@ public class GlobalSecurityConfig {
             .csrf(csrf -> csrf.ignoringRequestMatchers("/ws/Sonos/**").requireCsrfProtectionMatcher(csrfSecurityRequestMatcher))
             .headers(header -> header.frameOptions(fo -> fo.sameOrigin()))
             .authorizeHttpRequests((authorize) -> authorize.requestMatchers("/recover*", "/accessDenied*", "/style/**", "/icons/**", "/flash/**", "/script/**",
-                    "/login", "/error", "/sonos/**", "/sonoslink/**", "/ws/Sonos/**").permitAll().requestMatchers("/personalSettings*",
+                    "/login", "/error", "/sonos/**", "/sonoslink/**", "/ws/Sonos/**",
+                    "/rest/getOpenSubsonicExtensions*").permitAll().requestMatchers("/personalSettings*",
                     "/playerSettings*", "/shareSettings*", "/credentialsSettings*").hasRole("SETTINGS")
                     .requestMatchers("/generalSettings*", "/advancedSettings*", "/userSettings*", "/musicFolderSettings*",
                             "/databaseSettings*", "/transcodeSettings*", "/rest/startScan*").hasRole("ADMIN")

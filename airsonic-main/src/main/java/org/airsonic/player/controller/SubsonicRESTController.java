@@ -177,6 +177,32 @@ public class SubsonicRESTController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
+    @RequestMapping({"/getOpenSubsonicExtensions", "/getOpenSubsonicExtensions.view"})
+    public void getOpenSubsonicExtensions(HttpServletRequest request, HttpServletResponse response) {
+        OpenSubsonicExtensions container = new OpenSubsonicExtensions();
+        container.getOpenSubsonicExtension().addAll(OPENSUBSONIC_EXTENSIONS);
+        Response res = createResponse();
+        res.setOpenSubsonicExtensions(container);
+        jaxbWriter.writeResponse(request, response, res);
+    }
+
+    private static final List<OpenSubsonicExtension> OPENSUBSONIC_EXTENSIONS = buildExtensionList();
+
+    private static List<OpenSubsonicExtension> buildExtensionList() {
+        return List.of(
+            buildExtension("formPost", 1)
+        );
+    }
+
+    private static OpenSubsonicExtension buildExtension(String name, int... versions) {
+        OpenSubsonicExtension ext = new OpenSubsonicExtension();
+        ext.setName(name);
+        for (int v : versions) {
+            ext.getVersions().add(v);
+        }
+        return ext;
+    }
+
 
     /**
      * CAUTION : this method is required by mobile applications and must not be removed.
