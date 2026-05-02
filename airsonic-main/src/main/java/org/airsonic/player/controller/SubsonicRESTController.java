@@ -35,7 +35,6 @@ import org.airsonic.player.util.NetworkUtil;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
 import org.apache.commons.lang.StringUtils;
-import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,12 +58,10 @@ import org.subsonic.restapi.PodcastStatus;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
-import javax.xml.datatype.XMLGregorianCalendar;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.stream.Stream;
@@ -142,8 +139,6 @@ public class SubsonicRESTController {
     @Autowired
     private BookmarkService bookmarkService;
     @Autowired
-    private MediaScannerService mediaScannerService;
-    @Autowired
     private MediaFolderService mediaFolderService;
     @Autowired
     private LocaleResolver localeResolver;
@@ -162,19 +157,11 @@ public class SubsonicRESTController {
     @Autowired
     private JAXBWriter jaxbWriter;
 
-    private static final String NO_LONGER_SUPPORTED = "No longer supported";
-
     @ExceptionHandler(MissingServletRequestParameterException.class)
     public void handleMissingRequestParam(HttpServletRequest request,
                                           HttpServletResponse response,
                                           MissingServletRequestParameterException exception) {
         error(request, response, ErrorCode.MISSING_PARAMETER, "Required param (" + exception.getParameterName() + ") is missing");
-    }
-
-    @RequestMapping({"/ping", "/ping.view"})
-    public void ping(HttpServletRequest request, HttpServletResponse response) {
-        Response res = createResponse();
-        jaxbWriter.writeResponse(request, response, res);
     }
 
     @RequestMapping({"/getOpenSubsonicExtensions", "/getOpenSubsonicExtensions.view"})
@@ -201,26 +188,6 @@ public class SubsonicRESTController {
             ext.getVersions().add(v);
         }
         return ext;
-    }
-
-
-    /**
-     * CAUTION : this method is required by mobile applications and must not be removed.
-     */
-    @RequestMapping({"/getLicense", "/getLicense.view"})
-    public void getLicense(HttpServletRequest request, HttpServletResponse response) {
-        request = wrapRequest(request);
-        License license = new License();
-
-        license.setEmail("airsonic@github.com");
-        license.setValid(true);
-        XMLGregorianCalendar farFuture = jaxbWriter.convertDate(Instant.now().plus(ChronoUnit.YEARS.getDuration().multipliedBy(100)));
-        license.setLicenseExpires(farFuture);
-        license.setTrialExpires(farFuture);
-
-        Response res = createResponse();
-        res.setLicense(license);
-        jaxbWriter.writeResponse(request, response, res);
     }
 
 
@@ -2059,16 +2026,6 @@ public class SubsonicRESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping({"/getChatMessages", "/getChatMessages.view"})
-    public ResponseEntity<String> getChatMessages(HttpServletRequest request, HttpServletResponse response) {
-        return ResponseEntity.status(HttpStatus.SC_GONE).body(NO_LONGER_SUPPORTED);
-    }
-
-    @RequestMapping({"/addChatMessage", "/addChatMessage.view"})
-    public ResponseEntity<String> addChatMessage(HttpServletRequest request, HttpServletResponse response) {
-        return ResponseEntity.status(HttpStatus.SC_GONE).body(NO_LONGER_SUPPORTED);
-    }
-
     @RequestMapping({"/getLyrics", "/getLyrics.view"})
     public void getLyrics(HttpServletRequest request, HttpServletResponse response) {
         request = wrapRequest(request);
@@ -2174,25 +2131,6 @@ public class SubsonicRESTController {
     public void getCaptions(HttpServletRequest request, HttpServletResponse response) {
         request = wrapRequest(request);
         error(request, response, ErrorCode.GENERIC, "getCaptions is not yet implemented");
-    }
-
-    @RequestMapping({"/startScan", "/startScan.view"})
-    public void startScan(HttpServletRequest request, HttpServletResponse response) {
-        request = wrapRequest(request);
-        mediaScannerService.scanLibrary();
-        getScanStatus(request, response);
-    }
-
-    @RequestMapping({"/getScanStatus", "/getScanStatus.view"})
-    public void getScanStatus(HttpServletRequest request, HttpServletResponse response) {
-        request = wrapRequest(request);
-        ScanStatus scanStatus = new ScanStatus();
-        scanStatus.setScanning(this.mediaScannerService.isScanning());
-        scanStatus.setCount((long) this.mediaScannerService.getScanCount());
-
-        Response res = createResponse();
-        res.setScanStatus(scanStatus);
-        this.jaxbWriter.writeResponse(request, response, res);
     }
 
     private HttpServletRequest wrapRequest(HttpServletRequest request) {
