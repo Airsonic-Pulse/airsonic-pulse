@@ -1,19 +1,7 @@
 [![Release](https://github.com/litebito/airsonic-pulse/actions/workflows/release.yml/badge.svg)](https://github.com/litebito/airsonic-pulse/actions/workflows/release.yml) [![CI - Pull Requests](https://github.com/litebito/airsonic-pulse/actions/workflows/pr_ci.yml/badge.svg)](https://github.com/litebito/airsonic-pulse/actions/workflows/pr_ci.yml)  [![CI - Main](https://github.com/litebito/airsonic-pulse/actions/workflows/pm_ci.yml/badge.svg)](https://github.com/litebito/airsonic-pulse/actions/workflows/pm_ci.yml) [![Trivy](https://github.com/litebito/airsonic-pulse/actions/workflows/any_trivy_scan.yml/badge.svg)](https://github.com/litebito/airsonic-pulse/actions/workflows/any_trivy_scan.yml)
-![Last commit](https://img.shields.io/github/last-commit/litebito/airsonic-pulse)
-![Commits since latest release](https://img.shields.io/github/commits-since/litebito/airsonic-pulse/latest)
-![Commit activity](https://img.shields.io/github/commit-activity/t/litebito/airsonic-pulse)
-![Commit activity last month](https://img.shields.io/github/commit-activity/m/litebito/airsonic-pulse)
-![Commit activity last year](https://img.shields.io/github/commit-activity/y/litebito/airsonic-pulse)
-![Commits since latest release](https://img.shields.io/github/commits-since/litebito/airsonic-pulse/latest)
-![Release/Version](https://img.shields.io/github/v/release/litebito/airsonic-pulse?sort=semver&display_name=release)
-![Issues](https://img.shields.io/github/issues/litebito/airsonic-pulse)
-
-
 
 
 # Airsonic-Pulse
-
-(this readme is being rewritten)
 
 ## 1. What is Airsonic-Pulse?
 
