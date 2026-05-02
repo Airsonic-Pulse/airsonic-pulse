@@ -84,8 +84,6 @@ public class SubsonicRESTController {
     private static final Logger LOG = LoggerFactory.getLogger(SubsonicRESTController.class);
 
     @Autowired
-    private SettingsService settingsService;
-    @Autowired
     private SecurityService securityService;
     @Autowired
     private PlayerService playerService;
@@ -93,8 +91,6 @@ public class SubsonicRESTController {
     private MediaFileService mediaFileService;
     @Autowired
     private LastFmService lastFmService;
-    @Autowired
-    private MusicIndexService musicIndexService;
     @Autowired
     private DownloadController downloadController;
     @Autowired
@@ -187,32 +183,6 @@ public class SubsonicRESTController {
         return ext;
     }
 
-
-    @RequestMapping({"/getArtists", "/getArtists.view"})
-    public void getArtists(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-
-        ArtistsID3 result = new ArtistsID3();
-        result.setIgnoredArticles(settingsService.getIgnoredArticles());
-        Integer musicFolderId = getIntParameter(request, "musicFolderId");
-        List<org.airsonic.player.domain.MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username, musicFolderId);
-
-        List<org.airsonic.player.domain.Artist> artists = artistService.getAlphabeticalArtists(musicFolders);
-        SortedMap<MusicIndex, List<MusicIndex.SortableArtistWithArtist>> indexedArtists = musicIndexService.getIndexedArtists(artists);
-        for (Map.Entry<MusicIndex, List<MusicIndex.SortableArtistWithArtist>> entry : indexedArtists.entrySet()) {
-            IndexID3 index = new IndexID3();
-            result.getIndex().add(index);
-            index.setName(entry.getKey().getIndex());
-            for (MusicIndex.SortableArtistWithArtist sortableArtist : entry.getValue()) {
-                index.getArtist().add(jaxbContentService.createJaxbArtist(new ArtistID3(), sortableArtist.getArtist(), username));
-            }
-        }
-
-        Response res = createResponse();
-        res.setArtists(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
 
     @RequestMapping({"/getSimilarSongs", "/getSimilarSongs.view"})
     public void getSimilarSongs(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -368,75 +338,6 @@ public class SubsonicRESTController {
 
 
 
-
-    @RequestMapping({"/getArtist", "/getArtist.view"})
-    public void getArtist(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-
-        String username = securityService.getCurrentUsername(request);
-        int id = getRequiredIntParameter(request, "id");
-        org.airsonic.player.domain.Artist artist = artistService.getArtist(id);
-        if (artist == null) {
-            error(request, response, ErrorCode.NOT_FOUND, "Artist not found.");
-            return;
-        }
-
-        List<org.airsonic.player.domain.MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username);
-        ArtistWithAlbumsID3 result = jaxbContentService.createJaxbArtist(new ArtistWithAlbumsID3(), artist, username);
-        for (Album album : albumService.getAlbumsByArtist(artist.getName(), musicFolders)) {
-            result.getAlbum().add(jaxbContentService.createJaxbAlbum(new AlbumID3(), album, username));
-        }
-
-        Response res = createResponse();
-        res.setArtist(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-
-    @RequestMapping({"/getAlbum", "/getAlbum.view"})
-    public void getAlbum(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-
-        int id = getRequiredIntParameter(request, "id");
-        Album album = albumService.getAlbum(id);
-        if (album == null) {
-            error(request, response, ErrorCode.NOT_FOUND, "Album not found.");
-            return;
-        }
-
-        AlbumWithSongsID3 result = jaxbContentService.createJaxbAlbum(new AlbumWithSongsID3(), album, username);
-        for (MediaFile mediaFile : mediaFileService.getSongsForAlbum(album.getArtist(), album.getName())) {
-            result.getSong().add(jaxbContentService.createJaxbChild(player, mediaFile, username));
-        }
-
-        Response res = createResponse();
-        res.setAlbum(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/getSong", "/getSong.view"})
-    public void getSong(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-
-        int id = getRequiredIntParameter(request, "id");
-        MediaFile song = mediaFileService.getMediaFile(id);
-        if (song == null || song.isDirectory()) {
-            error(request, response, ErrorCode.NOT_FOUND, "Song not found.");
-            return;
-        }
-        if (!securityService.isFolderAccessAllowed(song, username)) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, "Access denied");
-            return;
-        }
-
-        Response res = createResponse();
-        res.setSong(jaxbContentService.createJaxbChild(player, song, username));
-        jaxbWriter.writeResponse(request, response, res);
-    }
 
     @RequestMapping({"/search", "/search.view"})
     public void search(HttpServletRequest request, HttpServletResponse response) throws Exception {
@@ -850,50 +751,6 @@ public class SubsonicRESTController {
         playlistService.broadcastDeleted(id);
 
         writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping({"/getAlbumList2", "/getAlbumList2.view"})
-    public void getAlbumList2(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-
-        int size = getIntParameter(request, "size", 10);
-        int offset = getIntParameter(request, "offset", 0);
-        size = Math.max(0, Math.min(size, 500));
-        String type = getRequiredStringParameter(request, "type");
-        String username = securityService.getCurrentUsername(request);
-        Integer musicFolderId = getIntParameter(request, "musicFolderId");
-        List<org.airsonic.player.domain.MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username, musicFolderId);
-
-        List<Album> albums;
-        if ("frequent".equals(type)) {
-            albums = albumService.getMostFrequentlyPlayedAlbums(offset, size, musicFolders);
-        } else if ("recent".equals(type)) {
-            albums = albumService.getMostResentlyPlayedAlbums(offset, size, musicFolders);
-        } else if ("newest".equals(type)) {
-            albums = albumService.getRecentlyAddedAlbums(offset, size, musicFolders);
-        } else if ("alphabeticalByArtist".equals(type)) {
-            albums = albumService.getAlphabeticalAlbums(offset, size, true, false, musicFolders);
-        } else if ("alphabeticalByName".equals(type)) {
-            albums = albumService.getAlphabeticalAlbums(offset, size, false, false, musicFolders);
-        } else if ("byGenre".equals(type)) {
-            albums = albumService.getAlbumsByGenre(offset, size, getRequiredStringParameter(request, "genre"), musicFolders);
-        } else if ("byYear".equals(type)) {
-            albums = albumService.getAlbumsByYear(offset, size, getRequiredIntParameter(request, "fromYear"),
-                                              getRequiredIntParameter(request, "toYear"), musicFolders);
-        } else if ("starred".equals(type)) {
-            albums = albumService.getStarredAlbums(offset, size, username, musicFolders);
-        } else if ("random".equals(type)) {
-            albums = searchService.getRandomAlbumsId3(size, musicFolders);
-        } else {
-            throw new Exception("Invalid list type: " + type);
-        }
-        AlbumList2 result = new AlbumList2();
-        for (Album album : albums) {
-            result.getAlbum().add(jaxbContentService.createJaxbAlbum(new AlbumID3(), album, username));
-        }
-        Response res = createResponse();
-        res.setAlbumList2(result);
-        jaxbWriter.writeResponse(request, response, res);
     }
 
     @RequestMapping({"/download", "/download.view"})
