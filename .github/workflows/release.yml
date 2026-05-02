@@ -31,6 +31,11 @@ jobs:
         id: version
         run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
+      - name: Generate checksums
+        run: |
+          cd airsonic-main/target
+          sha256sum airsonic.war > artifacts-checksums.sha256
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -38,7 +43,8 @@ jobs:
           gh release create "${{ github.ref_name }}" \
             --title "${{ github.ref_name }}" \
             --generate-notes \
-            airsonic-main/target/airsonic.war#airsonic.war
+            airsonic-main/target/airsonic.war#airsonic.war \
+            airsonic-main/target/artifacts-checksums.sha256#artifacts-checksums.sha256
 
       - name: Prepare Docker build context
         run: |
