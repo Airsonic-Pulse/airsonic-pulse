@@ -918,55 +918,6 @@ public class SubsonicRESTController {
         writeEmptyResponse(request, response);
     }
 
-    @RequestMapping({"/getPlayQueue", "/getPlayQueue.view"})
-    public void getPlayQueue(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-
-        SavedPlayQueue playQueue = playQueueService.loadSavedPlayQueueForRest(username);
-        if (playQueue == null) {
-            writeEmptyResponse(request, response);
-            return;
-        }
-
-        org.subsonic.restapi.PlayQueue restPlayQueue = new org.subsonic.restapi.PlayQueue();
-        restPlayQueue.setUsername(playQueue.getUsername());
-        restPlayQueue.setCurrent(Optional.ofNullable(playQueue.getCurrentMediaFile()).map(MediaFile::getId).orElse(null));
-        restPlayQueue.setPosition(playQueue.getPositionMillis());
-        restPlayQueue.setChanged(jaxbWriter.convertDate(playQueue.getChanged()));
-        restPlayQueue.setChangedBy(playQueue.getChangedBy());
-
-        for (MediaFile mediaFile : playQueue.getMediaFiles()) {
-            if (mediaFile != null) {
-                restPlayQueue.getEntry().add(jaxbContentService.createJaxbChild(player, mediaFile, username));
-            }
-        }
-
-        Response res = createResponse();
-        res.setPlayQueue(restPlayQueue);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/savePlayQueue", "/savePlayQueue.view"})
-    public void savePlayQueue(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        List<Integer> mediaFileIds = Arrays.stream(getIntParameters(request, "id")).boxed().toList();
-        Integer current = getIntParameter(request, "current");
-        Long position = getLongParameter(request, "position");
-        String changedBy = getRequiredStringParameter(request, "c");
-
-        if (!mediaFileIds.contains(current)) {
-            error(request, response, ErrorCode.GENERIC, "Current track is not included in play queue");
-            return;
-        }
-
-        playQueueService.savePlayQueue(username, mediaFileIds, current, position, changedBy);
-
-        writeEmptyResponse(request, response);
-    }
-
     @RequestMapping({"/getShares", "/getShares.view"})
     public void getShares(HttpServletRequest request, HttpServletResponse response) throws Exception {
         request = wrapRequest(request);
