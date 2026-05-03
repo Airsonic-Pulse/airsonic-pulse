@@ -59,7 +59,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
-import java.time.Instant;
 import java.util.*;
 import java.util.Map.Entry;
 
@@ -101,8 +100,6 @@ public class SubsonicRESTController {
     private StreamController streamController;
     @Autowired
     private HLSController hlsController;
-    @Autowired
-    private ShareService shareService;
     @Autowired
     private PlaylistService playlistService;
     @Autowired
@@ -864,127 +861,6 @@ public class SubsonicRESTController {
         Response res = createResponse();
         res.setInternetRadioStations(result);
         jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/getShares", "/getShares.view"})
-    public void getShares(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        List<org.airsonic.player.domain.MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username);
-
-        Shares result = new Shares();
-        for (org.airsonic.player.domain.entity.Share share : shareService.getSharesForUser(user)) {
-            org.subsonic.restapi.Share s = createJaxbShare(request, share);
-            result.getShare().add(s);
-
-            for (MediaFile mediaFile : shareService.getSharedFiles(share.getId(), musicFolders)) {
-                s.getEntry().add(jaxbContentService.createJaxbChild(player, mediaFile, username));
-            }
-        }
-        Response res = createResponse();
-        res.setShares(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/createShare", "/createShare.view"})
-    public void createShare(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        if (!user.isShareRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to share media.");
-            return;
-        }
-
-        List<MediaFile> files = new ArrayList<MediaFile>();
-        for (int id : getRequiredIntParameters(request, "id")) {
-            files.add(mediaFileService.getMediaFile(id));
-        }
-
-        org.airsonic.player.domain.entity.Share share = shareService.createShare(username, files);
-        share.setDescription(request.getParameter("description"));
-        long expires = getLongParameter(request, "expires", 0L);
-        if (expires != 0) {
-            share.setExpires(Instant.ofEpochMilli(expires));
-        }
-        shareService.updateShare(share);
-
-        Shares result = new Shares();
-        org.subsonic.restapi.Share s = createJaxbShare(request, share);
-        result.getShare().add(s);
-
-        List<org.airsonic.player.domain.MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username);
-
-        for (MediaFile mediaFile : shareService.getSharedFiles(share.getId(), musicFolders)) {
-            s.getEntry().add(jaxbContentService.createJaxbChild(player, mediaFile, username));
-        }
-
-        Response res = createResponse();
-        res.setShares(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/deleteShare", "/deleteShare.view"})
-    public void deleteShare(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        int id = getRequiredIntParameter(request, "id");
-
-        org.airsonic.player.domain.entity.Share share = shareService.getShareById(id);
-        if (share == null) {
-            error(request, response, ErrorCode.NOT_FOUND, "Shared media not found.");
-            return;
-        }
-        if (!user.isAdminRole() && !share.getUsername().equals(user.getUsername())) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, "Not authorized to delete shared media.");
-            return;
-        }
-
-        shareService.deleteShare(id);
-        writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping({"/updateShare", "/updateShare.view"})
-    public void updateShare(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        int id = getRequiredIntParameter(request, "id");
-
-        org.airsonic.player.domain.entity.Share share = shareService.getShareById(id);
-        if (share == null) {
-            error(request, response, ErrorCode.NOT_FOUND, "Shared media not found.");
-            return;
-        }
-        if (!user.isAdminRole() && !share.getUsername().equals(user.getUsername())) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, "Not authorized to modify shared media.");
-            return;
-        }
-
-        share.setDescription(request.getParameter("description"));
-        String expiresString = request.getParameter("expires");
-        if (expiresString != null) {
-            long expires = Long.parseLong(expiresString);
-            share.setExpires(expires == 0L ? null : Instant.ofEpochMilli(expires));
-        }
-        shareService.updateShare(share);
-        writeEmptyResponse(request, response);
-    }
-
-    private org.subsonic.restapi.Share createJaxbShare(HttpServletRequest request, org.airsonic.player.domain.entity.Share share) {
-        org.subsonic.restapi.Share result = new org.subsonic.restapi.Share();
-        result.setId(String.valueOf(share.getId()));
-        result.setUrl(shareService.getShareUrl(request, share));
-        result.setUsername(share.getUsername());
-        result.setCreated(jaxbWriter.convertDate(share.getCreated()));
-        result.setVisitCount(share.getVisitCount());
-        result.setDescription(share.getDescription());
-        result.setExpires(jaxbWriter.convertDate(share.getExpires()));
-        result.setLastVisited(jaxbWriter.convertDate(share.getLastVisited()));
-        return result;
     }
 
     @RequestMapping({"/getCoverArt", "/getCoverArt.view"})
