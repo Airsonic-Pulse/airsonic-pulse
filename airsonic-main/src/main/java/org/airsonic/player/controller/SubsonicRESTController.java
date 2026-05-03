@@ -23,7 +23,6 @@ package org.airsonic.player.controller;
 import com.google.common.primitives.Ints;
 import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.domain.*;
-import org.airsonic.player.domain.Bookmark;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.PlayQueue;
 import org.airsonic.player.domain.User;
@@ -122,8 +121,6 @@ public class SubsonicRESTController {
     private ArtistService artistService;
     @Autowired
     private AlbumService albumService;
-    @Autowired
-    private BookmarkService bookmarkService;
     @Autowired
     private MediaFolderService mediaFolderService;
     @Autowired
@@ -867,55 +864,6 @@ public class SubsonicRESTController {
         Response res = createResponse();
         res.setInternetRadioStations(result);
         jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/getBookmarks", "/getBookmarks.view"})
-    public void getBookmarks(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-
-        Bookmarks result = new Bookmarks();
-        for (Bookmark bookmark : bookmarkService.getBookmarks(username)) {
-            org.subsonic.restapi.Bookmark b = new org.subsonic.restapi.Bookmark();
-            result.getBookmark().add(b);
-            b.setPosition(bookmark.getPositionMillis());
-            b.setUsername(bookmark.getUsername());
-            b.setComment(bookmark.getComment());
-            b.setCreated(jaxbWriter.convertDate(bookmark.getCreated()));
-            b.setChanged(jaxbWriter.convertDate(bookmark.getChanged()));
-
-            MediaFile mediaFile = mediaFileService.getMediaFile(bookmark.getMediaFileId());
-            b.setEntry(jaxbContentService.createJaxbChild(player, mediaFile, username));
-        }
-
-        Response res = createResponse();
-        res.setBookmarks(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/createBookmark", "/createBookmark.view"})
-    public void createBookmark(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        int mediaFileId = getRequiredIntParameter(request, "id");
-        long position = getRequiredLongParameter(request, "position");
-        String comment = request.getParameter("comment");
-
-        bookmarkService.setBookmark(username, mediaFileId, position, comment);
-
-        writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping({"/deleteBookmark", "/deleteBookmark.view"})
-    public void deleteBookmark(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-
-        String username = securityService.getCurrentUsername(request);
-        int mediaFileId = getRequiredIntParameter(request, "id");
-        bookmarkService.deleteBookmark(username, mediaFileId);
-
-        writeEmptyResponse(request, response);
     }
 
     @RequestMapping({"/getShares", "/getShares.view"})
