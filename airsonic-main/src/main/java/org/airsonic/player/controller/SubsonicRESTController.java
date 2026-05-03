@@ -99,8 +99,6 @@ public class SubsonicRESTController {
     @Autowired
     private UserSettingsController userSettingsController;
     @Autowired
-    private StatusService statusService;
-    @Autowired
     private StreamController streamController;
     @Autowired
     private HLSController hlsController;
@@ -115,15 +113,11 @@ public class SubsonicRESTController {
     @Autowired
     private JukeboxService jukeboxService;
     @Autowired
-    private AudioScrobblerService audioScrobblerService;
-    @Autowired
     private PodcastPersistenceService podcastPersistenceService;
     @Autowired
     private PodcastManagementService podcastManagementService;
     @Autowired
     private PodcastDownloadClient podcastDownloadClient;
-    @Autowired
-    private RatingService ratingService;
     @Autowired
     private ArtistService artistService;
     @Autowired
@@ -689,125 +683,6 @@ public class SubsonicRESTController {
         }
 
         hlsController.handleHlsRequest(authentication, id, request, response);
-    }
-
-    @RequestMapping({"/scrobble", "/scrobble.view"})
-    public void scrobble(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-
-        boolean submission = getBooleanParameter(request, "submission", true);
-        int[] ids = getRequiredIntParameters(request, "id");
-        long[] times = getLongParameters(request, "time");
-        if (times.length > 0 && times.length != ids.length) {
-            error(request, response, ErrorCode.GENERIC, "Wrong number of timestamps: " + times.length);
-            return;
-        }
-
-        for (int i = 0; i < ids.length; i++) {
-            int id = ids[i];
-            MediaFile file = mediaFileService.getMediaFile(id);
-            if (file == null) {
-                LOG.warn("File to scrobble not found: " + id);
-                continue;
-            }
-            Instant time = times.length == 0 ? null : Instant.ofEpochMilli(times[i]);
-
-            statusService.addRemotePlay(new PlayStatus(UUID.randomUUID(), file, player, time == null ? Instant.now() : time));
-            mediaFileService.incrementPlayCount(player, file);
-            audioScrobblerService.register(file, player.getUsername(), submission, time);
-        }
-
-        writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping({"/star", "/star.view"})
-    public void star(HttpServletRequest request, HttpServletResponse response) {
-        starOrUnstar(request, response, true);
-    }
-
-    @RequestMapping({"/unstar", "/unstar.view"})
-    public void unstar(HttpServletRequest request, HttpServletResponse response) {
-        starOrUnstar(request, response, false);
-    }
-
-    private void starOrUnstar(HttpServletRequest request, HttpServletResponse response, boolean star) {
-        request = wrapRequest(request);
-
-        String username = securityService.getCurrentUser(request).getUsername();
-        for (int id : getIntParameters(request, "id")) {
-            MediaFile mediaFile = mediaFileService.getMediaFile(id);
-            if (mediaFile == null) {
-                error(request, response, ErrorCode.NOT_FOUND, "Media file not found: " + id);
-                return;
-            }
-            if (star) {
-                mediaFileService.starMediaFiles(List.of(id), username);
-            } else {
-                mediaFileService.unstarMediaFiles(List.of(id), username);
-            }
-        }
-        for (int albumId : getIntParameters(request, "albumId")) {
-            if (!albumService.starOrUnstar(albumId, username, star)) {
-                error(request, response, ErrorCode.NOT_FOUND, "Album not found: " + albumId);
-                return;
-            }
-        }
-        for (int artistId : getIntParameters(request, "artistId")) {
-            if (!artistService.starOrUnstar(artistId, username, star)) {
-                error(request, response, ErrorCode.NOT_FOUND, "Artist not found: " + artistId);
-                return;
-            }
-        }
-        writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping({"/getStarred", "/getStarred.view"})
-    public void getStarred(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-        Integer musicFolderId = getIntParameter(request, "musicFolderId");
-        List<org.airsonic.player.domain.MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username, musicFolderId);
-
-        Starred result = new Starred();
-        for (MediaFile artist : mediaFileService.getStarredArtists(0, Integer.MAX_VALUE, username, musicFolders)) {
-            result.getArtist().add(jaxbContentService.createJaxbArtist(artist, username));
-        }
-        for (MediaFile album : mediaFileService.getStarredAlbums(0, Integer.MAX_VALUE, username, musicFolders)) {
-            result.getAlbum().add(jaxbContentService.createJaxbChild(player, album, username));
-        }
-        for (MediaFile song : mediaFileService.getStarredSongs(0, Integer.MAX_VALUE, username, musicFolders)) {
-            result.getSong().add(jaxbContentService.createJaxbChild(player, song, username));
-        }
-        Response res = createResponse();
-        res.setStarred(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/getStarred2", "/getStarred2.view"})
-    public void getStarred2(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-        Integer musicFolderId = getIntParameter(request, "musicFolderId");
-        List<org.airsonic.player.domain.MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username, musicFolderId);
-
-        Starred2 result = new Starred2();
-        for (org.airsonic.player.domain.Artist artist : artistService.getStarredArtists(username, musicFolders)) {
-            result.getArtist().add(jaxbContentService.createJaxbArtist(new ArtistID3(), artist, username));
-        }
-        for (Album album : albumService.getStarredAlbums(username, musicFolders)) {
-            result.getAlbum().add(jaxbContentService.createJaxbAlbum(new AlbumID3(), album, username));
-        }
-        for (MediaFile song : mediaFileService.getStarredSongs(0, Integer.MAX_VALUE, username, musicFolders)) {
-            result.getSong().add(jaxbContentService.createJaxbChild(player, song, username));
-        }
-        Response res = createResponse();
-        res.setStarred2(result);
-        jaxbWriter.writeResponse(request, response, res);
     }
 
     @RequestMapping({"/getPodcasts", "/getPodcasts.view"})
@@ -1468,27 +1343,6 @@ public class SubsonicRESTController {
         Response res = createResponse();
         res.setLyrics(result);
         jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/setRating", "/setRating.view"})
-    public void setRating(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        Integer rating = getRequiredIntParameter(request, "rating");
-        if (rating == 0) {
-            rating = null;
-        }
-
-        int id = getRequiredIntParameter(request, "id");
-        MediaFile mediaFile = mediaFileService.getMediaFile(id);
-        if (mediaFile == null) {
-            error(request, response, ErrorCode.NOT_FOUND, "File not found: " + id);
-            return;
-        }
-
-        String username = securityService.getCurrentUsername(request);
-        ratingService.setRatingForUser(username, mediaFile, rating);
-
-        writeEmptyResponse(request, response);
     }
 
     @RequestMapping({"/getAlbumInfo", "/getAlbumInfo.view"})
