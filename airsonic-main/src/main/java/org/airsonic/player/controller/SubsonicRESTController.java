@@ -28,7 +28,6 @@ import org.airsonic.player.domain.PlayQueue;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.*;
-import org.airsonic.player.service.podcast.PodcastDownloadClient;
 import org.airsonic.player.util.NetworkUtil;
 import org.airsonic.player.util.StringUtil;
 import org.airsonic.player.util.Util;
@@ -37,8 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
-import org.springframework.http.ContentDisposition;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
@@ -51,13 +48,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.ServletWebRequest;
 import org.subsonic.restapi.*;
 import org.subsonic.restapi.Lyrics;
-import org.subsonic.restapi.PodcastStatus;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 
-import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.*;
 import java.util.Map.Entry;
@@ -108,12 +103,6 @@ public class SubsonicRESTController {
     private PlayQueueService playQueueService;
     @Autowired
     private JukeboxService jukeboxService;
-    @Autowired
-    private PodcastPersistenceService podcastPersistenceService;
-    @Autowired
-    private PodcastManagementService podcastManagementService;
-    @Autowired
-    private PodcastDownloadClient podcastDownloadClient;
     @Autowired
     private ArtistService artistService;
     @Autowired
@@ -677,172 +666,6 @@ public class SubsonicRESTController {
         }
 
         hlsController.handleHlsRequest(authentication, id, request, response);
-    }
-
-    @RequestMapping({"/getPodcasts", "/getPodcasts.view"})
-    public void getPodcasts(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-        boolean includeEpisodes = getBooleanParameter(request, "includeEpisodes", true);
-        Integer channelId = getIntParameter(request, "id");
-
-        Podcasts result = new Podcasts();
-
-        for (org.airsonic.player.domain.PodcastChannel channel : podcastPersistenceService.getAllChannels()) {
-            if (channelId == null || channelId.equals(channel.getId())) {
-
-                org.subsonic.restapi.PodcastChannel c = new org.subsonic.restapi.PodcastChannel();
-                result.getChannel().add(c);
-
-                c.setId(String.valueOf(channel.getId()));
-                c.setUrl(channel.getUrl());
-                c.setStatus(PodcastStatus.valueOf(channel.getStatus().name()));
-                c.setTitle(channel.getTitle());
-                c.setDescription(channel.getDescription());
-                c.setCoverArt(CoverArtController.PODCAST_COVERART_PREFIX + channel.getId());
-                c.setOriginalImageUrl(channel.getImageUrl());
-                c.setErrorMessage(channel.getErrorMessage());
-
-                if (includeEpisodes) {
-                    List<org.airsonic.player.domain.PodcastEpisode> episodes = podcastPersistenceService.getEpisodes(channel.getId());
-                    for (org.airsonic.player.domain.PodcastEpisode episode : episodes) {
-                        c.getEpisode().add(createJaxbPodcastEpisode(player, username, episode));
-                    }
-                }
-            }
-        }
-        Response res = createResponse();
-        res.setPodcasts(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/getNewestPodcasts", "/getNewestPodcasts.view"})
-    public void getNewestPodcasts(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        String username = securityService.getCurrentUsername(request);
-        Player player = playerService.getPlayer(request, response, username);
-
-        int count = getIntParameter(request, "count", 20);
-        NewestPodcasts result = new NewestPodcasts();
-
-        for (org.airsonic.player.domain.PodcastEpisode episode : podcastPersistenceService.getNewestEpisodes(count)) {
-            result.getEpisode().add(createJaxbPodcastEpisode(player, username, episode));
-        }
-
-        Response res = createResponse();
-        res.setNewestPodcasts(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-    private org.subsonic.restapi.PodcastEpisode createJaxbPodcastEpisode(Player player, String username, org.airsonic.player.domain.PodcastEpisode episode) {
-        org.subsonic.restapi.PodcastEpisode e = new org.subsonic.restapi.PodcastEpisode();
-
-        if (episode.getMediaFile() != null) {
-            MediaFile mediaFile = episode.getMediaFile();
-            e = jaxbContentService.createJaxbChild(new org.subsonic.restapi.PodcastEpisode(), player, mediaFile, username);
-            e.setStreamId(String.valueOf(mediaFile.getId()));
-        }
-
-        e.setId(String.valueOf(episode.getId()));  // Overwrites the previous "id" attribute.
-        e.setChannelId(String.valueOf(episode.getChannel().getId()));
-        e.setStatus(PodcastStatus.valueOf(episode.getStatus().name()));
-        e.setTitle(episode.getTitle());
-        e.setDescription(episode.getDescription());
-        e.setPublishDate(jaxbWriter.convertDate(episode.getPublishDate()));
-        return e;
-    }
-
-    @RequestMapping({"/refreshPodcasts", "/refreshPodcasts.view"})
-    public void refreshPodcasts(HttpServletRequest request, HttpServletResponse response) {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        if (!user.isPodcastRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to administrate podcasts.");
-            return;
-        }
-        podcastManagementService.refreshAllChannels(true);
-        writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping({"/createPodcastChannel", "/createPodcastChannel.view"})
-    public void createPodcastChannel(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        if (!user.isPodcastRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to administrate podcasts.");
-            return;
-        }
-
-        String url = getRequiredStringParameter(request, "url");
-        podcastManagementService.createChannel(url);
-        writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping({"/deletePodcastChannel", "/deletePodcastChannel.view"})
-    public void deletePodcastChannel(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        if (!user.isPodcastRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to administrate podcasts.");
-            return;
-        }
-
-        int id = getRequiredIntParameter(request, "id");
-        podcastManagementService.deleteChannel(id);
-        writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping({"/deletePodcastEpisode", "/deletePodcastEpisode.view"})
-    public void deletePodcastEpisode(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        if (!user.isPodcastRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to administrate podcasts.");
-            return;
-        }
-
-        int id = getRequiredIntParameter(request, "id");
-        podcastPersistenceService.deleteEpisode(id, true);
-        writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping({"/downloadPodcastEpisode", "/downloadPodcastEpisode.view"})
-    public void downloadPodcastEpisode(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        if (!user.isPodcastRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to administrate podcasts.");
-            return;
-        }
-
-        int id = getRequiredIntParameter(request, "id");
-        org.airsonic.player.domain.PodcastEpisode episode = podcastPersistenceService.getEpisode(id, true);
-        if (episode == null) {
-            error(request, response, ErrorCode.NOT_FOUND, "Podcast episode " + id + " not found.");
-            return;
-        }
-
-        podcastDownloadClient.downloadEpisode(episode.getId());
-        writeEmptyResponse(request, response);
-    }
-
-    @RequestMapping({"/exportPodcasts/opml", "/exportPodcasts/opml.view"})
-    public ResponseEntity<PodcastExportOPML> exportPodcastOPML(HttpServletRequest request, HttpServletResponse response)
-            throws Exception {
-        request = wrapRequest(request);
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        if (!user.isPodcastRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED,
-                    user.getUsername() + " is not authorized to administrate podcasts.");
-            return null;
-        }
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentDisposition(ContentDisposition.builder("attachment").filename("airsonic.opml", StandardCharsets.UTF_8).build());
-        headers.setContentType(org.springframework.http.MediaType.APPLICATION_XML);
-
-        return ResponseEntity.ok().headers(headers).body(podcastPersistenceService.exportAllChannels());
     }
 
     @RequestMapping({"/getInternetRadioStations", "/getInternetRadioStations.view"})
