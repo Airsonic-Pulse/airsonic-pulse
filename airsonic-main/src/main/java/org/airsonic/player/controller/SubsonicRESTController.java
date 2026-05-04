@@ -20,11 +20,9 @@
  */
 package org.airsonic.player.controller;
 
-import com.google.common.primitives.Ints;
 import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.MusicFolder;
-import org.airsonic.player.domain.PlayQueue;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.i18n.LocaleResolver;
 import org.airsonic.player.service.*;
@@ -99,10 +97,6 @@ public class SubsonicRESTController {
     private PlaylistService playlistService;
     @Autowired
     private LyricsService lyricsService;
-    @Autowired
-    private PlayQueueService playQueueService;
-    @Autowired
-    private JukeboxService jukeboxService;
     @Autowired
     private ArtistService artistService;
     @Autowired
@@ -363,101 +357,6 @@ public class SubsonicRESTController {
 
         Response res = createResponse();
         res.setPlaylist(result);
-        jaxbWriter.writeResponse(request, response, res);
-    }
-
-    @RequestMapping({"/jukeboxControl", "/jukeboxControl.view"})
-    public void jukeboxControl(HttpServletRequest request, HttpServletResponse response) throws Exception {
-        request = wrapRequest(request, true);
-
-        org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
-        if (!user.isJukeboxRole()) {
-            error(request, response, ErrorCode.NOT_AUTHORIZED, user.getUsername() + " is not authorized to use jukebox.");
-            return;
-        }
-
-        Player player = playerService.getPlayer(request, response, user.getUsername());
-
-        boolean returnPlaylist = false;
-        String action = getRequiredStringParameter(request, "action");
-
-        switch (action) {
-            case "start":
-                playQueueService.start(player);
-                break;
-            case "stop":
-                playQueueService.stop(player);
-                break;
-            case "skip":
-                int index = getRequiredIntParameter(request, "index");
-                long offset = getLongParameter(request, "offset", 0) * 1000;
-                playQueueService.skip(player, index, offset);
-                break;
-            case "add":
-                int[] ids = getIntParameters(request, "id");
-                playQueueService.add(player, Ints.asList(ids), null, true, true);
-                break;
-            case "set":
-                ids = getIntParameters(request, "id");
-                playQueueService.reset(player, Ints.asList(ids), true);
-                break;
-            case "clear":
-                playQueueService.clear(player);
-                break;
-            case "remove":
-                index = getRequiredIntParameter(request, "index");
-                playQueueService.remove(player, Arrays.asList(index));
-                break;
-            case "shuffle":
-                playQueueService.shuffle(player);
-                break;
-            case "setGain":
-                float gain = getRequiredFloatParameter(request, "gain");
-                playQueueService.setJukeboxGain(player, gain);
-                break;
-            case "get":
-                returnPlaylist = true;
-                break;
-            case "status":
-                // No action necessary.
-                break;
-            default:
-                throw new Exception("Unknown jukebox action: '" + action + "'.");
-        }
-
-        String username = securityService.getCurrentUsername(request);
-        PlayQueue playQueue = player.getPlayQueue();
-
-        // this variable is only needed for the JukeboxLegacySubsonicService. To be removed.
-        boolean controlsJukebox = jukeboxService.canControl(player);
-
-        int currentIndex = controlsJukebox && !playQueue.isEmpty() ? playQueue.getIndex() : -1;
-        boolean playing = controlsJukebox && !playQueue.isEmpty() && playQueue.getStatus() == PlayQueue.Status.PLAYING;
-        float gain;
-        int position;
-        gain = jukeboxService.getGain(player);
-        position = controlsJukebox && !playQueue.isEmpty() ? jukeboxService.getPosition(player) : 0;
-
-        Response res = createResponse();
-        if (returnPlaylist) {
-            JukeboxPlaylist result = new JukeboxPlaylist();
-            res.setJukeboxPlaylist(result);
-            result.setCurrentIndex(currentIndex);
-            result.setPlaying(playing);
-            result.setGain(gain);
-            result.setPosition(position);
-            for (MediaFile mediaFile : playQueue.getFiles()) {
-                result.getEntry().add(jaxbContentService.createJaxbChild(player, mediaFile, username));
-            }
-        } else {
-            JukeboxStatus result = new JukeboxStatus();
-            res.setJukeboxStatus(result);
-            result.setCurrentIndex(currentIndex);
-            result.setPlaying(playing);
-            result.setGain(gain);
-            result.setPosition(position);
-        }
-
         jaxbWriter.writeResponse(request, response, res);
     }
 
