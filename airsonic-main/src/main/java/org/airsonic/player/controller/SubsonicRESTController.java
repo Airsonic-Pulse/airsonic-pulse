@@ -116,8 +116,6 @@ public class SubsonicRESTController {
     @Autowired
     private PersonalSettingsService personalSettingsService;
     @Autowired
-    private InternetRadioService internetRadioService;
-    @Autowired
     private JaxbContentService jaxbContentService;
 
 
@@ -666,24 +664,6 @@ public class SubsonicRESTController {
         }
 
         hlsController.handleHlsRequest(authentication, id, request, response);
-    }
-
-    @RequestMapping({"/getInternetRadioStations", "/getInternetRadioStations.view"})
-    public void getInternetRadioStations(HttpServletRequest request, HttpServletResponse response) {
-        request = wrapRequest(request);
-
-        InternetRadioStations result = new InternetRadioStations();
-        for (InternetRadio radio : internetRadioService.getEnabledInternetRadios()) {
-            InternetRadioStation i = new InternetRadioStation();
-            i.setId(String.valueOf(radio.getId()));
-            i.setName(radio.getName());
-            i.setStreamUrl(radio.getStreamUrl());
-            i.setHomePageUrl(radio.getHomepageUrl());
-            result.getInternetRadioStation().add(i);
-        }
-        Response res = createResponse();
-        res.setInternetRadioStations(result);
-        jaxbWriter.writeResponse(request, response, res);
     }
 
     @RequestMapping({"/getCoverArt", "/getCoverArt.view"})

@@ -1,0 +1,143 @@
+/*
+ This file is part of Airsonic.
+
+ Airsonic is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ Airsonic is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with Airsonic.  If not, see <http://www.gnu.org/licenses/>.
+
+ Copyright 2025 (C) Airsonic Authors
+ Based upon Subsonic, Copyright 2009 (C) Sindre Mehus
+ */
+package org.airsonic.player.controller;
+
+import org.airsonic.player.domain.InternetRadio;
+import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.Player;
+import org.airsonic.player.domain.PlayerTechnology;
+import org.airsonic.player.service.InternetRadioService;
+import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.PlayerService;
+import org.airsonic.player.util.StringUtil;
+import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.subsonic.restapi.InternetRadioStation;
+import org.subsonic.restapi.InternetRadioStations;
+import org.subsonic.restapi.Response;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.util.List;
+
+@Controller
+@RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
+public class SubsonicRadioController {
+
+    @Autowired
+    private JAXBWriter jaxbWriter;
+    @Autowired
+    private InternetRadioService internetRadioService;
+    @Autowired
+    private PlayerService playerService;
+    @Autowired
+    private MediaFileService mediaFileService;
+
+    @RequestMapping({"/getInternetRadioStations", "/getInternetRadioStations.view"})
+    public void getInternetRadioStations(HttpServletRequest request, HttpServletResponse response) {
+        request = wrapRequest(request);
+
+        InternetRadioStations result = new InternetRadioStations();
+        for (InternetRadio radio : internetRadioService.getEnabledInternetRadios()) {
+            InternetRadioStation i = new InternetRadioStation();
+            i.setId(String.valueOf(radio.getId()));
+            i.setName(radio.getName());
+            i.setStreamUrl(radio.getStreamUrl());
+            i.setHomePageUrl(radio.getHomepageUrl());
+            result.getInternetRadioStation().add(i);
+        }
+        Response res = createResponse();
+        res.setInternetRadioStations(result);
+        jaxbWriter.writeResponse(request, response, res);
+    }
+
+    private Response createResponse() {
+        return jaxbWriter.createResponse(true);
+    }
+
+    private HttpServletRequest wrapRequest(HttpServletRequest request) {
+        return wrapRequest(request, false);
+    }
+
+    private HttpServletRequest wrapRequest(final HttpServletRequest request, boolean jukebox) {
+        final Integer playerId = createPlayerIfNecessary(request, jukebox);
+        return new HttpServletRequestWrapper(request) {
+            @Override
+            public String getParameter(String name) {
+                // Returns the correct player to be used in PlayerService.getPlayer()
+                if ("player".equals(name)) {
+                    return playerId == null ? null : String.valueOf(playerId);
+                }
+
+                // Support old style ID parameters.
+                if ("id".equals(name)) {
+                    return mapId(request.getParameter("id"));
+                }
+
+                return super.getParameter(name);
+            }
+        };
+    }
+
+    private String mapId(String id) {
+        if (id == null || id.startsWith(CoverArtController.ALBUM_COVERART_PREFIX) ||
+                id.startsWith(CoverArtController.ARTIST_COVERART_PREFIX) || StringUtils.isNumeric(id)) {
+            return id;
+        }
+
+        try {
+            String path = StringUtil.utf8HexDecode(id);
+            MediaFile mediaFile = mediaFileService.getMediaFile(path);
+            return String.valueOf(mediaFile.getId());
+        } catch (Exception x) {
+            return id;
+        }
+    }
+
+    private Integer createPlayerIfNecessary(HttpServletRequest request, boolean jukebox) {
+        String username = request.getRemoteUser();
+        String clientId = request.getParameter("c");
+        if (jukebox) {
+            clientId += "-jukebox";
+        }
+
+        List<Player> players = playerService.getPlayersForUserAndClientId(username, clientId);
+
+        // If not found, create it.
+        if (players.isEmpty()) {
+            Player player = new Player();
+            player.setIpAddress(request.getRemoteAddr());
+            player.setUsername(username);
+            player.setClientId(clientId);
+            player.setName(clientId);
+            player.setTechnology(jukebox ? PlayerTechnology.JUKEBOX : PlayerTechnology.EXTERNAL_WITH_PLAYLIST);
+            playerService.createPlayer(player);
+            players = playerService.getPlayersForUserAndClientId(username, clientId);
+        }
+
+        // Return the player ID.
+        return !players.isEmpty() ? players.get(0).getId() : null;
+    }
+}
