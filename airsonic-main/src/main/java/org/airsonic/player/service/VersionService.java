@@ -139,13 +139,49 @@ public class VersionService {
     public Version getLocalVersion() {
         if (localVersion == null) {
             try {
-                localVersion = new Version(build.getProperty("version") + "." + build.getProperty("timestamp"));
-                LOG.info("Resolved local Airsonic version to: {}", localVersion);
+                String version = build.getProperty("version");
+                String timestamp = build.getProperty("timestamp");
+                localVersion = new Version(version + "." + timestamp);
+                LOG.info("Resolved local Airsonic version to: {}", formatDisplayVersion(version, timestamp));
             } catch (Exception x) {
                 LOG.warn("Failed to resolve local Airsonic version.", x);
             }
         }
         return localVersion;
+    }
+
+    /**
+     * Returns the human-readable display form of the local version. SNAPSHOT
+     * builds keep the concatenated {@code version.timestamp} format (used by
+     * the upgrade-detection comparison logic). Final releases are presented as
+     * {@code version (build timestamp)} for clarity in the UI and startup log.
+     *
+     * <p>This is intended for human-facing surfaces only. API consumers should
+     * continue to use {@link #getLocalVersion()} (whose toString form is the
+     * unformatted concatenated value).
+     *
+     * @return The formatted display version.
+     */
+    public String getDisplayVersion() {
+        return formatDisplayVersion(build.getProperty("version"), build.getProperty("timestamp"));
+    }
+
+    /**
+     * Pure formatter used by {@link #getDisplayVersion()} and the startup log.
+     * Package-private so unit tests can exercise the formatting logic without
+     * loading {@code build.properties}.
+     */
+    static String formatDisplayVersion(String version, String timestamp) {
+        if (version == null || version.isEmpty()) {
+            return "";
+        }
+        if (timestamp == null || timestamp.isEmpty()) {
+            return version;
+        }
+        if (version.endsWith("-SNAPSHOT")) {
+            return version + "." + timestamp;
+        }
+        return version + " (build " + timestamp + ")";
     }
 
     /**
