@@ -37,9 +37,7 @@ import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.ServletRequestUtils;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.subsonic.restapi.AlbumInfo;
@@ -85,14 +83,6 @@ public class SubsonicArtistInfoController {
     private JaxbContentService jaxbContentService;
     @Autowired
     private LocaleResolver localeResolver;
-
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public void handleMissingRequestParam(HttpServletRequest request,
-                                          HttpServletResponse response,
-                                          MissingServletRequestParameterException exception) {
-        error(request, response, SubsonicRESTController.ErrorCode.MISSING_PARAMETER,
-                "Required param (" + exception.getParameterName() + ") is missing");
-    }
 
     @RequestMapping({"/getSimilarSongs", "/getSimilarSongs.view"})
     public void getSimilarSongs(HttpServletRequest request, HttpServletResponse response) throws Exception {

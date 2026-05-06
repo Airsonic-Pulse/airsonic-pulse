@@ -23,13 +23,9 @@ package org.airsonic.player.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.context.request.ServletWebRequest;
 import org.subsonic.restapi.OpenSubsonicExtension;
 import org.subsonic.restapi.OpenSubsonicExtensions;
 import org.subsonic.restapi.Response;
@@ -38,7 +34,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
-import java.util.Map.Entry;
 
 /**
  * Multi-controller used for the REST API.
@@ -57,13 +52,6 @@ public class SubsonicRESTController {
 
     @Autowired
     private JAXBWriter jaxbWriter;
-
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public void handleMissingRequestParam(HttpServletRequest request,
-                                          HttpServletResponse response,
-                                          MissingServletRequestParameterException exception) {
-        error(request, response, ErrorCode.MISSING_PARAMETER, "Required param (" + exception.getParameterName() + ") is missing");
-    }
 
     @RequestMapping({"/getOpenSubsonicExtensions", "/getOpenSubsonicExtensions.view"})
     public void getOpenSubsonicExtensions(HttpServletRequest request, HttpServletResponse response) {
@@ -114,15 +102,6 @@ public class SubsonicRESTController {
         public ErrorCode getError() {
             return error;
         }
-    }
-
-    @ExceptionHandler(APIException.class)
-    public ResponseEntity<String> apiException(ServletWebRequest swr, APIException exception) {
-        Entry<String, String> exceptionResponse = jaxbWriter.serializeForType(swr.getRequest(),
-                jaxbWriter.createErrorResponse(exception));
-        return ResponseEntity.ok()
-                .contentType(org.springframework.http.MediaType.parseMediaType(exceptionResponse.getKey()))
-                .body(exceptionResponse.getValue());
     }
 
     private Response createResponse() {

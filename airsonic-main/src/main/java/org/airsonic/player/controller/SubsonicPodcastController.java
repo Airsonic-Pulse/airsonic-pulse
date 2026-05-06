@@ -37,8 +37,6 @@ import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.subsonic.restapi.NewestPodcasts;
@@ -78,14 +76,6 @@ public class SubsonicPodcastController {
     private JaxbContentService jaxbContentService;
     @Autowired
     private MediaFileService mediaFileService;
-
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public void handleMissingRequestParam(HttpServletRequest request,
-                                          HttpServletResponse response,
-                                          MissingServletRequestParameterException exception) {
-        error(request, response, SubsonicRESTController.ErrorCode.MISSING_PARAMETER,
-                "Required param (" + exception.getParameterName() + ") is missing");
-    }
 
     @RequestMapping({"/getPodcasts", "/getPodcasts.view"})
     public void getPodcasts(HttpServletRequest request, HttpServletResponse response) throws Exception {

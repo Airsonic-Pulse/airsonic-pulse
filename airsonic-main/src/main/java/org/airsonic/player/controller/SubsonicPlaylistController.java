@@ -31,8 +31,6 @@ import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.subsonic.restapi.PlaylistWithSongs;
@@ -70,14 +68,6 @@ public class SubsonicPlaylistController {
     private SecurityService securityService;
     @Autowired
     private JaxbContentService jaxbContentService;
-
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public void handleMissingRequestParam(HttpServletRequest request,
-                                          HttpServletResponse response,
-                                          MissingServletRequestParameterException exception) {
-        error(request, response, SubsonicRESTController.ErrorCode.MISSING_PARAMETER,
-                "Required param (" + exception.getParameterName() + ") is missing");
-    }
 
     @RequestMapping({"/getPlaylists", "/getPlaylists.view"})
     public void getPlaylists(HttpServletRequest request, HttpServletResponse response) {
