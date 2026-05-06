@@ -38,8 +38,6 @@ import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.subsonic.restapi.AlbumID3;
@@ -89,14 +87,6 @@ public class SubsonicID3Controller {
     private JaxbContentService jaxbContentService;
     @Autowired
     private SettingsService settingsService;
-
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public void handleMissingRequestParam(HttpServletRequest request,
-                                          HttpServletResponse response,
-                                          MissingServletRequestParameterException exception) {
-        error(request, response, SubsonicRESTController.ErrorCode.MISSING_PARAMETER,
-                "Required param (" + exception.getParameterName() + ") is missing");
-    }
 
     @RequestMapping({"/getArtists", "/getArtists.view"})
     public void getArtists(HttpServletRequest request, HttpServletResponse response) throws Exception {

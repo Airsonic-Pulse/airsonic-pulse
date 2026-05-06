@@ -37,7 +37,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.ServletRequestUtils;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -51,7 +50,6 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Optional;
 
 @Controller
@@ -80,15 +78,6 @@ public class SubsonicMediaController {
     private PlayerService playerService;
     @Autowired
     private MediaFileService mediaFileService;
-
-    @ExceptionHandler(SubsonicRESTController.APIException.class)
-    public ResponseEntity<String> apiException(ServletWebRequest swr, SubsonicRESTController.APIException exception) {
-        Entry<String, String> exceptionResponse = jaxbWriter.serializeForType(swr.getRequest(),
-                jaxbWriter.createErrorResponse(exception));
-        return ResponseEntity.ok()
-                .contentType(org.springframework.http.MediaType.parseMediaType(exceptionResponse.getKey()))
-                .body(exceptionResponse.getValue());
-    }
 
     @RequestMapping({"/download", "/download.view"})
     public ResponseEntity<Resource> download(Principal p,

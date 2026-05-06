@@ -32,8 +32,6 @@ import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.MissingServletRequestParameterException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.subsonic.restapi.Response;
@@ -69,14 +67,6 @@ public class SubsonicShareController {
     private SecurityService securityService;
     @Autowired
     private JaxbContentService jaxbContentService;
-
-    @ExceptionHandler(MissingServletRequestParameterException.class)
-    public void handleMissingRequestParam(HttpServletRequest request,
-                                          HttpServletResponse response,
-                                          MissingServletRequestParameterException exception) {
-        error(request, response, SubsonicRESTController.ErrorCode.MISSING_PARAMETER,
-                "Required param (" + exception.getParameterName() + ") is missing");
-    }
 
     @RequestMapping({"/getShares", "/getShares.view"})
     public void getShares(HttpServletRequest request, HttpServletResponse response) throws Exception {
