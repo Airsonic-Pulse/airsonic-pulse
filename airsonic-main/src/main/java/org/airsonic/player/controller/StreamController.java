@@ -57,6 +57,7 @@ import org.springframework.web.context.request.ServletWebRequest;
 import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.awt.*;
 import java.io.FilterInputStream;
@@ -149,6 +150,15 @@ public class StreamController {
             return mediaFileService.getMediaFile(pattern.matcher(p).replaceAll(""));
         }).orElseGet(() -> id.map(mediaFileService::getMediaFile).orElse(null));
         boolean isSingleFile = Objects.nonNull(file);
+
+        // Caller specified `id` but the lookup returned null — return 404 instead of falling
+        // through to an empty 200 response. Skip when isPodcast (playlist requests carry their
+        // content via the playlist branch and don't need `id` to resolve).
+        if (file == null && id.isPresent() && !isPodcast) {
+            LOG.warn("Stream request for non-existent media ID: {}", id.get());
+            swr.getResponse().sendError(HttpServletResponse.SC_NOT_FOUND, "Media not found");
+            return null;
+        }
 
         Long byteOffset = null;
 
