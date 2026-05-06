@@ -16,7 +16,7 @@
 
     <tr th:with="unknownLabel=#{common.unknown}">
         <td class="ruleTableHeader" th:text="#{help.version.title}"></td>
-        <td class="ruleTableCell"><span th:text="|${#strings.isEmpty(model.localVersion) ? unknownLabel : model.localVersion} &ndash;
+        <td class="ruleTableCell"><span th:text="|${#strings.isEmpty(model.displayVersion) ? unknownLabel : model.displayVersion} &ndash;
         ${#strings.isEmpty(model.buildDate) ? unknownLabel : #dates.format(model.buildDate)} [Commit:|"></span> <a th:href="|${model.projectUrl}/commit/${model.buildNumber}|" target="_blank" th:text="${model.buildNumber}"></a>]</td>
     </tr>
     <tr>

@@ -98,4 +98,33 @@ public class VersionServiceTest {
         versionService.setLatestBetaVersion(new Version("11.0.0-SNAPSHOT"));
         assertTrue(versionService.isNewBetaVersionAvailable());
     }
+
+    @Test
+    public void testGetDisplayVersion_snapshot() throws Exception {
+        VersionService versionService = new VersionService();
+        // Setup loads VERSION = "10.6.2-SNAPSHOT", TIMESTAMP = "20230509140255"
+        assertEquals("10.6.2-SNAPSHOT.20230509140255", versionService.getDisplayVersion());
+    }
+
+    @Test
+    public void testFormatDisplayVersion_snapshot() {
+        assertEquals("13.1.0-SNAPSHOT.20260506131100",
+                VersionService.formatDisplayVersion("13.1.0-SNAPSHOT", "20260506131100"));
+    }
+
+    @Test
+    public void testFormatDisplayVersion_finalRelease() {
+        assertEquals("13.0.0 (build 20260429190445)",
+                VersionService.formatDisplayVersion("13.0.0", "20260429190445"));
+    }
+
+    @Test
+    public void testFormatDisplayVersion_nullVersion() {
+        assertEquals("", VersionService.formatDisplayVersion(null, "20260506131100"));
+    }
+
+    @Test
+    public void testFormatDisplayVersion_nullTimestamp() {
+        assertEquals("13.0.0", VersionService.formatDisplayVersion("13.0.0", null));
+    }
 }

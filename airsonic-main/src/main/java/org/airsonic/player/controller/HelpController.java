@@ -92,6 +92,7 @@ public class HelpController {
         map.put("user", securityService.getCurrentUser(request));
         map.put("brand", settingsService.getBrand());
         map.put("localVersion", versionService.getLocalVersion());
+        map.put("displayVersion", versionService.getDisplayVersion());
         map.put("buildDate", versionService.getLocalBuildDate());
         map.put("buildNumber", versionService.getLocalBuildNumber());
         map.put("serverInfo", serverInfo);
