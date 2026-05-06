@@ -143,7 +143,7 @@ public class AvatarControllerTest {
 
         // set up mock
         when(personalSettingsService.getAvatar(eq(AVATAR_ID), isNull(), eq(false))).thenReturn(mockedAvatar);
-        when(mockedAvatar.getMimeType()).thenReturn("img/png");
+        when(mockedAvatar.getMimeType()).thenReturn("image/png");
         when(mockedAvatar.getPath()).thenReturn(Paths.get("icons","avatars","Engineer.png"));
 
         // id = 1 is engineer avatar
@@ -165,7 +165,7 @@ public class AvatarControllerTest {
 
         // set up mock
         when(personalSettingsService.getAvatar(eq(AVATAR_ID), eq("user"), eq(false))).thenReturn(mockedAvatar);
-        when(mockedAvatar.getMimeType()).thenReturn("img/png");
+        when(mockedAvatar.getMimeType()).thenReturn("image/png");
         when(mockedAvatar.getPath()).thenReturn(Paths.get("icons","avatars","Engineer.png"));
 
         // id = 1 is engineer avatar
@@ -191,7 +191,7 @@ public class AvatarControllerTest {
 
         // setup mock
         when(personalSettingsService.getAvatar(isNull(), eq(USER_NAME), eq(true))).thenReturn(mockedAvatar);
-        when(mockedAvatar.getMimeType()).thenReturn("img/png");
+        when(mockedAvatar.getMimeType()).thenReturn("image/png");
         when(mockedAvatar.getPath()).thenReturn(Paths.get("icons","avatars","All-Caps.png"));
 
         // id = 1 is engineer avatar

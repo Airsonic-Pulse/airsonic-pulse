@@ -1,0 +1,18 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="fix-avatar-mime-type" author="litebito">
+        <comment>
+            Correct the system_avatar.mime_type value from the non-standard "img/png"
+            seeded by the legacy schema35 changesets to the standard "image/png".
+            Idempotent: a fresh install where schema35 has already been corrected
+            (no rows match WHERE mime_type = 'img/png') results in a no-op UPDATE.
+            Fixes #115.
+        </comment>
+        <sql>UPDATE system_avatar SET mime_type = 'image/png' WHERE mime_type = 'img/png'</sql>
+        <rollback>
+            <sql>UPDATE system_avatar SET mime_type = 'img/png' WHERE mime_type = 'image/png'</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
