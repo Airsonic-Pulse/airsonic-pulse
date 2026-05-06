@@ -165,12 +165,13 @@
     </changeSet>
     <changeSet id="schema35_010_Formal" author="muff1nman">
         <validCheckSum>7:54035115d2d5d88756e872b3462f26cc</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Formal'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Formal" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Formal.png" />
@@ -183,12 +184,13 @@
     </changeSet>
     <changeSet id="schema35_010_Engineer" author="muff1nman">
         <validCheckSum>7:1f00633cd526800eeaa0f96d5d2d0ab4</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Engineer'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Engineer" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Engineer.png" />
@@ -201,12 +203,13 @@
     </changeSet>
     <changeSet id="schema35_010_Footballer" author="muff1nman">
         <validCheckSum>7:74067f5a06636f5f4e05fc165652da8e</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Footballer'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Footballer" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Footballer.png" />
@@ -219,12 +222,13 @@
     </changeSet>
     <changeSet id="schema35_010_Green-Boy" author="muff1nman">
         <validCheckSum>7:58eb7d10640898003be6f1742733078e</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Green-Boy'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Green-Boy" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Green-Boy.png" />
@@ -237,12 +241,13 @@
     </changeSet>
     <changeSet id="schema35_010_Linux-Zealot" author="muff1nman">
         <validCheckSum>7:6a27c30211f114b76bfb8dc87e39afe0</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Linux-Zealot'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Linux-Zealot" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Linux-Zealot.png" />
@@ -255,12 +260,13 @@
     </changeSet>
     <changeSet id="schema35_010_Mac-Zealot" author="muff1nman">
         <validCheckSum>7:9cddcb5f9a6a360f60ab72b305345817</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Mac-Zealot'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Mac-Zealot" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Mac-Zealot.png" />
@@ -273,12 +279,13 @@
     </changeSet>
     <changeSet id="schema35_010_Windows-Zealot" author="muff1nman">
         <validCheckSum>7:f2b9ba75a5bd06e4523e78362044ae7a</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Windows-Zealot'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Windows-Zealot" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Windows-Zealot.png" />
@@ -291,12 +298,13 @@
     </changeSet>
     <changeSet id="schema35_010_Army-Officer" author="muff1nman">
         <validCheckSum>7:f82442701bee7b16b2f11c83f02aabab</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Army-Officer'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Army-Officer" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Army-Officer.png" />
@@ -309,12 +317,13 @@
     </changeSet>
     <changeSet id="schema35_010_Beatnik" author="muff1nman">
         <validCheckSum>7:51ebe6f94e5cafaf3c5fcd568e950434</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Beatnik'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Beatnik" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Beatnik.png" />
@@ -327,12 +336,13 @@
     </changeSet>
     <changeSet id="schema35_010_All-Caps" author="muff1nman">
         <validCheckSum>7:d22cdfc57fc0ce6413ec04fd6e2fe5f8</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'All-Caps'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="All-Caps" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/All-Caps.png" />
@@ -345,12 +355,13 @@
     </changeSet>
     <changeSet id="schema35_010_Clown" author="muff1nman">
         <validCheckSum>7:7e50b09bc5cfd25bdb353562f3f1f768</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Clown'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Clown" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Clown.png" />
@@ -363,12 +374,13 @@
     </changeSet>
     <changeSet id="schema35_010_Commie-Pinko" author="muff1nman">
         <validCheckSum>7:b674559ca9b7dd1c2466e138e7137405</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Commie-Pinko'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Commie-Pinko" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Commie-Pinko.png" />
@@ -381,12 +393,13 @@
     </changeSet>
     <changeSet id="schema35_010_Forum-Flirt" author="muff1nman">
         <validCheckSum>7:7290bba7007dcc3fe8d90991971b4030</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Forum-Flirt'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Forum-Flirt" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Forum-Flirt.png" />
@@ -399,12 +412,13 @@
     </changeSet>
     <changeSet id="schema35_010_Gamer" author="muff1nman">
         <validCheckSum>7:4543410f8e5681f20ecef97e780e0573</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Gamer'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Gamer" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Gamer.png" />
@@ -417,12 +431,13 @@
     </changeSet>
     <changeSet id="schema35_010_Hopelessly-Addicted" author="muff1nman">
         <validCheckSum>7:f3c66c12b246da0a90349b6a3da741a3</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Hopelessly-Addicted'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Hopelessly-Addicted" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Hopelessly-Addicted.png" />
@@ -435,12 +450,13 @@
     </changeSet>
     <changeSet id="schema35_010_Jekyll-And-Hyde" author="muff1nman">
         <validCheckSum>7:81c5f814838707b89721759498743da0</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Jekyll-And-Hyde'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Jekyll-And-Hyde" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Jekyll-And-Hyde.png" />
@@ -453,12 +469,13 @@
     </changeSet>
     <changeSet id="schema35_010_Joker" author="muff1nman">
         <validCheckSum>7:1a15275764dc97170319825b94f70fb3</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Joker'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Joker" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Joker.png" />
@@ -471,12 +488,13 @@
     </changeSet>
     <changeSet id="schema35_010_Lurker" author="muff1nman">
         <validCheckSum>7:66415321945789d22a16d042b1b3306f</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Lurker'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Lurker" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Lurker.png" />
@@ -489,12 +507,13 @@
     </changeSet>
     <changeSet id="schema35_010_Moderator" author="muff1nman">
         <validCheckSum>7:e60a95cc8d57ff522415b581f13d52e6</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Moderator'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Moderator" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Moderator.png" />
@@ -507,12 +526,13 @@
     </changeSet>
     <changeSet id="schema35_010_Newbie" author="muff1nman">
         <validCheckSum>7:9b38b2025882a11fb02d9f9784f067ed</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Newbie'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Newbie" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Newbie.png" />
@@ -525,12 +545,13 @@
     </changeSet>
     <changeSet id="schema35_010_No-Dissent" author="muff1nman">
         <validCheckSum>7:1cd5940012c95e26462840dfaacd1ee5</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'No-Dissent'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="No-Dissent" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/No-Dissent.png" />
@@ -543,12 +564,13 @@
     </changeSet>
     <changeSet id="schema35_010_Performer" author="muff1nman">
         <validCheckSum>7:b6f3765aa9733f026a6eced46f17fd76</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Performer'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Performer" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Performer.png" />
@@ -561,12 +583,13 @@
     </changeSet>
     <changeSet id="schema35_010_Push-My-Button" author="muff1nman">
         <validCheckSum>7:e959c49fb38e99fe7fc1e00efd3d7b16</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Push-My-Button'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Push-My-Button" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Push-My-Button.png" />
@@ -579,12 +602,13 @@
     </changeSet>
     <changeSet id="schema35_010_Ray-Of-Sunshine" author="muff1nman">
         <validCheckSum>7:ad41d5220459ea33978c0b7c7e05b282</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Ray-Of-Sunshine'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Ray-Of-Sunshine" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Ray-Of-Sunshine.png" />
@@ -597,12 +621,13 @@
     </changeSet>
     <changeSet id="schema35_010_Red-Hot-Chili-Peppers-1" author="muff1nman">
         <validCheckSum>7:d7f6b7675de11283a5a61ece4693cdfe</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Red-Hot-Chili-Peppers-1'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Red-Hot-Chili-Peppers-1" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Red-Hot-Chili-Peppers-1.png" />
@@ -615,12 +640,13 @@
     </changeSet>
     <changeSet id="schema35_010_Red-Hot-Chili-Peppers-2" author="muff1nman">
         <validCheckSum>7:35f2791297bbdca1cd04447aeafd70e9</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Red-Hot-Chili-Peppers-2'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Red-Hot-Chili-Peppers-2" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Red-Hot-Chili-Peppers-2.png" />
@@ -633,12 +659,13 @@
     </changeSet>
     <changeSet id="schema35_010_Red-Hot-Chili-Peppers-3" author="muff1nman">
         <validCheckSum>7:97b4ee07300628c37c422dc2c4570e5a</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Red-Hot-Chili-Peppers-3'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Red-Hot-Chili-Peppers-3" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Red-Hot-Chili-Peppers-3.png" />
@@ -651,12 +678,13 @@
     </changeSet>
     <changeSet id="schema35_010_Red-Hot-Chili-Peppers-4" author="muff1nman">
         <validCheckSum>7:a8d662d989026bef363ea0096f2eb3f5</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Red-Hot-Chili-Peppers-4'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Red-Hot-Chili-Peppers-4" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Red-Hot-Chili-Peppers-4.png" />
@@ -669,12 +697,13 @@
     </changeSet>
     <changeSet id="schema35_010_Ringmaster" author="muff1nman">
         <validCheckSum>7:ee2340f09e351c1ccda3c9dfa71ffcbf</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Ringmaster'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Ringmaster" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Ringmaster.png" />
@@ -687,12 +716,13 @@
     </changeSet>
     <changeSet id="schema35_010_Rumor-Junkie" author="muff1nman">
         <validCheckSum>7:46c9cfd1d5d60eef0277d046064e7670</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Rumor-Junkie'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Rumor-Junkie" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Rumor-Junkie.png" />
@@ -705,12 +735,13 @@
     </changeSet>
     <changeSet id="schema35_010_Sozzled-Surfer" author="muff1nman">
         <validCheckSum>7:c018f6267a19989ba99c2361ad959fc6</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Sozzled-Surfer'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Sozzled-Surfer" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Sozzled-Surfer.png" />
@@ -723,12 +754,13 @@
     </changeSet>
     <changeSet id="schema35_010_Statistician" author="muff1nman">
         <validCheckSum>7:786c0d65ab283f6cad03fdd0757480f9</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Statistician'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Statistician" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Statistician.png" />
@@ -741,12 +773,13 @@
     </changeSet>
     <changeSet id="schema35_010_Tech-Support" author="muff1nman">
         <validCheckSum>7:5cfbe2a8a4ad2a605880170d27b195ed</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Tech-Support'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Tech-Support" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Tech-Support.png" />
@@ -759,12 +792,13 @@
     </changeSet>
     <changeSet id="schema35_010_The-Guru" author="muff1nman">
         <validCheckSum>7:ab9565e7768e03193d2de5c60be74843</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'The-Guru'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="The-Guru" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/The-Guru.png" />
@@ -777,12 +811,13 @@
     </changeSet>
     <changeSet id="schema35_010_The-Referee" author="muff1nman">
         <validCheckSum>7:705db6a005696ae8d9d7a39d9ef626a8</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'The-Referee'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="The-Referee" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/The-Referee.png" />
@@ -795,12 +830,13 @@
     </changeSet>
     <changeSet id="schema35_010_Troll" author="muff1nman">
         <validCheckSum>7:6eb305b202548b993d7edd0746ea71d9</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Troll'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Troll" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Troll.png" />
@@ -813,12 +849,13 @@
     </changeSet>
     <changeSet id="schema35_010_Uptight" author="muff1nman">
         <validCheckSum>7:dc955eccac25bbe19b61de970ddea05e</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Uptight'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Uptight" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Uptight.png" />
@@ -831,12 +868,13 @@
     </changeSet>
     <changeSet id="schema35_010_Fire-Guitar" author="muff1nman">
         <validCheckSum>7:2c8eb5047dc5ebe3fbb1c5bc4f614122</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Fire-Guitar'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Fire-Guitar" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Fire-Guitar.png" />
@@ -849,12 +887,13 @@
     </changeSet>
     <changeSet id="schema35_010_Drum" author="muff1nman">
         <validCheckSum>7:4e77bbb7cca43ba206f0bbfd4af38d7f</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Drum'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Drum" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Drum.png" />
@@ -867,12 +906,13 @@
     </changeSet>
     <changeSet id="schema35_010_Headphones" author="muff1nman">
         <validCheckSum>7:b577f199dd646877d51f4766d63dbd72</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Headphones'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Headphones" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Headphones.png" />
@@ -885,12 +925,13 @@
     </changeSet>
     <changeSet id="schema35_010_Mic" author="muff1nman">
         <validCheckSum>7:999caf515ab0b3d5ac99d3c81893bd67</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Mic'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Mic" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Mic.png" />
@@ -903,12 +944,13 @@
     </changeSet>
     <changeSet id="schema35_010_Turntable" author="muff1nman">
         <validCheckSum>7:14ea8fa0912b13ab337c940b871d7782</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Turntable'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Turntable" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Turntable.png" />
@@ -921,12 +963,13 @@
     </changeSet>
     <changeSet id="schema35_010_Vinyl" author="muff1nman">
         <validCheckSum>7:391aefb55d1076fd9e05c1ae7377d5cd</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Vinyl'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Vinyl" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Vinyl.png" />
@@ -939,12 +982,13 @@
     </changeSet>
     <changeSet id="schema35_010_Cool" author="muff1nman">
         <validCheckSum>7:c4fbec5479846de62714bf0fed6224c3</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Cool'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Cool" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Cool.png" />
@@ -957,12 +1001,13 @@
     </changeSet>
     <changeSet id="schema35_010_Laugh" author="muff1nman">
         <validCheckSum>7:9ddb901cd6baef436261d8719973988d</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Laugh'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Laugh" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Laugh.png" />
@@ -975,12 +1020,13 @@
     </changeSet>
     <changeSet id="schema35_010_Study" author="muff1nman">
         <validCheckSum>7:d4bc85dc419904b95ff88b95dfc4694a</validCheckSum>
+        <validCheckSum>ANY</validCheckSum>
         <preConditions onFail="MARK_RAN">
             <sqlCheck expectedResult="0">select count(*) from system_avatar where name = 'Study'</sqlCheck>
         </preConditions>
         <insert tableName="system_avatar">
             <column name="name" value="Study" />
-            <column name="mime_type" value="img/png" />
+            <column name="mime_type" value="image/png" />
             <column name="width" valueNumeric="48" />
             <column name="height" valueNumeric="48" />
             <column name="data" valueBlobFile="../../org/airsonic/player/dao/schema/Study.png" />
