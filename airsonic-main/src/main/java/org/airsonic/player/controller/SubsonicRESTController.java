@@ -22,7 +22,6 @@ package org.airsonic.player.controller;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -46,12 +45,9 @@ import java.util.List;
  */
 @Controller
 @RequestMapping(value = "/rest", method = {RequestMethod.GET, RequestMethod.POST})
-public class SubsonicRESTController {
+public class SubsonicRESTController extends AbstractSubsonicController {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsonicRESTController.class);
-
-    @Autowired
-    private JAXBWriter jaxbWriter;
 
     @RequestMapping({"/getOpenSubsonicExtensions", "/getOpenSubsonicExtensions.view"})
     public void getOpenSubsonicExtensions(HttpServletRequest request, HttpServletResponse response) {
@@ -102,14 +98,6 @@ public class SubsonicRESTController {
         public ErrorCode getError() {
             return error;
         }
-    }
-
-    private Response createResponse() {
-        return jaxbWriter.createResponse(true);
-    }
-
-    public void error(HttpServletRequest request, HttpServletResponse response, ErrorCode code, String message) {
-        jaxbWriter.writeErrorResponse(request, response, code, message);
     }
 
     public enum ErrorCode {

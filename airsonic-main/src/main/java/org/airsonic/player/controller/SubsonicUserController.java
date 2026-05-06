@@ -49,10 +49,8 @@ import static org.springframework.web.bind.ServletRequestUtils.getStringParamete
 
 @Controller
 @RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
-public class SubsonicUserController {
+public class SubsonicUserController extends AbstractSubsonicController {
 
-    @Autowired
-    private JAXBWriter jaxbWriter;
     @Autowired
     private UserService userService;
     @Autowired
@@ -270,16 +268,7 @@ public class SubsonicUserController {
         writeEmptyResponse(request, response);
     }
 
-    private Response createResponse() {
-        return jaxbWriter.createResponse(true);
-    }
-
     private void writeEmptyResponse(HttpServletRequest request, HttpServletResponse response) {
         jaxbWriter.writeResponse(request, response, createResponse());
-    }
-
-    private void error(HttpServletRequest request, HttpServletResponse response,
-                       SubsonicRESTController.ErrorCode code, String message) {
-        jaxbWriter.writeErrorResponse(request, response, code, message);
     }
 }

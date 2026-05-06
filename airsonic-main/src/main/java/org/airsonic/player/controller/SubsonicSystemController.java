@@ -18,10 +18,7 @@
  */
 package org.airsonic.player.controller;
 
-import org.airsonic.player.domain.Player;
-import org.airsonic.player.domain.PlayerTechnology;
 import org.airsonic.player.service.MediaScannerService;
-import org.airsonic.player.service.PlayerService;
 import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -33,24 +30,18 @@ import org.subsonic.restapi.Response;
 import org.subsonic.restapi.ScanStatus;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 import javax.xml.datatype.XMLGregorianCalendar;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.List;
 
 @Controller
 @RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
-public class SubsonicSystemController {
+public class SubsonicSystemController extends AbstractSubsonicController {
 
     @Autowired
-    private JAXBWriter jaxbWriter;
-    @Autowired
     private MediaScannerService mediaScannerService;
-    @Autowired
-    private PlayerService playerService;
 
     private static final String NO_LONGER_SUPPORTED = "No longer supported";
 
@@ -108,47 +99,4 @@ public class SubsonicSystemController {
         return ResponseEntity.status(HttpStatus.SC_GONE).body(NO_LONGER_SUPPORTED);
     }
 
-    private Response createResponse() {
-        return this.jaxbWriter.createResponse(true);
-    }
-
-    private HttpServletRequest wrapRequest(HttpServletRequest request) {
-        return wrapRequest(request, false);
-    }
-
-    private HttpServletRequest wrapRequest(final HttpServletRequest request, boolean jukebox) {
-        final Integer playerId = createPlayerIfNecessary(request, jukebox);
-        return new HttpServletRequestWrapper(request) {
-            @Override
-            public String getParameter(String name) {
-                if ("player".equals(name)) {
-                    return playerId == null ? null : String.valueOf(playerId);
-                }
-                return super.getParameter(name);
-            }
-        };
-    }
-
-    private Integer createPlayerIfNecessary(HttpServletRequest request, boolean jukebox) {
-        String username = request.getRemoteUser();
-        String clientId = request.getParameter("c");
-        if (jukebox) {
-            clientId += "-jukebox";
-        }
-
-        List<Player> players = this.playerService.getPlayersForUserAndClientId(username, clientId);
-
-        if (players.isEmpty()) {
-            Player player = new Player();
-            player.setIpAddress(request.getRemoteAddr());
-            player.setUsername(username);
-            player.setClientId(clientId);
-            player.setName(clientId);
-            player.setTechnology(jukebox ? PlayerTechnology.JUKEBOX : PlayerTechnology.EXTERNAL_WITH_PLAYLIST);
-            this.playerService.createPlayer(player);
-            players = this.playerService.getPlayersForUserAndClientId(username, clientId);
-        }
-
-        return !players.isEmpty() ? players.get(0).getId() : null;
-    }
 }
