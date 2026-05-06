@@ -21,14 +21,9 @@ package org.airsonic.player.controller;
 
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Player;
-import org.airsonic.player.domain.PlayerTechnology;
 import org.airsonic.player.service.JaxbContentService;
-import org.airsonic.player.service.MediaFileService;
-import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.PlaylistService;
 import org.airsonic.player.service.SecurityService;
-import org.airsonic.player.util.StringUtil;
-import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,7 +33,6 @@ import org.subsonic.restapi.Playlists;
 import org.subsonic.restapi.Response;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.ArrayList;
@@ -54,16 +48,10 @@ import static org.springframework.web.bind.ServletRequestUtils.getRequiredIntPar
 
 @Controller
 @RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
-public class SubsonicPlaylistController {
+public class SubsonicPlaylistController extends AbstractSubsonicController {
 
     @Autowired
-    private JAXBWriter jaxbWriter;
-    @Autowired
     private PlaylistService playlistService;
-    @Autowired
-    private MediaFileService mediaFileService;
-    @Autowired
-    private PlayerService playerService;
     @Autowired
     private SecurityService securityService;
     @Autowired
@@ -246,80 +234,7 @@ public class SubsonicPlaylistController {
         writeEmptyResponse(request, response);
     }
 
-    private Response createResponse() {
-        return jaxbWriter.createResponse(true);
-    }
-
     private void writeEmptyResponse(HttpServletRequest request, HttpServletResponse response) {
         jaxbWriter.writeResponse(request, response, createResponse());
-    }
-
-    private void error(HttpServletRequest request, HttpServletResponse response,
-                       SubsonicRESTController.ErrorCode code, String message) {
-        jaxbWriter.writeErrorResponse(request, response, code, message);
-    }
-
-    private HttpServletRequest wrapRequest(HttpServletRequest request) {
-        return wrapRequest(request, false);
-    }
-
-    private HttpServletRequest wrapRequest(final HttpServletRequest request, boolean jukebox) {
-        final Integer playerId = createPlayerIfNecessary(request, jukebox);
-        return new HttpServletRequestWrapper(request) {
-            @Override
-            public String getParameter(String name) {
-                // Returns the correct player to be used in PlayerService.getPlayer()
-                if ("player".equals(name)) {
-                    return playerId == null ? null : String.valueOf(playerId);
-                }
-
-                // Support old style ID parameters.
-                if ("id".equals(name)) {
-                    return mapId(request.getParameter("id"));
-                }
-
-                return super.getParameter(name);
-            }
-        };
-    }
-
-    private String mapId(String id) {
-        if (id == null || id.startsWith(CoverArtController.ALBUM_COVERART_PREFIX) ||
-                id.startsWith(CoverArtController.ARTIST_COVERART_PREFIX) || StringUtils.isNumeric(id)) {
-            return id;
-        }
-
-        try {
-            String path = StringUtil.utf8HexDecode(id);
-            MediaFile mediaFile = mediaFileService.getMediaFile(path);
-            return String.valueOf(mediaFile.getId());
-        } catch (Exception x) {
-            return id;
-        }
-    }
-
-    private Integer createPlayerIfNecessary(HttpServletRequest request, boolean jukebox) {
-        String username = request.getRemoteUser();
-        String clientId = request.getParameter("c");
-        if (jukebox) {
-            clientId += "-jukebox";
-        }
-
-        List<Player> players = playerService.getPlayersForUserAndClientId(username, clientId);
-
-        // If not found, create it.
-        if (players.isEmpty()) {
-            Player player = new Player();
-            player.setIpAddress(request.getRemoteAddr());
-            player.setUsername(username);
-            player.setClientId(clientId);
-            player.setName(clientId);
-            player.setTechnology(jukebox ? PlayerTechnology.JUKEBOX : PlayerTechnology.EXTERNAL_WITH_PLAYLIST);
-            playerService.createPlayer(player);
-            players = playerService.getPlayersForUserAndClientId(username, clientId);
-        }
-
-        // Return the player ID.
-        return !players.isEmpty() ? players.get(0).getId() : null;
     }
 }
