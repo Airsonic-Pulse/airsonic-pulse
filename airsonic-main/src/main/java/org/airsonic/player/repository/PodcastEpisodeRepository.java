@@ -5,6 +5,8 @@ import org.airsonic.player.domain.PodcastChannel;
 import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -20,9 +22,11 @@ public interface PodcastEpisodeRepository extends JpaRepository<PodcastEpisode, 
 
     Optional<PodcastEpisode> findByChannelAndTitleAndPublishDate(PodcastChannel channel, String title, Instant publishDate);
 
-    List<PodcastEpisode> findByChannel(PodcastChannel channel);
+    @Query("SELECT pe FROM PodcastEpisode pe WHERE pe.channel = :channel ORDER BY pe.id")
+    List<PodcastEpisode> findByChannel(@Param("channel") PodcastChannel channel);
 
-    List<PodcastEpisode> findByChannelAndLockedFalse(PodcastChannel channel);
+    @Query("SELECT pe FROM PodcastEpisode pe WHERE pe.channel = :channel AND pe.locked = false ORDER BY pe.id")
+    List<PodcastEpisode> findByChannelAndLockedFalse(@Param("channel") PodcastChannel channel);
 
     List<PodcastEpisode> findByChannelAndStatus(PodcastChannel channel, PodcastStatus status);
 
