@@ -25,7 +25,7 @@ public class RESTAuthTest {
 
     private static final String USERNAME = "admin";
     private static final String PASSWORD = "admin";
-    private static final String API_VERSION = "1.15.0";
+    private static final String API_VERSION = "1.16.1";
 
     @TempDir
     private static Path tempDir;
