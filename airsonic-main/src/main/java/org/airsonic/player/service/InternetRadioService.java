@@ -270,6 +270,17 @@ public class InternetRadioService {
     }
 
     /**
+     * Retrieve an internet radio by its id.
+     *
+     * @param id an internet radio id
+     * @return the matching internet radio, or {@code null} if not found
+     */
+    @Transactional(readOnly = true)
+    public InternetRadio getInternetRadioById(Integer id) {
+        return internetRadioRepository.findById(id).orElse(null);
+    }
+
+    /**
      * Delete an internet radio by its id.
      *
      * @param id an internet radio id
