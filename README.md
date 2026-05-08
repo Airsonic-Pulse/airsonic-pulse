@@ -12,10 +12,13 @@ Airsonic-Pulse is a continuation of Kagemomiji's [Airsonic-Advanced](https://git
 ### Why Airsonic-Pulse?
 Several Airsonic-Advanced forks are seemingly abandoned by their maintainers. Airsonic-Pulse is an attempt to continue the project with:
 - Active maintenance and security updates
+- Resolve open bugs
 - Modernization of the Java platform (Java 21+)
-- Planned frontend overhaul
-- Planned new features
 - Continued Subsonic API compatibility
+- Implementation of the OpenSubsonic API
+- Planned frontend overhaul, modernization
+- Planned new features
+
 
 ### What is Airsonic
 Airsonic is a free, web-based media streamer, providing ubiquitous access to your music. Use it to share your music with friends, or to listen to your own music while at work. You can stream to multiple players simultaneously, for instance to one player in your kitchen and another in your living room.
