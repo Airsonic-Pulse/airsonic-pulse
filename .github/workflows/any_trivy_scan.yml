@@ -18,7 +18,7 @@ on:
     - cron: '0 0 * * *'
 jobs:
   scan:
-    name: scan
+    name: "trivy-scan"
     runs-on: [self-hosted, linux, x64, repo-airsonic-pulse]
     steps:
       - name: Checkout code
