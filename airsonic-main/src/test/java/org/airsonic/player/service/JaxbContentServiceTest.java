@@ -94,6 +94,7 @@ class JaxbContentServiceTest {
             assertEquals(3, result.getAlbumCount());
             assertThat(result.getStarred()).isNotNull();
             assertEquals(CoverArtController.ARTIST_COVERART_PREFIX + "42", result.getCoverArt());
+            assertEquals("artist", result.getMediaType());
         }
 
         @Test
@@ -136,6 +137,8 @@ class JaxbContentServiceTest {
             when(album.getYear()).thenReturn(2020);
             when(album.getGenre()).thenReturn("Rock");
             when(album.getPlayCount()).thenReturn(42);
+            when(album.getLastPlayed()).thenReturn(Instant.parse("2026-05-01T12:00:00Z"));
+            when(album.getMusicBrainzReleaseId()).thenReturn("mbid-album-123");
             when(coverArtService.getAlbumArt(10)).thenReturn(coverArt);
             when(albumService.getAlbumStarredDate(10, "user")).thenReturn(starredDate);
             when(coverArtService.getAlbumArt(10)).thenReturn(coverArt);
@@ -156,6 +159,9 @@ class JaxbContentServiceTest {
             assertEquals(2020, result.getYear());
             assertEquals("Rock", result.getGenre());
             assertEquals(42L, result.getPlayCount());
+            assertNotNull(result.getPlayed());
+            assertEquals("mbid-album-123", result.getMusicBrainzId());
+            assertEquals("ArtistName", result.getDisplayArtist());
         }
 
         @Test
@@ -243,6 +249,9 @@ class JaxbContentServiceTest {
             when(ratingService.getRatingForUser("user", mediaFile)).thenReturn(4);
             when(ratingService.getAverageRating(mediaFile)).thenReturn(3.5);
             when(mediaFile.getPlayCount()).thenReturn(10);
+            when(mediaFile.getLastPlayed()).thenReturn(Instant.parse("2026-05-01T12:00:00Z"));
+            when(mediaFile.getMusicBrainzRecordingId()).thenReturn("mbid-track-456");
+            when(mediaFile.getAlbumArtist()).thenReturn("Album Artist");
             when(mediaFile.getDuration()).thenReturn(200.0);
             when(mediaFile.getBitRate()).thenReturn(320);
             when(mediaFile.getTrackNumber()).thenReturn(1);
@@ -291,6 +300,11 @@ class JaxbContentServiceTest {
             assertEquals(MediaType.MUSIC, child.getType());
             assertEquals("ogg", child.getTranscodedSuffix());
             assertNotNull(child.getTranscodedContentType());
+            assertNotNull(child.getPlayed());
+            assertEquals("mbid-track-456", child.getMusicBrainzId());
+            assertEquals("Artist", child.getDisplayArtist());
+            assertEquals("Album Artist", child.getDisplayAlbumArtist());
+            assertEquals("music", child.getMediaType());
         }
 
         @Test

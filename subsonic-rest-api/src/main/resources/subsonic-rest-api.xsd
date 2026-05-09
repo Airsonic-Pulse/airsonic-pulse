@@ -144,6 +144,7 @@
         <xs:attribute name="coverArt" type="xs:string" use="optional"/>
         <xs:attribute name="albumCount" type="xs:int" use="required"/>
         <xs:attribute name="starred" type="xs:dateTime" use="optional"/>
+        <xs:attribute name="mediaType" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
     </xs:complexType>
 
     <xs:complexType name="ArtistWithAlbumsID3">
@@ -169,6 +170,9 @@
         <xs:attribute name="starred" type="xs:dateTime" use="optional"/>
         <xs:attribute name="year" type="xs:int" use="optional"/>     <!-- Added in 1.10.1 -->
         <xs:attribute name="genre" type="xs:string" use="optional"/> <!-- Added in 1.10.1 -->
+        <xs:attribute name="played" type="xs:dateTime" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="musicBrainzId" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="displayArtist" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
     </xs:complexType>
 
     <xs:complexType name="AlbumWithSongsID3">
@@ -258,6 +262,11 @@
         <xs:attribute name="bookmarkPosition" type="xs:long" use="optional"/>  <!-- In millis. Added in 1.10.1 -->
         <xs:attribute name="originalWidth" type="xs:int" use="optional"/>  <!-- Added in 1.13.0 -->
         <xs:attribute name="originalHeight" type="xs:int" use="optional"/>  <!-- Added in 1.13.0 -->
+        <xs:attribute name="played" type="xs:dateTime" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="musicBrainzId" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="displayArtist" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="displayAlbumArtist" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="mediaType" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
     </xs:complexType>
 
     <xs:simpleType name="MediaType">
