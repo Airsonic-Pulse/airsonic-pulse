@@ -73,6 +73,7 @@ public class JaxbContentService {
         if (!CoverArt.NULL_ART.equals(coverArtService.getArtistArt(artist.getId()))) {
             jaxbArtist.setCoverArt(CoverArtController.ARTIST_COVERART_PREFIX + artist.getId());
         }
+        jaxbArtist.setMediaType("artist");
         return jaxbArtist;
     }
 
@@ -106,6 +107,9 @@ public class JaxbContentService {
         jaxbAlbum.setPlayCount((long) album.getPlayCount());
         jaxbAlbum.setYear(album.getYear());
         jaxbAlbum.setGenre(album.getGenre());
+        jaxbAlbum.setPlayed(jaxbWriter.convertDate(album.getLastPlayed()));
+        jaxbAlbum.setMusicBrainzId(album.getMusicBrainzReleaseId());
+        jaxbAlbum.setDisplayArtist(album.getArtist());
         return jaxbAlbum;
     }
 
@@ -153,6 +157,13 @@ public class JaxbContentService {
         child.setUserRating(ratingService.getRatingForUser(username, mediaFile));
         child.setAverageRating(ratingService.getAverageRating(mediaFile));
         child.setPlayCount((long) mediaFile.getPlayCount());
+        child.setPlayed(jaxbWriter.convertDate(mediaFile.getLastPlayed()));
+        child.setMusicBrainzId(mediaFile.getMusicBrainzRecordingId());
+        child.setDisplayArtist(mediaFile.getArtist());
+        child.setDisplayAlbumArtist(mediaFile.getAlbumArtist());
+        if (mediaFile.getMediaType() != null) {
+            child.setMediaType(mediaFile.getMediaType().name().toLowerCase());
+        }
 
         if (mediaFile.isFile()) {
             Double mediaFileDuration = mediaFile.getDuration();
