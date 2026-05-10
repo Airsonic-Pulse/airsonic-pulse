@@ -1,0 +1,22 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="fix-transcode-offset-mp3-step1" author="litebito">
+        <preConditions onFail="MARK_RAN">
+            <sqlCheck expectedResult="1">SELECT COUNT(*) FROM transcoding WHERE name='mp3 audio' AND step1='ffmpeg %S -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -'</sqlCheck>
+        </preConditions>
+        <comment>
+            Add -ss %o to the default mp3 audio transcoding step1 so that
+            timeOffset is honored source-side by ffmpeg rather than via a
+            wasteful post-encoding byte-skip. Issue #132 / OpenSubsonic
+            transcodeOffset extension. The preCondition skips this changeset
+            if the admin has customized the mp3 profile, preserving their
+            customization.
+        </comment>
+        <sql>UPDATE transcoding SET step1='ffmpeg %S -ss %o -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -' WHERE name='mp3 audio' AND step1='ffmpeg %S -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -'</sql>
+        <rollback>
+            <sql>UPDATE transcoding SET step1='ffmpeg %S -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -' WHERE name='mp3 audio' AND step1='ffmpeg %S -ss %o -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -'</sql>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>

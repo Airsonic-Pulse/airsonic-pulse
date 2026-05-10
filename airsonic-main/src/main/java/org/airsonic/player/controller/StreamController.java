@@ -112,7 +112,7 @@ public class StreamController {
             @RequestParam("maxBitRate") Optional<Integer> maxBitRate,
             @RequestParam("id") Optional<Integer> id,
             @RequestParam("path") Optional<String> path,
-            @RequestParam(required = false, name = "offsetSeconds") Double offsetSeconds,
+            @RequestParam(required = false, name = "timeOffset") Double offsetSeconds,
             ServletWebRequest swr) throws Exception {
 
         String username = securityService.getCurrentUsername(swr.getRequest());
@@ -188,12 +188,16 @@ public class StreamController {
 
             TranscodingService.Parameters parameters = transcodingService.getParameters(file, player, bitRate,
                     targetFormat, videoTranscodingSettings);
+            parameters.setOffsetSeconds(offsetSeconds);
 
             // Support ranges as long as we're not transcoding blindly
             expectedSize = parameters.isRangeAllowed() ? parameters.getExpectedLength() : null;
 
-            // roughly adjust for offset seconds
-            if (expectedSize != null && expectedSize > 0 && offsetSeconds != null && offsetSeconds > 0 && file.getDuration() != null) {
+            // For non-transcoded streams, roughly adjust for offset seconds via byte-level skip.
+            // Transcoded streams have ffmpeg seek the source via %o (-ss), so byte-skipping the
+            // re-encoded output here would double-seek.
+            if (!parameters.isTranscode() && expectedSize != null && expectedSize > 0
+                    && offsetSeconds != null && offsetSeconds > 0 && file.getDuration() != null) {
                 byteOffset = Math.round(expectedSize * offsetSeconds / file.getDuration());
                 expectedSize = Math.max(0, expectedSize - byteOffset);
             }
@@ -239,9 +243,13 @@ public class StreamController {
             statusService.removeActiveLocalPlay(
                     new PlayStatus(status.getId(), mediaFile, player, status.getMillisSinceLastUpdate()));
         };
+        final Double offsetSecondsF = offsetSeconds;
         Function<MediaFile, InputStream> streamGenerator = LambdaUtils.uncheckFunction(
-            mediaFile -> transcodingService.getTranscodedInputStream(
-                    transcodingService.getParameters(mediaFile, player, bitRate, targetFormat, videoTranscodingSettingsF)));
+            mediaFile -> {
+                TranscodingService.Parameters p = transcodingService.getParameters(mediaFile, player, bitRate, targetFormat, videoTranscodingSettingsF);
+                p.setOffsetSeconds(offsetSecondsF);
+                return transcodingService.getTranscodedInputStream(p);
+            });
 
         HttpHeaders headers = new HttpHeaders();
         InputStream playStream = new PlayQueueInputStream(player.getPlayQueue(), fileStartListener, fileEndListener, streamGenerator);
