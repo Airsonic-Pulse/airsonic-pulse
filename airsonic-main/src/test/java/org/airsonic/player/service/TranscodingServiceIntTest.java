@@ -47,7 +47,7 @@ public class TranscodingServiceIntTest {
         Transcoding mp3Transcode = transcodings.stream().filter(t -> t.getName().equals("mp3 audio")).findFirst().get();
         assertNotNull(mp3Transcode);
         assertEquals("ogg oga aac m4a flac wav wma aif aiff ape mpc shn wv", mp3Transcode.getSourceFormats());
-        assertEquals("ffmpeg %S -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -", mp3Transcode.getStep1());
+        assertEquals("ffmpeg %S -ss %o -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -", mp3Transcode.getStep1());
         assertEquals("mp3", mp3Transcode.getTargetFormat());
         assertNull(mp3Transcode.getStep2());
         assertNull(mp3Transcode.getStep3());

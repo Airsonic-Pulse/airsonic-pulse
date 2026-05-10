@@ -99,7 +99,7 @@ public class SettingsService {
     private static final String KEY_UPLOAD_BITRATE_LIMIT = "UploadBitrateLimit";
     private static final String KEY_SPLIT_OPTIONS = "SplitOptions";
     private static final String KEY_SPLIT_COMMAND = "SplitCommand";
-    private static final String KEY_DOWNSAMPLING_COMMAND = "DownsamplingCommand4";
+    private static final String KEY_DOWNSAMPLING_COMMAND = "DownsamplingCommand5";
     private static final String KEY_HLS_COMMAND = "HlsCommand4";
     private static final String KEY_JUKEBOX_COMMAND = "JukeboxCommand2";
     private static final String KEY_VIDEO_IMAGE_COMMAND = "VideoImageCommand";
@@ -205,7 +205,7 @@ public class SettingsService {
     private static final long DEFAULT_UPLOAD_BITRATE_LIMIT = 0;
     private static final String DEFAULT_SPLIT_OPTIONS = "-ss %o -t %d";
     private static final String DEFAULT_SPLIT_COMMAND = "ffmpeg %S -i %s -vcodec copy -acodec copy -f %f -";
-    private static final String DEFAULT_DOWNSAMPLING_COMMAND = "ffmpeg %S -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -";
+    private static final String DEFAULT_DOWNSAMPLING_COMMAND = "ffmpeg %S -ss %o -i %s -map 0:0 -b:a %bk -v 0 -f mp3 -";
     private static final String DEFAULT_HLS_COMMAND = "ffmpeg -ss %o -i %s -s %wx%h -async 1 -c:v libx264 -flags +cgop -b:v %vk -maxrate %bk -preset superfast -copyts -b:a %rk -bufsize 256k -map 0:0 -map 0:%i -ac 2 -ar 44100 -v 0 -threads 0 -force_key_frames expr:gte(t,n_forced*10) -start_number %j -hls_time %d -hls_list_size 0 -hls_segment_filename %n %p";
     private static final String DEFAULT_JUKEBOX_COMMAND = "ffmpeg -ss %o -i %s -map 0:0 -v 0 -ar 44100 -ac 2 -f s16be -";
     private static final String DEFAULT_VIDEO_IMAGE_COMMAND = "ffmpeg -r 1 -ss %o -t 1 -i %s -s %wx%h -v 0 -f mjpeg -";
@@ -281,7 +281,7 @@ public class SettingsService {
 
     // Array of obsolete properties. Used to clean property file.
     private static final List<String> OBSOLETE_KEYS = Arrays.asList("PortForwardingPublicPort", "PortForwardingLocalPort",
-            "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "AutoCoverBatch", "MusicMask",
+            "DownsamplingCommand", "DownsamplingCommand2", "DownsamplingCommand3", "DownsamplingCommand4", "AutoCoverBatch", "MusicMask",
             "VideoMask", "CoverArtMask", "HlsCommand", "HlsCommand2", "HlsCommand3", "JukeboxCommand",
             "CoverArtFileTypes", "UrlRedirectCustomHost", "CoverArtLimit", "StreamPort",
             "PortForwardingEnabled", "RewriteUrl", "UrlRedirectCustomUrl", "UrlRedirectContextPath",

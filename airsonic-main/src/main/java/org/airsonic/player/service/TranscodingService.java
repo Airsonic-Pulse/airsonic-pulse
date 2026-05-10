@@ -337,15 +337,16 @@ public class TranscodingService {
         Integer maxBitRate = parameters.getMaxBitRate();
         VideoTranscodingSettings videoTranscodingSettings = parameters.getVideoTranscodingSettings();
         MediaFile mediaFile = parameters.getMediaFile();
+        Double offsetSeconds = parameters.getOffsetSeconds();
 
-        TranscodeInputStream in = createTranscodeInputStream(transcoding.getStep1(), maxBitRate, videoTranscodingSettings, mediaFile, null);
+        TranscodeInputStream in = createTranscodeInputStream(transcoding.getStep1(), maxBitRate, videoTranscodingSettings, offsetSeconds, mediaFile, null);
 
         if (transcoding.getStep2() != null) {
-            in = createTranscodeInputStream(transcoding.getStep2(), maxBitRate, videoTranscodingSettings, mediaFile, in);
+            in = createTranscodeInputStream(transcoding.getStep2(), maxBitRate, videoTranscodingSettings, offsetSeconds, mediaFile, in);
         }
 
         if (transcoding.getStep3() != null) {
-            in = createTranscodeInputStream(transcoding.getStep3(), maxBitRate, videoTranscodingSettings, mediaFile, in);
+            in = createTranscodeInputStream(transcoding.getStep3(), maxBitRate, videoTranscodingSettings, offsetSeconds, mediaFile, in);
         }
 
         return in;
@@ -378,6 +379,7 @@ public class TranscodingService {
      */
     private TranscodeInputStream createTranscodeInputStream(String command, Integer maxBitRate,
                                                             VideoTranscodingSettings videoTranscodingSettings,
+                                                            Double offsetSeconds,
                                                             MediaFile mediaFile, InputStream in) throws IOException {
 
         // Work-around for filename character encoding problem on Windows.
@@ -402,7 +404,9 @@ public class TranscodingService {
                 Optional.ofNullable(mediaFile.getAlbumName()).orElse("Unknown Album"),
                 Optional.ofNullable(maxBitRate).map(String::valueOf).orElse(null),
                 Optional.ofNullable(mediaFile.getFormat()).orElse(null),
-                Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getTimeOffset).map(String::valueOf).orElse(String.valueOf(mediaFile.getStartPosition())),
+                Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getTimeOffset).map(String::valueOf)
+                        .or(() -> Optional.ofNullable(offsetSeconds).filter(v -> v > 0).map(v -> String.valueOf(v.intValue())))
+                        .orElse(String.valueOf(mediaFile.getStartPosition())),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getDuration).map(String::valueOf).orElse(String.valueOf(mediaFile.getDuration())),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getWidth).map(String::valueOf).orElse(null),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getHeight).map(String::valueOf).orElse(null),
@@ -677,6 +681,7 @@ public class TranscodingService {
         private final VideoTranscodingSettings videoTranscodingSettings;
         private Integer maxBitRate;
         private Transcoding transcoding;
+        private Double offsetSeconds;
 
         public Parameters(MediaFile mediaFile, VideoTranscodingSettings videoTranscodingSettings) {
             this.mediaFile = mediaFile;
@@ -730,6 +735,14 @@ public class TranscodingService {
 
         public VideoTranscodingSettings getVideoTranscodingSettings() {
             return videoTranscodingSettings;
+        }
+
+        public Double getOffsetSeconds() {
+            return offsetSeconds;
+        }
+
+        public void setOffsetSeconds(Double offsetSeconds) {
+            this.offsetSeconds = offsetSeconds;
         }
     }
 }
