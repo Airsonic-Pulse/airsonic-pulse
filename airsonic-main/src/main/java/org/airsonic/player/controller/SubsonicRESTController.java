@@ -63,7 +63,8 @@ public class SubsonicRESTController extends AbstractSubsonicController {
     private static List<OpenSubsonicExtension> buildExtensionList() {
         return List.of(
             buildExtension("formPost", 1),
-            buildExtension("transcodeOffset", 1)
+            buildExtension("transcodeOffset", 1),
+            buildExtension("songLyrics", 1)
         );
     }
 

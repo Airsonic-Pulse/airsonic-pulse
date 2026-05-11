@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.controller;
 
+import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.service.LyricsService;
@@ -35,8 +36,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.context.request.ServletWebRequest;
+import org.subsonic.restapi.Line;
 import org.subsonic.restapi.Lyrics;
+import org.subsonic.restapi.LyricsList;
 import org.subsonic.restapi.Response;
+import org.subsonic.restapi.StructuredLyrics;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -156,6 +160,42 @@ public class SubsonicMediaController extends AbstractSubsonicController {
 
         Response res = createResponse();
         res.setLyrics(result);
+        jaxbWriter.writeResponse(request, response, res);
+    }
+
+    @RequestMapping({"/getLyricsBySongId", "/getLyricsBySongId.view"})
+    public void getLyricsBySongId(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        request = wrapRequest(request);
+
+        int id = ServletRequestUtils.getRequiredIntParameter(request, "id");
+
+        MediaFile mediaFile = mediaFileService.getMediaFile(id);
+        if (mediaFile == null) {
+            error(request, response, SubsonicRESTController.ErrorCode.NOT_FOUND, "Media file " + id + " not found.");
+            return;
+        }
+
+        LyricsList result = new LyricsList();
+
+        org.airsonic.player.domain.Lyrics lyrics = lyricsService.getLyricsFromMediaFile(mediaFile);
+        if (lyrics != null && lyrics.getLyrics() != null && !lyrics.getLyrics().isBlank()) {
+            StructuredLyrics structured = new StructuredLyrics();
+            structured.setDisplayArtist(mediaFile.getArtist());
+            structured.setDisplayTitle(mediaFile.getTitle());
+            structured.setLang("xxx");
+            structured.setSynced(false);
+
+            for (String lineText : lyrics.getLyrics().split("\\R")) {
+                Line line = new Line();
+                line.setValue(lineText);
+                structured.getLine().add(line);
+            }
+
+            result.getStructuredLyrics().add(structured);
+        }
+
+        Response res = createResponse();
+        res.setLyricsList(result);
         jaxbWriter.writeResponse(request, response, res);
     }
 

@@ -39,6 +39,7 @@
             <xs:element name="randomSongs" type="sub:Songs" minOccurs="1" maxOccurs="1"/>
             <xs:element name="songsByGenre" type="sub:Songs" minOccurs="1" maxOccurs="1"/>
             <xs:element name="lyrics" type="sub:Lyrics" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="lyricsList" type="sub:LyricsList" minOccurs="1" maxOccurs="1"/>
             <xs:element name="podcasts" type="sub:Podcasts" minOccurs="1" maxOccurs="1"/>
             <xs:element name="newestPodcasts" type="sub:NewestPodcasts" minOccurs="1" maxOccurs="1"/>
             <xs:element name="podcastEpisode" type="sub:PodcastEpisode" minOccurs="1" maxOccurs="1"/>
@@ -417,6 +418,28 @@
     <xs:complexType name="Lyrics" mixed="true">
         <xs:attribute name="artist" type="xs:string" use="optional"/>
         <xs:attribute name="title" type="xs:string" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="LyricsList">
+        <xs:sequence>
+            <xs:element name="structuredLyrics" type="sub:StructuredLyrics" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="StructuredLyrics">
+        <xs:sequence>
+            <xs:element name="line" type="sub:Line" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="displayArtist" type="xs:string" use="optional"/>
+        <xs:attribute name="displayTitle" type="xs:string" use="optional"/>
+        <xs:attribute name="lang" type="xs:string" use="required"/>
+        <xs:attribute name="synced" type="xs:boolean" use="required"/>
+        <xs:attribute name="offset" type="xs:int" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="Line">
+        <xs:attribute name="value" type="xs:string" use="required"/>
+        <xs:attribute name="start" type="xs:long" use="optional"/>
     </xs:complexType>
 
     <xs:complexType name="Podcasts">
