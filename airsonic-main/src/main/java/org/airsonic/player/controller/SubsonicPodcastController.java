@@ -121,6 +121,25 @@ public class SubsonicPodcastController extends AbstractSubsonicController {
         jaxbWriter.writeResponse(request, response, res);
     }
 
+    @RequestMapping({"/getPodcastEpisode", "/getPodcastEpisode.view"})
+    public void getPodcastEpisode(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        request = wrapRequest(request);
+        String username = securityService.getCurrentUsername(request);
+        Player player = playerService.getPlayer(request, response, username);
+
+        int id = getRequiredIntParameter(request, "id");
+
+        org.airsonic.player.domain.PodcastEpisode episode = podcastPersistenceService.getEpisode(id, true);
+        if (episode == null) {
+            error(request, response, SubsonicRESTController.ErrorCode.NOT_FOUND, "Podcast episode " + id + " not found.");
+            return;
+        }
+
+        Response res = createResponse();
+        res.setPodcastEpisode(createJaxbPodcastEpisode(player, username, episode));
+        jaxbWriter.writeResponse(request, response, res);
+    }
+
     private org.subsonic.restapi.PodcastEpisode createJaxbPodcastEpisode(Player player, String username, org.airsonic.player.domain.PodcastEpisode episode) {
         org.subsonic.restapi.PodcastEpisode e = new org.subsonic.restapi.PodcastEpisode();
 
