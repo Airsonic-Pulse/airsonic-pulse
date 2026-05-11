@@ -41,6 +41,7 @@
             <xs:element name="lyrics" type="sub:Lyrics" minOccurs="1" maxOccurs="1"/>
             <xs:element name="podcasts" type="sub:Podcasts" minOccurs="1" maxOccurs="1"/>
             <xs:element name="newestPodcasts" type="sub:NewestPodcasts" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="podcastEpisode" type="sub:PodcastEpisode" minOccurs="1" maxOccurs="1"/>
             <xs:element name="internetRadioStations" type="sub:InternetRadioStations" minOccurs="1" maxOccurs="1"/>
             <xs:element name="bookmarks" type="sub:Bookmarks" minOccurs="1" maxOccurs="1"/>
             <xs:element name="playQueue" type="sub:PlayQueue" minOccurs="1" maxOccurs="1"/>
