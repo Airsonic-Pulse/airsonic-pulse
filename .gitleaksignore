@@ -1,0 +1,12 @@
+# Inherited findings from upstream (airsonic-advanced / subsonic).
+# Already publicly visible in upstream repos for years; rewriting history
+# would not improve exposure and would damage attribution.
+
+# reCAPTCHA default site key — public by design (rendered in HTML)
+a928b9ee3ff62a8eb1b5be7f380b6941ca7d7358:airsonic-main/src/main/java/org/airsonic/player/service/SettingsService.java:generic-api-key:201
+
+# reCAPTCHA default secret key — DEFAULT_* placeholder, user-overridable in settings
+a928b9ee3ff62a8eb1b5be7f380b6941ca7d7358:airsonic-main/src/main/java/org/airsonic/player/service/SettingsService.java:generic-api-key:202
+
+# Last.fm API key — inherited from original Subsonic (Sindre Mehus, 2016)
+a40ad1f7ef65f0058141d316bba3cdc3a5aee1ae:subsonic-main/src/main/java/net/sourceforge/subsonic/service/LastFmService.java:generic-api-key:52
