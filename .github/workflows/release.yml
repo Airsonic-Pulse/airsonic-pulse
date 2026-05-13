@@ -21,6 +21,22 @@ jobs:
           mvn --version
           ffmpeg -version
 
+      - name: Locate release notes
+        id: notes
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          NOTES_FILE="docs/release-notes/${REF_NAME}.md"
+          if [[ ! -f "${NOTES_FILE}" ]]; then
+            echo "::error::Release notes file missing at ${NOTES_FILE}"
+            echo "::error::Generate it locally with:"
+            echo "::error::  bash .github/scripts/release-notes.sh ${REF_NAME}"
+            echo "::error::Edit the file to add Highlights / Upgrade notes above the marker,"
+            echo "::error::then commit, push, and re-tag."
+            exit 1
+          fi
+          echo "notes_file=${NOTES_FILE}" >> "$GITHUB_OUTPUT"
+
       - name: Create music directory
         run: mkdir -p /tmp/music
 
@@ -29,20 +45,38 @@ jobs:
 
       - name: Extract version from tag
         id: version
-        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: echo "version=${REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       - name: Generate checksums
         run: |
           cd airsonic-main/target
           sha256sum airsonic.war > artifacts-checksums.sha256
 
+      - name: Determine prerelease flag
+        id: prerelease
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          # Tag contains a hyphen → prerelease (e.g. v13.1.0-rc.1, v13.1.0-beta.2)
+          if [[ "${REF_NAME}" == *-* ]]; then
+            echo "flag=--prerelease" >> "$GITHUB_OUTPUT"
+          else
+            echo "flag=" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REF_NAME: ${{ github.ref_name }}
+          NOTES_FILE: ${{ steps.notes.outputs.notes_file }}
+          PRERELEASE_FLAG: ${{ steps.prerelease.outputs.flag }}
         run: |
-          gh release create "${{ github.ref_name }}" \
-            --title "${{ github.ref_name }}" \
-            --generate-notes \
+          gh release create "${REF_NAME}" \
+            --title "${REF_NAME}" \
+            --notes-file "${NOTES_FILE}" \
+            ${PRERELEASE_FLAG} \
             airsonic-main/target/airsonic.war#airsonic.war \
             airsonic-main/target/artifacts-checksums.sha256#artifacts-checksums.sha256
 
@@ -66,8 +100,9 @@ jobs:
 
       - name: Determine Docker tags
         id: docker-tags
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          VERSION=${{ steps.version.outputs.version }}
           TAGS="ghcr.io/litebito/airsonic-pulse:${VERSION}"
           # Add 'latest' tag only for non-prerelease versions (no hyphen in version)
           if [[ "${VERSION}" != *-* ]]; then

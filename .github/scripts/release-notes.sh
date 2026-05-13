@@ -1,23 +1,39 @@
 #!/bin/bash
 set -euo pipefail
 
-# format-release-notes.sh — Generate formatted release notes from merged PRs
+# release-notes.sh — Generate formatted release notes and write to file
 #
 # Usage:
-#   ./scripts/format-release-notes.sh <release-tag> [since-tag]
+#   ./scripts/release-notes.sh <release-tag> [since-tag]
+#
+# Behavior:
+#   - Generates the auto-categorized "What's Changed" section from merged PRs
+#   - Writes to docs/release-notes/<tag>.md
+#   - Also emits the auto section to stdout for piping/preview
+#   - On first run for a tag, creates the file with a title header and marker:
+#       # Airsonic-Pulse <tag>
+#
+#       <!-- AUTO-GENERATED-BELOW -->
+#       ## What's Changed
+#       [... auto content ...]
+#   - On subsequent runs, finds the <!-- AUTO-GENERATED-BELOW --> marker and
+#     replaces everything from that line down with freshly-generated content.
+#     Content above the marker (Highlights, Upgrade notes, etc.) is preserved.
+#   - If the file exists but has no marker line, appends marker + auto content
+#     to the end (safety fallback).
 #
 # Examples:
-#   ./scripts/format-release-notes.sh v13.1.0 v13.0.0
-#   ./scripts/format-release-notes.sh v13.1.0              # auto-detects previous tag
-#   ./scripts/format-release-notes.sh v13.1.0 v13.0.0 | gh release edit v13.1.0 --notes-file -
+#   ./scripts/release-notes.sh v13.1.0 v13.0.0
+#   ./scripts/release-notes.sh v13.1.0              # auto-detects previous tag
+#   ./scripts/release-notes.sh v13.1.0 | less       # preview while writing
 #
 # Categorization priority:
 #   1. Issue labels (if PR references an issue via "fixes #N" or "closes #N")
 #   2. PR title pattern (fallback for PRs without issue references)
 #
-# Label-to-category mapping (in priority order — highest wins):
+# Label-to-category mapping (highest priority first):
 #   bug                  → Bug Fixes
-#   hardening, security  → Hardening
+#   hardening, security  → Hardening & Security
 #   infrastructure       → Infrastructure & CI
 #   documentation        → Documentation
 #   enhancement          → Features & Enhancements
@@ -27,6 +43,9 @@ set -euo pipefail
 
 RELEASE_TAG="${1:-}"
 SINCE_TAG="${2:-}"
+MARKER="<!-- AUTO-GENERATED-BELOW -->"
+NOTES_DIR="docs/release-notes"
+NOTES_FILE="${NOTES_DIR}/${RELEASE_TAG}.md"
 
 if [[ -z "${RELEASE_TAG}" ]]; then
     echo "Usage: $0 <release-tag> [since-tag]" >&2
@@ -89,8 +108,6 @@ fi
 # ---------------------------------------------------------------------------
 
 # Label priority order (highest priority first).
-# When an issue has multiple labels, the highest-priority match wins.
-# E.g. an issue labeled "bug" + "hardening" → Bug Fixes (bug is higher priority).
 LABEL_PRIORITY=(
     bug
     hardening
@@ -102,7 +119,6 @@ LABEL_PRIORITY=(
     chore
 )
 
-# Map a label name to a category key
 label_to_category() {
     local label="$1"
     case "${label}" in
@@ -118,8 +134,6 @@ label_to_category() {
     esac
 }
 
-# Given a newline-separated list of labels, return the category for the
-# highest-priority label that maps to a category.
 labels_to_category() {
     local labels="$1"
     local priority_label
@@ -132,7 +146,6 @@ labels_to_category() {
     echo ""
 }
 
-# Fallback: guess category from PR title (for PRs without issue references)
 title_to_category() {
     local title_lower
     title_lower="$(echo "$1" | tr '[:upper:]' '[:lower:]')"
@@ -157,7 +170,6 @@ title_to_category() {
     fi
 }
 
-# Arrays for categorized output
 declare -a CAT_FEATURES=()
 declare -a CAT_DOCUMENTATION=()
 declare -a CAT_BUGFIXES=()
@@ -165,14 +177,12 @@ declare -a CAT_HARDENING=()
 declare -a CAT_INFRASTRUCTURE=()
 declare -a CAT_MAINTENANCE=()
 
-# Process each PR
 while IFS= read -r pr_line; do
     PR_NUM="$(echo "${pr_line}" | jq -r '.number')"
     PR_TITLE="$(echo "${pr_line}" | jq -r '.title')"
     PR_AUTHOR="$(echo "${pr_line}" | jq -r '.author.login')"
     PR_BODY="$(echo "${pr_line}" | jq -r '.body // ""')"
 
-    # Extract issue number from PR title or body ("fixes #N", "closes #N")
     ISSUE_NUM=""
     if [[ "${PR_TITLE}" =~ [Ff]ixes[[:space:]]+#([0-9]+) ]]; then
         ISSUE_NUM="${BASH_REMATCH[1]}"
@@ -184,38 +194,30 @@ while IFS= read -r pr_line; do
         ISSUE_NUM="${BASH_REMATCH[1]}"
     fi
 
-    # Build the formatted line
     CATEGORY=""
     if [[ -n "${ISSUE_NUM}" ]]; then
-        # Fetch issue title and labels
         ISSUE_DATA="$(gh issue view "${ISSUE_NUM}" --json title,labels 2>/dev/null || echo "")"
         if [[ -n "${ISSUE_DATA}" ]]; then
             ISSUE_TITLE="$(echo "${ISSUE_DATA}" | jq -r '.title')"
-            # Strip common prefixes from issue titles
             ISSUE_TITLE="${ISSUE_TITLE#\[Feature Request\]: }"
             ISSUE_TITLE="${ISSUE_TITLE#\[Bug Report\]: }"
 
             LINE="* #${ISSUE_NUM} ${ISSUE_TITLE} by @${PR_AUTHOR} in #${PR_NUM}"
 
-            # Categorize from labels (highest-priority label wins)
             LABELS="$(echo "${ISSUE_DATA}" | jq -r '[.labels[].name] | join("\n")')"
             CATEGORY="$(labels_to_category "${LABELS}")"
         else
-            # Issue not found — use PR title
             CLEAN_TITLE="$(echo "${PR_TITLE}" | sed -E 's/[[:space:]]*[-—]+[[:space:]]*[Ff]ixes[[:space:]]+#[0-9]+//')"
             LINE="* #${ISSUE_NUM} ${CLEAN_TITLE} by @${PR_AUTHOR} in #${PR_NUM}"
         fi
     else
-        # No issue reference — use PR title as-is
         LINE="* ${PR_TITLE} by @${PR_AUTHOR} in #${PR_NUM}"
     fi
 
-    # Fallback to title-based categorization if labels didn't match
     if [[ -z "${CATEGORY}" ]]; then
         CATEGORY="$(title_to_category "${PR_TITLE}")"
     fi
 
-    # Add to appropriate category array
     case "${CATEGORY}" in
         features)       CAT_FEATURES+=("${LINE}") ;;
         documentation)  CAT_DOCUMENTATION+=("${LINE}") ;;
@@ -230,46 +232,101 @@ while IFS= read -r pr_line; do
 done < <(echo "${PRS_FILTERED}" | jq -c '.[]')
 
 # ---------------------------------------------------------------------------
-# Output
+# Build the auto section
 # ---------------------------------------------------------------------------
 
-echo "## What's Changed"
-echo ""
+AUTO_CONTENT="$(mktemp --suffix=.md)"
+trap 'rm -f "${AUTO_CONTENT}"' EXIT
 
-if [[ ${#CAT_FEATURES[@]} -gt 0 ]]; then
-    echo "### Features & Enhancements"
-    printf '%s\n' "${CAT_FEATURES[@]}"
+{
+    echo "## What's Changed"
     echo ""
+
+    if [[ ${#CAT_FEATURES[@]} -gt 0 ]]; then
+        echo "### Features & Enhancements"
+        printf '%s\n' "${CAT_FEATURES[@]}"
+        echo ""
+    fi
+
+    if [[ ${#CAT_DOCUMENTATION[@]} -gt 0 ]]; then
+        echo "### Documentation"
+        printf '%s\n' "${CAT_DOCUMENTATION[@]}"
+        echo ""
+    fi
+
+    if [[ ${#CAT_BUGFIXES[@]} -gt 0 ]]; then
+        echo "### Bug Fixes"
+        printf '%s\n' "${CAT_BUGFIXES[@]}"
+        echo ""
+    fi
+
+    if [[ ${#CAT_HARDENING[@]} -gt 0 ]]; then
+        echo "### Hardening & Security"
+        printf '%s\n' "${CAT_HARDENING[@]}"
+        echo ""
+    fi
+
+    if [[ ${#CAT_INFRASTRUCTURE[@]} -gt 0 ]]; then
+        echo "### Infrastructure & CI"
+        printf '%s\n' "${CAT_INFRASTRUCTURE[@]}"
+        echo ""
+    fi
+
+    if [[ ${#CAT_MAINTENANCE[@]} -gt 0 ]]; then
+        echo "### Maintenance"
+        printf '%s\n' "${CAT_MAINTENANCE[@]}"
+        echo ""
+    fi
+
+    echo "**Full Changelog**: https://github.com/litebito/airsonic-pulse/compare/${SINCE_TAG}...${RELEASE_TAG}"
+} > "${AUTO_CONTENT}"
+
+# ---------------------------------------------------------------------------
+# Write to file (creating, updating, or appending as appropriate)
+# ---------------------------------------------------------------------------
+
+mkdir -p "${NOTES_DIR}"
+
+if [[ ! -f "${NOTES_FILE}" ]]; then
+    # First run for this tag — create the file with title, marker, and auto content
+    {
+        echo "# Airsonic-Pulse ${RELEASE_TAG}"
+        echo ""
+        echo "${MARKER}"
+        cat "${AUTO_CONTENT}"
+    } > "${NOTES_FILE}"
+    echo "Created ${NOTES_FILE}" >&2
+    echo "Add Highlights / Upgrade notes between the title and the ${MARKER} marker," >&2
+    echo "then commit and push before tagging." >&2
+
+elif grep -qF "${MARKER}" "${NOTES_FILE}"; then
+    # File exists with marker — preserve everything up to and including the marker,
+    # replace everything below with fresh auto content
+    PRESERVED="$(mktemp --suffix=.md)"
+    trap 'rm -f "${AUTO_CONTENT}" "${PRESERVED}"' EXIT
+
+    # Extract content up to and including the marker line
+    awk -v marker="${MARKER}" '
+        { print }
+        index($0, marker) { exit }
+    ' "${NOTES_FILE}" > "${PRESERVED}"
+
+    {
+        cat "${PRESERVED}"
+        cat "${AUTO_CONTENT}"
+    } > "${NOTES_FILE}"
+
+    echo "Updated ${NOTES_FILE} (regenerated auto section below ${MARKER})" >&2
+
+else
+    # File exists but no marker — append marker + auto content as safety fallback
+    {
+        echo ""
+        echo "${MARKER}"
+        cat "${AUTO_CONTENT}"
+    } >> "${NOTES_FILE}"
+    echo "Appended marker + auto content to ${NOTES_FILE} (no existing marker found)" >&2
 fi
 
-if [[ ${#CAT_DOCUMENTATION[@]} -gt 0 ]]; then
-    echo "### Documentation"
-    printf '%s\n' "${CAT_DOCUMENTATION[@]}"
-    echo ""
-fi
-
-if [[ ${#CAT_BUGFIXES[@]} -gt 0 ]]; then
-    echo "### Bug Fixes"
-    printf '%s\n' "${CAT_BUGFIXES[@]}"
-    echo ""
-fi
-
-if [[ ${#CAT_HARDENING[@]} -gt 0 ]]; then
-    echo "### Hardening & Security"
-    printf '%s\n' "${CAT_HARDENING[@]}"
-    echo ""
-fi
-
-if [[ ${#CAT_INFRASTRUCTURE[@]} -gt 0 ]]; then
-    echo "### Infrastructure & CI"
-    printf '%s\n' "${CAT_INFRASTRUCTURE[@]}"
-    echo ""
-fi
-
-if [[ ${#CAT_MAINTENANCE[@]} -gt 0 ]]; then
-    echo "### Maintenance"
-    printf '%s\n' "${CAT_MAINTENANCE[@]}"
-    echo ""
-fi
-
-echo "**Full Changelog**: https://github.com/litebito/airsonic-pulse/compare/${SINCE_TAG}...${RELEASE_TAG}"
+# Always emit to stdout for piping/preview
+cat "${AUTO_CONTENT}"
