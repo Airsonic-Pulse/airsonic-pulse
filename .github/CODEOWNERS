@@ -1,0 +1,16 @@
+# CODEOWNERS for litebito/airsonic-pulse
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# When a PR is opened, GitHub auto-requests review from the matching owner(s).
+# Combined with branch protection rules requiring code-owner review, this
+# gates all merges to main on maintainer approval.
+#
+# Patterns later in the file take precedence for matching paths, so refine
+# from broad to narrow.
+
+# Default owner for everything in the repo
+* @litebito
+# Examples for later — not active yet
+# /airsonic-main/src/main/frontend/   @litebito @otherperson2
+# /docs/                              @litebito @otherperson1
+# /.github/workflows/                 @litebito
