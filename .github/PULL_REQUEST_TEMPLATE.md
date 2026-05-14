@@ -32,3 +32,5 @@ Closes #
 
 - [ ] Code follows project style guidelines (`mvn checkstyle:check` passes)
 - [ ] No hardcoded upstream repository references introduced
+- [ ] All commits are signed-off (`git commit --signoff`) — required by GPLv3 acceptance
+
