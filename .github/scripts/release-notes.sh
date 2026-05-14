@@ -278,7 +278,7 @@ trap 'rm -f "${AUTO_CONTENT}"' EXIT
         echo ""
     fi
 
-    echo "**Full Changelog**: https://github.com/litebito/airsonic-pulse/compare/${SINCE_TAG}...${RELEASE_TAG}"
+    echo "**Full Changelog**: https://github.com/Airsonic-Pulse/airsonic-pulse/compare/${SINCE_TAG}...${RELEASE_TAG}"
 } > "${AUTO_CONTENT}"
 
 # ---------------------------------------------------------------------------

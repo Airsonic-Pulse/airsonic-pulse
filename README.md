@@ -1,4 +1,4 @@
-[![Release](https://github.com/litebito/airsonic-pulse/actions/workflows/release.yml/badge.svg)](https://github.com/litebito/airsonic-pulse/actions/workflows/release.yml) [![CI - Pull Requests](https://github.com/litebito/airsonic-pulse/actions/workflows/pr_ci.yml/badge.svg)](https://github.com/litebito/airsonic-pulse/actions/workflows/pr_ci.yml)  [![CI - Main](https://github.com/litebito/airsonic-pulse/actions/workflows/pm_ci.yml/badge.svg)](https://github.com/litebito/airsonic-pulse/actions/workflows/pm_ci.yml) [![Trivy](https://github.com/litebito/airsonic-pulse/actions/workflows/any_trivy_scan.yml/badge.svg)](https://github.com/litebito/airsonic-pulse/actions/workflows/any_trivy_scan.yml)
+[![Release](https://github.com/Airsonic-Pulse/airsonic-pulse/actions/workflows/release.yml/badge.svg)](https://github.com/Airsonic-Pulse/airsonic-pulse/actions/workflows/release.yml) [![CI - Pull Requests](https://github.com/Airsonic-Pulse/airsonic-pulse/actions/workflows/pr_ci.yml/badge.svg)](https://github.com/Airsonic-Pulse/airsonic-pulse/actions/workflows/pr_ci.yml)  [![CI - Main](https://github.com/Airsonic-Pulse/airsonic-pulse/actions/workflows/pm_ci.yml/badge.svg)](https://github.com/Airsonic-Pulse/airsonic-pulse/actions/workflows/pm_ci.yml) [![Trivy](https://github.com/Airsonic-Pulse/airsonic-pulse/actions/workflows/any_trivy_scan.yml/badge.svg)](https://github.com/Airsonic-Pulse/airsonic-pulse/actions/workflows/any_trivy_scan.yml)
 
 
 # Airsonic-Pulse
@@ -41,7 +41,7 @@ Also note that Airsonic-Pulse versions 13.x and higher (and its snapshots) are *
 
 ### Stand-alone binaries
 Airsonic-Pulse can be downloaded from
-[GitHub](https://github.com/litebito/airsonic-pulse/releases).
+[GitHub](https://github.com/Airsonic-Pulse/airsonic-pulse/releases).
 
 You need a _minimum_ Java Runtime Environment (JRE) of 17 for 12.x onwards (including snapshots).
 - For 12.x releases -> Java 17
@@ -57,13 +57,13 @@ More modern base frameworks and libraries
   - Moving to Java 21, dropping support for Java 17
   - (... more to come...)
 
-For a long (but non-exhaustive) list of features inherited from Airsonic-Advanced, read the "Feature Enhancements" section in [History.md](https://github.com/litebito/airsonic-pulse/blob/main/docs/HISTORY.md)
+For a long (but non-exhaustive) list of features inherited from Airsonic-Advanced, read the "Feature Enhancements" section in [History.md](https://github.com/Airsonic-Pulse/airsonic-pulse/blob/main/docs/HISTORY.md)
 
 ## 4. Docker
 
 The Airsonic-Pulse Docker image is published to the GitHub Container Registry:
 ```
-ghcr.io/litebito/airsonic-pulse
+ghcr.io/airsonic-pulse/airsonic-pulse
 ```
 Supported architectures: `linux/amd64`, `linux/arm64`.
 
@@ -77,7 +77,7 @@ docker run -d \
   -v ./data/music:/var/music \
   -e PUID=1000 \
   -e PGID=1000 \
-  ghcr.io/litebito/airsonic-pulse:latest
+  ghcr.io/airsonic-pulse/airsonic-pulse:latest
 ```
 
 The image runs as root by default and uses `PUID`/`PGID` to create a non-root user at startup. Volume mount points are at `/var/*` to remain consistent with the standalone WAR deployment.
@@ -87,7 +87,7 @@ Docker Compose files for HSQLDB, PostgreSQL, and MariaDB are provided in [`insta
 For full Docker documentation, see [docs/docker/](./docs/docker/README.md).
 
 
-[GHCR](https://ghcr.io/litebito/airsonic-pulse). Docker releases are multiplatform, which means ARM64 is also released to Dockerhub. However, automated testing for those archs is not currently done in the CI/CD pipeline (only Linux platform is tested).
+[GHCR](https://ghcr.io/airsonic-pulse/airsonic-pulse). Docker releases are multiplatform, which means ARM64 is also released to Dockerhub. However, automated testing for those archs is not currently done in the CI/CD pipeline (only Linux platform is tested).
 
 
 Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Pulse shares similar running instructions unless stated otherwise. 
@@ -175,6 +175,6 @@ The cover art functionality supporting multiple image file formats is powered by
 
 ## Community
 
-Bugs, feature requests, and discussions for Airsonic-Pulse can be raised as issues on the [Airsonic-Pulse GitHub page](https://github.com/litebito/airsonic-pulse).
+Bugs, feature requests, and discussions for Airsonic-Pulse can be raised as issues on the [Airsonic-Pulse GitHub page](https://github.com/Airsonic-Pulse/airsonic-pulse).
 
-For more historical context, you can read more [here](https://github.com/litebito/airsonic-pulse/blob/main/docs/HISTORY.md), or check out the the upstream project at [kagemomiji/airsonic-advanced](https://github.com/kagemomiji/airsonic-advanced).
+For more historical context, you can read more [here](https://github.com/Airsonic-Pulse/airsonic-pulse/blob/main/docs/HISTORY.md), or check out the the upstream project at [kagemomiji/airsonic-advanced](https://github.com/kagemomiji/airsonic-advanced).

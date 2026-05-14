@@ -10,7 +10,7 @@
     <packaging>pom</packaging>
     <organization>
         <name>Airsonic-Pulse</name>
-        <url>https://github.com/litebito/airsonic-pulse</url>
+        <url>https://github.com/Airsonic-Pulse/airsonic-pulse</url>
     </organization>
     <inceptionYear>2016</inceptionYear>
 
@@ -29,8 +29,8 @@
         <snakeyaml.version>2.4</snakeyaml.version>
         <lucene.version>10.2.2</lucene.version>
         <logback.version>1.5.25</logback.version>
-        <docker.container.repo>ghcr.io/litebito/airsonic-pulse</docker.container.repo>
-        <airsonic.project.url>https://github.com/litebito/airsonic-pulse</airsonic.project.url>        
+        <docker.container.repo>ghcr.io/airsonic-pulse/airsonic-pulse</docker.container.repo>
+        <airsonic.project.url>https://github.com/Airsonic-Pulse/airsonic-pulse</airsonic.project.url>
     </properties>
 
 
@@ -58,9 +58,9 @@
     </pluginRepositories>
 
     <scm>
-        <connection>scm:git:git://github.com/litebito/airsonic-pulse.git</connection>
-        <developerConnection>scm:git:git@github.com:litebito/airsonic-pulse.git</developerConnection>
-        <url>https://github.com/litebito/airsonic-pulse</url>
+        <connection>scm:git:git://github.com/Airsonic-Pulse/airsonic-pulse.git</connection>
+        <developerConnection>scm:git:git@github.com:Airsonic-Pulse/airsonic-pulse.git</developerConnection>
+        <url>https://github.com/Airsonic-Pulse/airsonic-pulse</url>
     </scm>
 
     <modules>

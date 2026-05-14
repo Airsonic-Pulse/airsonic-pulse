@@ -1,11 +1,11 @@
 blank_issues_enabled: false
 contact_links:
   - name: General Questions & Discussions
-    url: https://github.com/litebito/airsonic-pulse/discussions
+    url: https://github.com/Airsonic-Pulse/airsonic-pulse/discussions
     about: For general questions, configuration help, or anything that is not a bug or feature request, please use GitHub Discussions.
   - name: Subsonic API Compatibility
     url: https://www.subsonic.org/pages/api.jsp
     about: Reference documentation for the Subsonic REST API that Airsonic-Pulse implements.
   - name: Security Vulnerabilities
-    url: https://github.com/litebito/airsonic-pulse/security/advisories/new
+    url: https://github.com/Airsonic-Pulse/airsonic-pulse/security/advisories/new
     about: All security vulnerabilities must be reported privately via GitHub Security Advisories. Do not open a public issue.

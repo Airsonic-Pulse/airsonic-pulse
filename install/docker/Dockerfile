@@ -18,7 +18,7 @@ FROM eclipse-temurin:${IMAGE_JAVA_VERSION}-jre-jammy
 ARG VERSION=dev
 
 LABEL description="Airsonic-Pulse is a free, web-based media streamer, providing ubiquitous access to your music." \
-      url="https://github.com/litebito/airsonic-pulse" \
+      url="https://github.com/Airsonic-Pulse/airsonic-pulse" \
       org.opencontainers.image.version=${VERSION}
 
 ENV AIRSONIC_PORT=4040 AIRSONIC_DIR=/var CONTEXT_PATH=/ UPNP_PORT=4041 PUID=0 PGID=0

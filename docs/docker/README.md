@@ -5,7 +5,7 @@ Airsonic-Pulse is available as a multi-architecture Docker image from the GitHub
 ## Image
 
 ```
-ghcr.io/litebito/airsonic-pulse
+ghcr.io/airsonic-pulse/airsonic-pulse
 ```
 
 Supported architectures: `linux/amd64`, `linux/arm64`
@@ -23,7 +23,7 @@ docker run -d \
   -e PUID=1000 \
   -e PGID=1000 \
   -e TZ=Etc/UTC \
-  ghcr.io/litebito/airsonic-pulse:latest
+  ghcr.io/airsonic-pulse/airsonic-pulse:latest
 ```
 
 Then open `http://localhost:4040` in your browser.

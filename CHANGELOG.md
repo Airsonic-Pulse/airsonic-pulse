@@ -4,7 +4,7 @@
 
 ### Breaking
 - Java 21 is now required (Java 17 support dropped)
-- Docker image moved to `ghcr.io/litebito/airsonic-pulse`
+- Docker image moved to `ghcr.io/airsonic-pulse/airsonic-pulse`
 - Docker multi-arch: `linux/amd64` and `linux/arm64` only (`arm/v7` dropped — not supported by Java 21)
 
 ### Added

@@ -101,7 +101,7 @@ Replace `VERSION` with the desired release tag (e.g. `v13.0.0`):
 ```bash
 VERSION=v13.0.0
 sudo curl -L \
-  "https://github.com/litebito/airsonic-pulse/releases/download/${VERSION}/airsonic.war" \
+  "https://github.com/Airsonic-Pulse/airsonic-pulse/releases/download/${VERSION}/airsonic.war" \
   -o /var/airsonic/airsonic.war
 sudo chown airsonic:airsonic /var/airsonic/airsonic.war
 ```
@@ -122,7 +122,7 @@ Replace `VERSION` with the release tag you installed (e.g. `v13.0.0`):
 ```bash
 VERSION=v13.0.0
 sudo curl -fsSL \
-  "https://raw.githubusercontent.com/litebito/airsonic-pulse/${VERSION}/install/systemd/airsonic.service" \
+  "https://raw.githubusercontent.com/Airsonic-Pulse/airsonic-pulse/${VERSION}/install/systemd/airsonic.service" \
   -o /etc/systemd/system/airsonic.service
 sudo systemctl daemon-reload
 ```
