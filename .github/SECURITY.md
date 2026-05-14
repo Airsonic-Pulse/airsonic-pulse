@@ -17,7 +17,7 @@ If you are running an older release, please upgrade before reporting a security 
 
 Use GitHub's private vulnerability reporting feature:
 
-➡️ **[Report a vulnerability](https://github.com/litebito/airsonic-pulse/security/advisories/new)**
+➡️ **[Report a vulnerability](https://github.com/Airsonic-Pulse/airsonic-pulse/security/advisories/new)**
 
 This delivers the report privately to the maintainers; the contents are not visible to the public.
 

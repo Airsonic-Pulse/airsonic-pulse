@@ -3,7 +3,7 @@ set -euo pipefail
 
 # Airsonic-Pulse installer for RHEL / CentOS / AlmaLinux / Rocky Linux / Fedora
 
-GITHUB_REPO="litebito/airsonic-pulse"
+GITHUB_REPO="Airsonic-Pulse/airsonic-pulse"
 AIRSONIC_HOME="/var/airsonic"
 AIRSONIC_USER="airsonic"
 SYSTEMD_UNIT="/etc/systemd/system/airsonic.service"

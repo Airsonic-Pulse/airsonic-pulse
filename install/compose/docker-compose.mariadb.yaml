@@ -14,7 +14,7 @@ services:
   airsonic-pulse:
     depends_on:
       - mariadb
-    image: ghcr.io/litebito/airsonic-pulse
+    image: ghcr.io/airsonic-pulse/airsonic-pulse
     environment:
       - PUID=1000
       - PGID=1000

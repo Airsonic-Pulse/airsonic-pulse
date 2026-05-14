@@ -105,10 +105,10 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          TAGS="ghcr.io/litebito/airsonic-pulse:${VERSION}"
+          TAGS="ghcr.io/airsonic-pulse/airsonic-pulse:${VERSION}"
           # Add 'latest' tag only for non-prerelease versions (no hyphen in version)
           if [[ "${VERSION}" != *-* ]]; then
-            TAGS="${TAGS},ghcr.io/litebito/airsonic-pulse:latest"
+            TAGS="${TAGS},ghcr.io/airsonic-pulse/airsonic-pulse:latest"
           fi
           echo "tags=${TAGS}" >> "$GITHUB_OUTPUT"
 

@@ -79,10 +79,10 @@ public class VersionService {
 
     public VersionService() throws IOException {
         build = PropertiesLoaderUtils.loadAllProperties("build.properties");
-        projectUrl = build.getProperty("projectUrl", "https://github.com/litebito/airsonic-pulse");
+        projectUrl = build.getProperty("projectUrl", "https://github.com/Airsonic-Pulse/airsonic-pulse");
         String ownerRepo = projectUrl.startsWith(GITHUB_HOST)
                 ? projectUrl.substring(GITHUB_HOST.length())
-                : "litebito/airsonic-pulse";
+                : "Airsonic-Pulse/airsonic-pulse";
         versionUrl = String.format(GITHUB_API_RELEASES_PATH, ownerRepo);
     }
 

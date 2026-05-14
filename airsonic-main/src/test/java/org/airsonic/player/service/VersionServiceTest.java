@@ -55,7 +55,7 @@ public class VersionServiceTest {
         properties.put("revision", COMMIT);
         properties.put("timestamp", TIMESTAMP);
         properties.put("name", NAME);
-        properties.put("projectUrl", "https://github.com/litebito/airsonic-pulse");
+        properties.put("projectUrl", "https://github.com/Airsonic-Pulse/airsonic-pulse");
         propertiesLoaderUtilsMockedStatic.when(() -> PropertiesLoaderUtils.loadAllProperties("build.properties")).thenReturn(properties);
     }
 
