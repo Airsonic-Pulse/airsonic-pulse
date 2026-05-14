@@ -14,7 +14,7 @@ on:
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
-    runs-on: [self-hosted, linux, x64, repo-airsonic-pulse]
+    runs-on: ubuntu-latest           # changed from self-hosted
     permissions:
       actions: read
       contents: read
@@ -38,9 +38,9 @@ jobs:
 
       - name: Setup Node.js (required for javascript-typescript extractor)
         if: matrix.language == 'javascript-typescript'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5    # bumped from @v4 — runs on node24, clears deprecation warning
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
