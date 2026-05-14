@@ -3,16 +3,10 @@ name: "CodeQL Advanced"
 on:
   push:
     branches: [ 'main' ]
-    paths-ignore:
-      - "**.md"
-      - "*.txt"
-      - ".github/**"
+    paths-ignore: [ "**.md", "*.txt", ".github/**" ]
   pull_request:
     branches: [ 'main' ]
-    paths-ignore:
-      - "**.md"
-      - "*.txt"
-      - ".github/**"
+    paths-ignore: [ "**.md", "*.txt", ".github/**" ]
   schedule:
     - cron: '0 19 * * 6'
   workflow_dispatch:
@@ -41,6 +35,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v5
+
+      - name: Setup Node.js (required for javascript-typescript extractor)
+        if: matrix.language == 'javascript-typescript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v4
