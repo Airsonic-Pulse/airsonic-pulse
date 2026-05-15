@@ -72,6 +72,11 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends ffmpeg
+
       - name: Verify environment
         run: |
           java -version
