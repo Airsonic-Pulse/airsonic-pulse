@@ -15,7 +15,7 @@ env:
 
 jobs:
   build-and-test:
-    runs-on: [self-hosted, linux, x64, repo-airsonic-pulse]
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
