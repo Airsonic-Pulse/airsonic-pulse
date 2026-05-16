@@ -38,7 +38,7 @@ jobs:
 
       - name: Setup Node.js (required for javascript-typescript extractor)
         if: matrix.language == 'javascript-typescript'
-        uses: actions/setup-node@v5    # bumped from @v4 — runs on node24, clears deprecation warning
+        uses: actions/setup-node@v6    # bumped from @v4 — runs on node24, clears deprecation warning
         with:
           node-version: '24'
 
