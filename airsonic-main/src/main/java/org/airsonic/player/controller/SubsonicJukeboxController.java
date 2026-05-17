@@ -115,7 +115,7 @@ public class SubsonicJukeboxController extends AbstractSubsonicController {
                 // No action necessary.
                 break;
             default:
-                throw new Exception("Unknown jukebox action: '" + action + "'.");
+                throw new SubsonicRESTController.APIException(SubsonicRESTController.ErrorCode.GENERIC, "Unknown jukebox action: '" + action + "'.");
         }
 
         String username = securityService.getCurrentUsername(request);

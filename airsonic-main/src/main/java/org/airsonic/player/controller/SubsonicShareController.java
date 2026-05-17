@@ -177,7 +177,4 @@ public class SubsonicShareController extends AbstractSubsonicController {
         return result;
     }
 
-    private void writeEmptyResponse(HttpServletRequest request, HttpServletResponse response) {
-        jaxbWriter.writeResponse(request, response, createResponse());
-    }
 }

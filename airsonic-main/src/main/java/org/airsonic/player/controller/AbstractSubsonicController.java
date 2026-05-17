@@ -55,6 +55,10 @@ public abstract class AbstractSubsonicController {
         return jaxbWriter.createResponse(true);
     }
 
+    protected void writeEmptyResponse(HttpServletRequest request, HttpServletResponse response) {
+        jaxbWriter.writeResponse(request, response, createResponse());
+    }
+
     protected void error(HttpServletRequest request, HttpServletResponse response,
                          SubsonicRESTController.ErrorCode code, String message) {
         jaxbWriter.writeErrorResponse(request, response, code, message);
