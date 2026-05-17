@@ -25,6 +25,8 @@ import org.airsonic.player.domain.Player;
 import org.airsonic.player.service.BookmarkService;
 import org.airsonic.player.service.JaxbContentService;
 import org.airsonic.player.service.SecurityService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,6 +44,8 @@ import static org.springframework.web.bind.ServletRequestUtils.getRequiredLongPa
 @RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
 public class SubsonicBookmarkController extends AbstractSubsonicController {
 
+    private static final Logger LOG = LoggerFactory.getLogger(SubsonicBookmarkController.class);
+
     @Autowired
     private BookmarkService bookmarkService;
     @Autowired
@@ -57,6 +61,13 @@ public class SubsonicBookmarkController extends AbstractSubsonicController {
 
         Bookmarks result = new Bookmarks();
         for (Bookmark bookmark : bookmarkService.getBookmarks(username)) {
+            MediaFile mediaFile = mediaFileService.getMediaFile(bookmark.getMediaFileId());
+            if (mediaFile == null) {
+                LOG.warn("Skipping bookmark {} — referenced media file {} does not exist",
+                        bookmark.getId(), bookmark.getMediaFileId());
+                continue;
+            }
+
             org.subsonic.restapi.Bookmark b = new org.subsonic.restapi.Bookmark();
             result.getBookmark().add(b);
             b.setPosition(bookmark.getPositionMillis());
@@ -64,8 +75,6 @@ public class SubsonicBookmarkController extends AbstractSubsonicController {
             b.setComment(bookmark.getComment());
             b.setCreated(jaxbWriter.convertDate(bookmark.getCreated()));
             b.setChanged(jaxbWriter.convertDate(bookmark.getChanged()));
-
-            MediaFile mediaFile = mediaFileService.getMediaFile(bookmark.getMediaFileId());
             b.setEntry(jaxbContentService.createJaxbChild(player, mediaFile, username));
         }
 
@@ -98,7 +107,4 @@ public class SubsonicBookmarkController extends AbstractSubsonicController {
         writeEmptyResponse(request, response);
     }
 
-    private void writeEmptyResponse(HttpServletRequest request, HttpServletResponse response) {
-        jaxbWriter.writeResponse(request, response, createResponse());
-    }
 }

@@ -19,9 +19,7 @@
 package org.airsonic.player.controller;
 
 import org.airsonic.player.service.MediaScannerService;
-import org.apache.http.HttpStatus;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -42,8 +40,6 @@ public class SubsonicSystemController extends AbstractSubsonicController {
 
     @Autowired
     private MediaScannerService mediaScannerService;
-
-    private static final String NO_LONGER_SUPPORTED = "No longer supported";
 
     @RequestMapping({"/ping", "/ping.view"})
     public void ping(HttpServletRequest request, HttpServletResponse response) {
@@ -90,13 +86,15 @@ public class SubsonicSystemController extends AbstractSubsonicController {
     }
 
     @RequestMapping({"/getChatMessages", "/getChatMessages.view"})
-    public ResponseEntity<String> getChatMessages(HttpServletRequest request, HttpServletResponse response) {
-        return ResponseEntity.status(HttpStatus.SC_GONE).body(NO_LONGER_SUPPORTED);
+    public void getChatMessages(HttpServletRequest request, HttpServletResponse response) throws SubsonicRESTController.APIException {
+        throw new SubsonicRESTController.APIException(SubsonicRESTController.ErrorCode.NOT_FOUND,
+                "Chat messages are not supported on this server");
     }
 
     @RequestMapping({"/addChatMessage", "/addChatMessage.view"})
-    public ResponseEntity<String> addChatMessage(HttpServletRequest request, HttpServletResponse response) {
-        return ResponseEntity.status(HttpStatus.SC_GONE).body(NO_LONGER_SUPPORTED);
+    public void addChatMessage(HttpServletRequest request, HttpServletResponse response) throws SubsonicRESTController.APIException {
+        throw new SubsonicRESTController.APIException(SubsonicRESTController.ErrorCode.NOT_FOUND,
+                "Posting chat messages is not supported on this server");
     }
 
 }

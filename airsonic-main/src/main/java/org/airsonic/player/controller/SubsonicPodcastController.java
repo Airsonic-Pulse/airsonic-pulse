@@ -238,9 +238,8 @@ public class SubsonicPodcastController extends AbstractSubsonicController {
         request = wrapRequest(request);
         org.airsonic.player.domain.User user = securityService.getCurrentUser(request);
         if (!user.isPodcastRole()) {
-            error(request, response, SubsonicRESTController.ErrorCode.NOT_AUTHORIZED,
+            throw new SubsonicRESTController.APIException(SubsonicRESTController.ErrorCode.NOT_AUTHORIZED,
                     user.getUsername() + " is not authorized to administrate podcasts.");
-            return null;
         }
 
         HttpHeaders headers = new HttpHeaders();
@@ -250,7 +249,4 @@ public class SubsonicPodcastController extends AbstractSubsonicController {
         return ResponseEntity.ok().headers(headers).body(podcastPersistenceService.exportAllChannels());
     }
 
-    private void writeEmptyResponse(HttpServletRequest request, HttpServletResponse response) {
-        jaxbWriter.writeResponse(request, response, createResponse());
-    }
 }

@@ -320,7 +320,7 @@ public class SubsonicBrowsingController extends AbstractSubsonicController {
         } else if ("random".equals(type)) {
             albums = searchService.getRandomAlbums(size, musicFolders);
         } else {
-            throw new Exception("Invalid list type: " + type);
+            throw new SubsonicRESTController.APIException(SubsonicRESTController.ErrorCode.GENERIC, "Invalid list type: " + type);
         }
 
         AlbumList result = new AlbumList();
