@@ -265,17 +265,17 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <version>3.6.0</version>
+                    <configuration>
+                        <configLocation>${maven.multiModuleProjectDirectory}/checkstyle.xml</configLocation>
+                        <encoding>UTF-8</encoding>
+                        <consoleOutput>true</consoleOutput>
+                        <failOnViolation>true</failOnViolation>
+                        <includeTestSourceDirectory>true</includeTestSourceDirectory>
+                    </configuration>
                     <executions>
                         <execution>
                             <id>validate</id>
                             <phase>validate</phase>
-                            <configuration>
-                                <configLocation>${project.basedir}/../checkstyle.xml</configLocation>
-                                <encoding>UTF-8</encoding>
-                                <consoleOutput>true</consoleOutput>
-                                <failOnViolation>true</failOnViolation>
-                                <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                            </configuration>
                             <goals>
                                 <goal>check</goal>
                             </goals>
