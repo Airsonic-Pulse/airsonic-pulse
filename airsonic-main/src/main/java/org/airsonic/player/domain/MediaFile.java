@@ -70,6 +70,9 @@ public class MediaFile {
     @Column(name = "title", nullable = true)
     private String title;
 
+    @Column(name = "sort_name", nullable = true)
+    private String sortName;
+
     @Column(name = "album", nullable = true)
     private String albumName;
 
@@ -282,6 +285,14 @@ public class MediaFile {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getSortName() {
+        return sortName;
+    }
+
+    public void setSortName(String sortName) {
+        this.sortName = sortName;
     }
 
     public String getAlbumName() {
@@ -567,7 +578,7 @@ public class MediaFile {
 
     public static final double NOT_INDEXED = -1.0;
 
-    public static final int VERSION = 4;
+    public static final int VERSION = 5;
 
     public static enum MediaType {
         MUSIC,

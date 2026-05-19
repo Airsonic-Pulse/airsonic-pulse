@@ -269,6 +269,7 @@
         <xs:attribute name="displayArtist" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
         <xs:attribute name="displayAlbumArtist" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
         <xs:attribute name="mediaType" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="sortName" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
     </xs:complexType>
 
     <xs:simpleType name="MediaType">
