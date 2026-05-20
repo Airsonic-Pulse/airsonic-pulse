@@ -47,6 +47,8 @@ public class MetaData {
     private Integer height;
     private String musicBrainzReleaseId;
     private String musicBrainzRecordingId;
+    private String musicBrainzArtistId;
+    private String artistSortName;
     private final List<Track> tracks = new ArrayList<>();
     private final List<Chapter> chapters = new ArrayList<>();
 
@@ -184,6 +186,22 @@ public class MetaData {
 
     public void setMusicBrainzRecordingId(String musicBrainzRecordingId) {
         this.musicBrainzRecordingId = musicBrainzRecordingId;
+    }
+
+    public String getMusicBrainzArtistId() {
+        return musicBrainzArtistId;
+    }
+
+    public void setMusicBrainzArtistId(String musicBrainzArtistId) {
+        this.musicBrainzArtistId = musicBrainzArtistId;
+    }
+
+    public String getArtistSortName() {
+        return artistSortName;
+    }
+
+    public void setArtistSortName(String artistSortName) {
+        this.artistSortName = artistSortName;
     }
 
     public void addTrack(Track track) {

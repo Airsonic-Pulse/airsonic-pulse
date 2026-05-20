@@ -5,4 +5,8 @@
     <include file="add-media-file-sort-name.xml" relativeToChangelogFile="true"/>
     <include file="add-media-file-album-sort-name.xml" relativeToChangelogFile="true"/>
     <include file="add-album-sort-name.xml" relativeToChangelogFile="true"/>
+    <include file="add-media-file-mb-artist-id.xml" relativeToChangelogFile="true"/>
+    <include file="add-media-file-artist-sort-name.xml" relativeToChangelogFile="true"/>
+    <include file="add-artist-mb-artist-id.xml" relativeToChangelogFile="true"/>
+    <include file="add-artist-sort-name.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

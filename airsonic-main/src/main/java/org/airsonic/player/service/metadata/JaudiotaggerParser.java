@@ -96,6 +96,10 @@ public class JaudiotaggerParser extends MetaDataParser {
                 metaData.setTrackNumber(parseIntegerPattern(getTagField(tag, FieldKey.TRACK), TRACK_NUMBER_PATTERN));
                 metaData.setMusicBrainzReleaseId(getTagField(tag, FieldKey.MUSICBRAINZ_RELEASEID));
                 metaData.setMusicBrainzRecordingId(getTagField(tag, FieldKey.MUSICBRAINZ_TRACK_ID));
+                // The ID3 artist is grouped by album-artist, so source its sort name and MB id
+                // from the release-artist tags rather than the per-track artist tags.
+                metaData.setMusicBrainzArtistId(getTagField(tag, FieldKey.MUSICBRAINZ_RELEASEARTISTID));
+                metaData.setArtistSortName(getTagField(tag, FieldKey.ALBUM_ARTIST_SORT));
 
                 metaData.setArtist(getTagField(tag, FieldKey.ARTIST));
                 metaData.setAlbumArtist(getTagField(tag, FieldKey.ALBUM_ARTIST));

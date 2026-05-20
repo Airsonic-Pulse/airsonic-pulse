@@ -1027,6 +1027,8 @@ public class MediaFileService {
                 mediaFile.setWidth(metaData.getWidth());
                 mediaFile.setMusicBrainzReleaseId(metaData.getMusicBrainzReleaseId());
                 mediaFile.setMusicBrainzRecordingId(metaData.getMusicBrainzRecordingId());
+                mediaFile.setMusicBrainzArtistId(metaData.getMusicBrainzArtistId());
+                mediaFile.setArtistSortName(metaData.getArtistSortName());
             }
             String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(mediaFile.getPath())));
             mediaFile.setFormat(format);

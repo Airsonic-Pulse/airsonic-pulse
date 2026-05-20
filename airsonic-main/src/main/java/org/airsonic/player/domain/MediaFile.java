@@ -157,6 +157,12 @@ public class MediaFile {
     @Column(name = "mb_recording_id", nullable = true)
     private String musicBrainzRecordingId;
 
+    @Column(name = "mb_artist_id", nullable = true)
+    private String musicBrainzArtistId;
+
+    @Column(name = "artist_sort_name", nullable = true)
+    private String artistSortName;
+
     @Transient
     private Double averageRating = 0.0;
 
@@ -496,6 +502,22 @@ public class MediaFile {
 
     public void setMusicBrainzRecordingId(String musicBrainzRecordingId) {
         this.musicBrainzRecordingId = musicBrainzRecordingId;
+    }
+
+    public String getMusicBrainzArtistId() {
+        return musicBrainzArtistId;
+    }
+
+    public void setMusicBrainzArtistId(String musicBrainzArtistId) {
+        this.musicBrainzArtistId = musicBrainzArtistId;
+    }
+
+    public String getArtistSortName() {
+        return artistSortName;
+    }
+
+    public void setArtistSortName(String artistSortName) {
+        this.artistSortName = artistSortName;
     }
 
     /**

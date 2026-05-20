@@ -74,6 +74,8 @@ public class JaxbContentService {
             jaxbArtist.setCoverArt(CoverArtController.ARTIST_COVERART_PREFIX + artist.getId());
         }
         jaxbArtist.setMediaType("artist");
+        jaxbArtist.setSortName(artist.getSortName());
+        jaxbArtist.setMusicBrainzId(artist.getMusicBrainzArtistId());
         return jaxbArtist;
     }
 
