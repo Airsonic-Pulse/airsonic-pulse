@@ -37,6 +37,7 @@ public class MetaData {
     private String artist;
     private String albumArtist;
     private String albumName;
+    private String albumSortName;
     private String genre;
     private Integer year;
     private Integer bitRate;
@@ -103,6 +104,14 @@ public class MetaData {
 
     public void setAlbumName(String albumName) {
         this.albumName = albumName;
+    }
+
+    public String getAlbumSortName() {
+        return albumSortName;
+    }
+
+    public void setAlbumSortName(String albumSortName) {
+        this.albumSortName = albumSortName;
     }
 
     public String getGenre() {
