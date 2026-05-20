@@ -155,6 +155,7 @@ public class JaxbContentService {
         child.setIsDir(mediaFile.isDirectory());
         child.setCoverArt(findCoverArt(mediaFile, parent));
         child.setYear(mediaFile.getYear());
+        child.setBpm(mediaFile.getBpm());
         child.setGenre(mediaFile.getGenre());
         child.setCreated(jaxbWriter.convertDate(mediaFile.getCreated()));
         child.setStarred(jaxbWriter.convertDate(mediaFileService.getMediaFileStarredDate(mediaFile, username)));

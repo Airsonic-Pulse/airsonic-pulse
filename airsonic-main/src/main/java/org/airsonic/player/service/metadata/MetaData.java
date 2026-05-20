@@ -40,6 +40,7 @@ public class MetaData {
     private String albumSortName;
     private String genre;
     private Integer year;
+    private Integer bpm;
     private Integer bitRate;
     private boolean variableBitRate;
     private Double duration;
@@ -130,6 +131,14 @@ public class MetaData {
 
     public void setYear(Integer year) {
         this.year = year;
+    }
+
+    public Integer getBpm() {
+        return bpm;
+    }
+
+    public void setBpm(Integer bpm) {
+        this.bpm = bpm;
     }
 
     public Integer getBitRate() {
