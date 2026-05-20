@@ -3,12 +3,13 @@
 [![Latest Version](https://img.shields.io/github/v/release/Airsonic-Pulse/airsonic-pulse?label=Latest%20Version&color=2f7bd9)](https://github.com/Airsonic-Pulse/airsonic-pulse/releases/latest)
 ![GitHub Tag](https://img.shields.io/github/v/tag/Airsonic-Pulse/Airsonic-Pulse)
 ![GitHub Release](https://img.shields.io/github/v/release/Airsonic-Pulse/Airsonic-Pulse)
+![GitHub Release Date](https://img.shields.io/github/release-date/Airsonic-Pulse/Airsonic-Pulse)
 
 [![Issues](https://img.shields.io/github/issues/Airsonic-Pulse/airsonic-pulse)](https://github.com/Airsonic-Pulse/airsonic-pulse/issues)
 [![Last Commit](https://img.shields.io/github/last-commit/Airsonic-Pulse/airsonic-pulse)](https://github.com/Airsonic-Pulse/airsonic-pulse/commits/main)
 ![GitHub commit activity](https://img.shields.io/github/commit-activity/m/Airsonic-Pulse/Airsonic-Pulse)
 ![GitHub commits since latest release](https://img.shields.io/github/commits-since/Airsonic-Pulse/Airsonic-Pulse/latest)
-![GitHub Release Date](https://img.shields.io/github/release-date/Airsonic-Pulse/Airsonic-Pulse)
+
 
 
 [![License](https://img.shields.io/github/license/Airsonic-Pulse/airsonic-pulse)](https://github.com/Airsonic-Pulse/airsonic-pulse/blob/main/LICENSE) ![Java](https://img.shields.io/badge/Java-21-orange)
