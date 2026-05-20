@@ -33,6 +33,7 @@ public class MetaData {
     private Integer discNumber;
     private Integer trackNumber;
     private String title;
+    private String sortName;
     private String artist;
     private String albumArtist;
     private String albumName;
@@ -70,6 +71,14 @@ public class MetaData {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getSortName() {
+        return sortName;
+    }
+
+    public void setSortName(String sortName) {
+        this.sortName = sortName;
     }
 
     public String getAlbumArtist() {

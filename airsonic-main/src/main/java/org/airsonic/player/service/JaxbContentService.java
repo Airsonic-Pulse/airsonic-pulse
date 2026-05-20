@@ -146,6 +146,7 @@ public class JaxbContentService {
             // Ignored.
         }
         child.setTitle(mediaFile.getName());
+        child.setSortName(mediaFile.getSortName());
         child.setAlbum(mediaFile.getAlbumName());
         child.setArtist(mediaFile.getArtist());
         child.setIsDir(mediaFile.isDirectory());

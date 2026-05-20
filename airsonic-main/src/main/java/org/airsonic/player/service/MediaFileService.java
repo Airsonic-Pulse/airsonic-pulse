@@ -1014,6 +1014,7 @@ public class MediaFileService {
                 mediaFile.setAlbumArtist(metaData.getAlbumArtist());
                 mediaFile.setAlbumName(metaData.getAlbumName());
                 mediaFile.setTitle(metaData.getTitle());
+                mediaFile.setSortName(metaData.getSortName());
                 mediaFile.setDiscNumber(metaData.getDiscNumber());
                 mediaFile.setTrackNumber(metaData.getTrackNumber());
                 mediaFile.setGenre(metaData.getGenre());
