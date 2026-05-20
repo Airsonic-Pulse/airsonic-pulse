@@ -94,6 +94,9 @@ public class MediaFile {
     @Column(name = "year", nullable = true)
     private Integer year;
 
+    @Column(name = "bpm", nullable = true)
+    private Integer bpm;
+
     @Column(name = "genre", nullable = true)
     private String genre;
 
@@ -362,6 +365,14 @@ public class MediaFile {
 
     public void setYear(Integer year) {
         this.year = year;
+    }
+
+    public Integer getBpm() {
+        return bpm;
+    }
+
+    public void setBpm(Integer bpm) {
+        this.bpm = bpm;
     }
 
     public String getGenre() {

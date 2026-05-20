@@ -26,6 +26,7 @@ import org.junit.jupiter.api.Test;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Unit test of {@link MetaDataParser}.
@@ -102,5 +103,49 @@ public class MetaDataParserTestCase {
         assertEquals("01", parser.removeTrackNumberFromTitle("01 ", 2));
         assertEquals("01", parser.removeTrackNumberFromTitle(" 01 ", 2));
         assertEquals("01", parser.removeTrackNumberFromTitle(" 01", 2));
+    }
+
+    @Test
+    public void testParseBpm() {
+
+        MetaDataParser parser = new MetaDataParser() {
+            @Override
+            public MetaData getRawMetaData(Path file) {
+                return null;
+            }
+
+            @Override
+            public void setMetaData(MediaFile file, MetaData metaData) {
+            }
+
+            @Override
+            public boolean isEditingSupported() {
+                return false;
+            }
+
+            @Override
+            MediaFolderService getMediaFolderService() {
+                return null;
+            }
+
+            @Override
+            public boolean isApplicable(Path path) {
+                return false;
+            }
+        };
+
+        assertEquals(Integer.valueOf(120), parser.parseBpm("120"));
+        assertEquals(Integer.valueOf(121), parser.parseBpm("120.6"));
+        assertEquals(Integer.valueOf(120), parser.parseBpm("120.4"));
+        assertEquals(Integer.valueOf(98), parser.parseBpm(" 98 "));
+        assertNull(parser.parseBpm(""));
+        assertNull(parser.parseBpm("   "));
+        assertNull(parser.parseBpm("fast"));
+        assertNull(parser.parseBpm(null));
+        assertNull(parser.parseBpm("0"));
+        assertNull(parser.parseBpm("-5"));
+        assertNull(parser.parseBpm("NaN"));
+        assertNull(parser.parseBpm("Infinity"));
+        assertNull(parser.parseBpm("99999999999"));
     }
 }

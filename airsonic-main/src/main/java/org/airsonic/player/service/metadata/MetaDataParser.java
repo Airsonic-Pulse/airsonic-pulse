@@ -280,6 +280,25 @@ public abstract class MetaDataParser {
         return result;
     }
 
+    Integer parseBpm(String str) {
+        str = StringUtils.trimToNull(str);
+
+        if (str == null) {
+            return null;
+        }
+
+        try {
+            double d = Double.parseDouble(str);
+            long r = Math.round(d);
+            if (!Double.isFinite(d) || r <= 0 || r > Integer.MAX_VALUE) {
+                return null;
+            }
+            return (int) r;
+        } catch (NumberFormatException x) {
+            return null;
+        }
+    }
+
     /**
      * Removes any prefixed track number from the given title string.
      *
