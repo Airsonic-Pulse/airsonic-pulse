@@ -51,6 +51,9 @@ public class Album {
     @Column(name = "name", nullable = false)
     private String name;
 
+    @Column(name = "sort_name", nullable = true)
+    private String sortName;
+
     @Column(name = "artist", nullable = false)
     private String artist;
 
@@ -153,6 +156,14 @@ public class Album {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getSortName() {
+        return sortName;
+    }
+
+    public void setSortName(String sortName) {
+        this.sortName = sortName;
     }
 
     public String getArtist() {

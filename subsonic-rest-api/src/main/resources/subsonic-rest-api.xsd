@@ -175,6 +175,7 @@
         <xs:attribute name="played" type="xs:dateTime" use="optional"/>  <!-- Added in OpenSubsonic -->
         <xs:attribute name="musicBrainzId" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
         <xs:attribute name="displayArtist" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="sortName" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
     </xs:complexType>
 
     <xs:complexType name="AlbumWithSongsID3">

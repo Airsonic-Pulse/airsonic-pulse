@@ -478,6 +478,9 @@ public class MediaScannerService {
         if (file.getGenre() != null) {
             album.setGenre(file.getGenre());
         }
+        if (file.getAlbumSortName() != null) {
+            album.setSortName(file.getAlbumSortName());
+        }
 
         if (album.getArt() == null && parent != null) {
             CoverArt art = coverArtService.getMediaFileArt(parent.getId());

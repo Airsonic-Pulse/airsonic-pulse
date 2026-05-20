@@ -1013,6 +1013,7 @@ public class MediaFileService {
                 mediaFile.setArtist(metaData.getArtist());
                 mediaFile.setAlbumArtist(metaData.getAlbumArtist());
                 mediaFile.setAlbumName(metaData.getAlbumName());
+                mediaFile.setAlbumSortName(metaData.getAlbumSortName());
                 mediaFile.setTitle(metaData.getTitle());
                 mediaFile.setSortName(metaData.getSortName());
                 mediaFile.setDiscNumber(metaData.getDiscNumber());

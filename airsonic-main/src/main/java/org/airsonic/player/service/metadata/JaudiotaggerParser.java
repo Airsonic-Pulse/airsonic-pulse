@@ -87,6 +87,7 @@ public class JaudiotaggerParser extends MetaDataParser {
             Tag tag = audioFile.getTag();
             if (tag != null) {
                 metaData.setAlbumName(getTagField(tag, FieldKey.ALBUM));
+                metaData.setAlbumSortName(getTagField(tag, FieldKey.ALBUM_SORT));
                 metaData.setTitle(getTagField(tag, FieldKey.TITLE));
                 metaData.setSortName(getTagField(tag, FieldKey.TITLE_SORT));
                 metaData.setYear(parseIntegerPattern(getTagField(tag, FieldKey.YEAR), YEAR_NUMBER_PATTERN));

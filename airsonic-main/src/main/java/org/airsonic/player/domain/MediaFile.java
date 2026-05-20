@@ -76,6 +76,9 @@ public class MediaFile {
     @Column(name = "album", nullable = true)
     private String albumName;
 
+    @Column(name = "album_sort_name", nullable = true)
+    private String albumSortName;
+
     @Column(name = "artist", nullable = true)
     private String artist;
 
@@ -301,6 +304,14 @@ public class MediaFile {
 
     public void setAlbumName(String album) {
         this.albumName = album;
+    }
+
+    public String getAlbumSortName() {
+        return albumSortName;
+    }
+
+    public void setAlbumSortName(String albumSortName) {
+        this.albumSortName = albumSortName;
     }
 
     public String getArtist() {

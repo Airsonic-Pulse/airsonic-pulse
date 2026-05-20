@@ -28,6 +28,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -35,8 +36,12 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -253,6 +258,72 @@ public class MediaScannerServiceTestCase {
         assertEquals("0820752d-1043-4572-ab36-2df3b5cc15fa", file.getMusicBrainzReleaseId());
         assertEquals("831586f4-56f9-4785-ac91-447ae20af633", file.getMusicBrainzRecordingId());
         assertEquals(-1.0d, file.getStartPosition(), 0.0d);
+    }
+
+    // The album sort name (FieldKey.ALBUM_SORT) is carried on each track's MediaFile and
+    // aggregated onto the Album in the private updateAlbum(), mirroring the mb_release_id
+    // pattern. These tests drive that aggregation step directly so the set / null-guard /
+    // last-write-wins semantics can be covered without audio fixtures tagged with ALBUM_SORT.
+
+    private static final Instant ALBUM_SORT_SCAN_TIME = Instant.now().truncatedTo(ChronoUnit.MICROS);
+
+    private Album newSortNameTestAlbum() {
+        Album album = new Album();
+        album.setName("TestAlbum");
+        album.setArtist("TestArtist");
+        album.setPath("TestAlbum");
+        // Match the scan time so updateAlbum treats this as a repeat encounter and skips
+        // the persistence/index branch — keeping these tests free of DB side effects.
+        album.setLastScanned(ALBUM_SORT_SCAN_TIME);
+        return album;
+    }
+
+    private void aggregateTrack(Map<String, Album> albums, String albumSortName) {
+        MediaFile file = new MediaFile();
+        file.setMediaType(MediaFile.MediaType.MUSIC);
+        file.setAlbumName("TestAlbum");
+        file.setArtist("TestArtist");
+        file.setAlbumArtist("TestArtist");
+        file.setParentPath("TestAlbum");
+        file.setAlbumSortName(albumSortName);
+        ReflectionTestUtils.invokeMethod(mediaScannerService, "updateAlbum",
+            null, file, null, ALBUM_SORT_SCAN_TIME,
+            new HashMap<String, AtomicInteger>(), albums, new HashSet<Integer>());
+    }
+
+    @Test
+    public void testAlbumSortNameSetFromTrack() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateTrack(albums, "Beatles, The");
+
+        assertEquals("Beatles, The", album.getSortName());
+    }
+
+    @Test
+    public void testAlbumSortNameNullDoesNotClobber() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateTrack(albums, "Beatles, The");
+        aggregateTrack(albums, null);
+
+        assertEquals("Beatles, The", album.getSortName());
+    }
+
+    @Test
+    public void testAlbumSortNameLastWriteWins() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateTrack(albums, "First Sort");
+        aggregateTrack(albums, "Second Sort");
+
+        assertEquals("Second Sort", album.getSortName());
     }
 
     @Test

@@ -110,6 +110,7 @@ public class JaxbContentService {
         jaxbAlbum.setPlayed(jaxbWriter.convertDate(album.getLastPlayed()));
         jaxbAlbum.setMusicBrainzId(album.getMusicBrainzReleaseId());
         jaxbAlbum.setDisplayArtist(album.getArtist());
+        jaxbAlbum.setSortName(album.getSortName());
         return jaxbAlbum;
     }
 
