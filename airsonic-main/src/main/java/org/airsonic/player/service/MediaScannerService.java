@@ -543,6 +543,13 @@ public class MediaScannerService {
             return a;
         });
 
+        if (file.getMusicBrainzArtistId() != null) {
+            artist.setMusicBrainzArtistId(file.getMusicBrainzArtistId());
+        }
+        if (file.getArtistSortName() != null) {
+            artist.setSortName(file.getArtistSortName());
+        }
+
         if (firstEncounter.get()) {
             artist.setFolder(musicFolder);
             artistService.save(artist);

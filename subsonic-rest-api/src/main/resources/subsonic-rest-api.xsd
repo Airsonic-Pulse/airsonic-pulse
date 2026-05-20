@@ -147,6 +147,8 @@
         <xs:attribute name="albumCount" type="xs:int" use="required"/>
         <xs:attribute name="starred" type="xs:dateTime" use="optional"/>
         <xs:attribute name="mediaType" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="musicBrainzId" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="sortName" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
     </xs:complexType>
 
     <xs:complexType name="ArtistWithAlbumsID3">

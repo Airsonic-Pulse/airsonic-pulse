@@ -326,6 +326,70 @@ public class MediaScannerServiceTestCase {
         assertEquals("Second Sort", album.getSortName());
     }
 
+    // The artist MB id (FieldKey.MUSICBRAINZ_RELEASEARTISTID) and sort name
+    // (FieldKey.ALBUM_ARTIST_SORT) are carried on each track's MediaFile and aggregated onto
+    // the Artist in the private updateArtist(). These tests drive that aggregation step
+    // directly to cover the set / null-guard / last-write-wins semantics without audio fixtures.
+
+    private static final Instant ARTIST_AGG_SCAN_TIME = Instant.now().truncatedTo(ChronoUnit.MICROS);
+
+    private Artist newFieldsTestArtist() {
+        Artist artist = new Artist("TestArtist");
+        // Match the scan time so updateArtist treats this as a repeat encounter and skips
+        // the persistence/index branch — keeping these tests free of DB side effects.
+        artist.setLastScanned(ARTIST_AGG_SCAN_TIME);
+        return artist;
+    }
+
+    private void aggregateArtistTrack(Map<String, Artist> artists, String mbArtistId, String artistSortName) {
+        MediaFile file = new MediaFile();
+        file.setMediaType(MediaFile.MediaType.MUSIC);
+        file.setAlbumArtist("TestArtist");
+        file.setMusicBrainzArtistId(mbArtistId);
+        file.setArtistSortName(artistSortName);
+        ReflectionTestUtils.invokeMethod(mediaScannerService, "updateArtist",
+            null, file, null, ARTIST_AGG_SCAN_TIME,
+            new HashMap<String, AtomicInteger>(), artists);
+    }
+
+    @Test
+    public void testArtistFieldsSetFromTrack() {
+        Artist artist = newFieldsTestArtist();
+        Map<String, Artist> artists = new HashMap<>();
+        artists.put("TestArtist", artist);
+
+        aggregateArtistTrack(artists, "mb-artist-1", "Beatles, The");
+
+        assertEquals("mb-artist-1", artist.getMusicBrainzArtistId());
+        assertEquals("Beatles, The", artist.getSortName());
+    }
+
+    @Test
+    public void testArtistFieldsNullDoesNotClobber() {
+        Artist artist = newFieldsTestArtist();
+        Map<String, Artist> artists = new HashMap<>();
+        artists.put("TestArtist", artist);
+
+        aggregateArtistTrack(artists, "mb-artist-1", "Beatles, The");
+        aggregateArtistTrack(artists, null, null);
+
+        assertEquals("mb-artist-1", artist.getMusicBrainzArtistId());
+        assertEquals("Beatles, The", artist.getSortName());
+    }
+
+    @Test
+    public void testArtistFieldsLastWriteWins() {
+        Artist artist = newFieldsTestArtist();
+        Map<String, Artist> artists = new HashMap<>();
+        artists.put("TestArtist", artist);
+
+        aggregateArtistTrack(artists, "mb-first", "First Sort");
+        aggregateArtistTrack(artists, "mb-second", "Second Sort");
+
+        assertEquals("mb-second", artist.getMusicBrainzArtistId());
+        assertEquals("Second Sort", artist.getSortName());
+    }
+
     @Test
     public void testMusicCue() {
         LOG.info("start testMusicCue");

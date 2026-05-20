@@ -42,6 +42,10 @@ public class Artist {
     private Integer id;
     @Column(unique = true, nullable = false)
     private String name;
+    @Column(name = "sort_name", nullable = true)
+    private String sortName;
+    @Column(name = "mb_artist_id", nullable = true)
+    private String musicBrainzArtistId;
     @Column(name = "album_count")
     @Convert(converter = AtomicIntegerConverter.class)
     private final AtomicInteger albumCount = new AtomicInteger();
@@ -83,6 +87,22 @@ public class Artist {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public String getSortName() {
+        return sortName;
+    }
+
+    public void setSortName(String sortName) {
+        this.sortName = sortName;
+    }
+
+    public String getMusicBrainzArtistId() {
+        return musicBrainzArtistId;
+    }
+
+    public void setMusicBrainzArtistId(String musicBrainzArtistId) {
+        this.musicBrainzArtistId = musicBrainzArtistId;
     }
 
     public int getAlbumCount() {
