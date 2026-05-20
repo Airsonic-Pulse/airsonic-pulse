@@ -1,0 +1,26 @@
+# Dependency Review — runs on every PR to main.
+# Blocks PRs that introduce dependencies with known vulnerabilities.
+# Complements Trivy (scans existing deps) and Dependabot (alerts on existing deps)
+# by catching NEW vulnerable dependencies at PR time.
+
+name: "Dependency Review"
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  dependency-review:
+    runs-on: [self-hosted, linux, x64, repo-airsonic-pulse]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd  # v6.0.2
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48  # v4.9.0
+        with:
+          fail-on-severity: high
+          allow-licenses: GPL-3.0-only, GPL-3.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, MPL-2.0, EPL-2.0, CC0-1.0, Unlicense, ISC
