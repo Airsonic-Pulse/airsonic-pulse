@@ -371,6 +371,21 @@ class JaxbContentServiceTest {
             assertEquals("Artist Name", result.getName());
             assertNull(result.getStarred());
         }
+
+        @Test
+        void createJaxbArtist_fromMediaFile_setsRatings() {
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFile.getId()).thenReturn(125);
+            when(mediaFile.getTitle()).thenReturn("Rated Artist");
+            when(mediaFileService.getMediaFileStarredDate(mediaFile, "user")).thenReturn(null);
+            when(ratingService.getRatingForUser("user", mediaFile)).thenReturn(5);
+            when(ratingService.getAverageRating(mediaFile)).thenReturn(4.2);
+
+            org.subsonic.restapi.Artist result = service.createJaxbArtist(mediaFile, "user");
+
+            assertEquals(5, result.getUserRating());
+            assertEquals(4.2, result.getAverageRating());
+        }
     }
 
 }
