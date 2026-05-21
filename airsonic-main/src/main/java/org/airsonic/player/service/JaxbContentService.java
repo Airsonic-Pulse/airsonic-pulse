@@ -85,7 +85,8 @@ public class JaxbContentService {
         result.setName(artist.getTitle() != null ? artist.getTitle() : artist.getArtist());
         Instant starred = mediaFileService.getMediaFileStarredDate(artist, username);
         result.setStarred(jaxbWriter.convertDate(starred));
-        // TODO: add rating. https://opensubsonic.netlify.app/docs/responses/artist/
+        result.setUserRating(ratingService.getRatingForUser(username, artist));
+        result.setAverageRating(ratingService.getAverageRating(artist));
         return result;
     }
 
