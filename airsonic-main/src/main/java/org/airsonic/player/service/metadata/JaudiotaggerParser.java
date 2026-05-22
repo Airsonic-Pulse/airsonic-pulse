@@ -30,6 +30,10 @@ import org.jaudiotagger.audio.AudioFileIO;
 import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
+import org.jaudiotagger.tag.TagField;
+import org.jaudiotagger.tag.id3.AbstractID3v2Frame;
+import org.jaudiotagger.tag.id3.AbstractID3v2Tag;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyTXXX;
 import org.jaudiotagger.tag.images.Artwork;
 import org.jaudiotagger.tag.reference.PictureTypes;
 import org.slf4j.Logger;
@@ -40,6 +44,7 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.LogManager;
@@ -55,6 +60,12 @@ import java.util.logging.LogManager;
 public class JaudiotaggerParser extends MetaDataParser {
 
     private static final Logger LOG = LoggerFactory.getLogger(JaudiotaggerParser.class);
+
+    static final String RG_TRACK_GAIN = "REPLAYGAIN_TRACK_GAIN";
+    static final String RG_ALBUM_GAIN = "REPLAYGAIN_ALBUM_GAIN";
+    static final String RG_TRACK_PEAK = "REPLAYGAIN_TRACK_PEAK";
+    static final String RG_ALBUM_PEAK = "REPLAYGAIN_ALBUM_PEAK";
+
     @Autowired
     private MediaFolderService mediaFolderService;
 
@@ -101,6 +112,10 @@ public class JaudiotaggerParser extends MetaDataParser {
                 // from the release-artist tags rather than the per-track artist tags.
                 metaData.setMusicBrainzArtistId(getTagField(tag, FieldKey.MUSICBRAINZ_RELEASEARTISTID));
                 metaData.setArtistSortName(getTagField(tag, FieldKey.ALBUM_ARTIST_SORT));
+                metaData.setReplayGainTrackGain(parseReplayGain(getReplayGainField(tag, RG_TRACK_GAIN)));
+                metaData.setReplayGainAlbumGain(parseReplayGain(getReplayGainField(tag, RG_ALBUM_GAIN)));
+                metaData.setReplayGainTrackPeak(parseReplayGain(getReplayGainField(tag, RG_TRACK_PEAK)));
+                metaData.setReplayGainAlbumPeak(parseReplayGain(getReplayGainField(tag, RG_ALBUM_PEAK)));
 
                 metaData.setArtist(getTagField(tag, FieldKey.ARTIST));
                 metaData.setAlbumArtist(getTagField(tag, FieldKey.ALBUM_ARTIST));
@@ -132,6 +147,33 @@ public class JaudiotaggerParser extends MetaDataParser {
     private static String getTagField(Tag tag, FieldKey fieldKey) {
         try {
             return StringUtils.replace(StringUtils.trimToNull(tag.getFirst(fieldKey)), "\0", " ");
+        } catch (Exception x) {
+            // Ignored.
+            return null;
+        }
+    }
+
+    /**
+     * Reads a ReplayGain value by name. ReplayGain has no jaudiotagger {@link FieldKey}, so it is
+     * read directly: from ID3v2 it lives in a TXXX frame keyed by a (case-insensitive) description,
+     * while Vorbis comments (FLAC/Ogg/Opus) expose it as a plain keyed field.
+     */
+    static String getReplayGainField(Tag tag, String name) {
+        try {
+            if (tag instanceof AbstractID3v2Tag id3v2) {
+                List<TagField> frames = id3v2.getFrame("TXXX");
+                if (frames != null) {
+                    for (TagField field : frames) {
+                        if (field instanceof AbstractID3v2Frame frame
+                                && frame.getBody() instanceof FrameBodyTXXX txxx
+                                && name.equalsIgnoreCase(txxx.getDescription())) {
+                            return StringUtils.trimToNull(txxx.getText());
+                        }
+                    }
+                }
+                return null;
+            }
+            return StringUtils.trimToNull(tag.getFirst(name));
         } catch (Exception x) {
             // Ignored.
             return null;

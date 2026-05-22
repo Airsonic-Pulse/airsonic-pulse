@@ -299,6 +299,29 @@ public abstract class MetaDataParser {
         }
     }
 
+    Double parseReplayGain(String str) {
+        str = StringUtils.trimToNull(str);
+
+        if (str == null) {
+            return null;
+        }
+
+        // Gain tags carry a trailing "dB" unit (e.g. "-6.50 dB"); peaks do not. Strip it if present.
+        if (str.length() >= 2 && "db".equalsIgnoreCase(str.substring(str.length() - 2))) {
+            str = StringUtils.trimToNull(str.substring(0, str.length() - 2));
+            if (str == null) {
+                return null;
+            }
+        }
+
+        try {
+            double d = Double.parseDouble(str);
+            return Double.isFinite(d) ? d : null;
+        } catch (NumberFormatException x) {
+            return null;
+        }
+    }
+
     /**
      * Removes any prefixed track number from the given title string.
      *

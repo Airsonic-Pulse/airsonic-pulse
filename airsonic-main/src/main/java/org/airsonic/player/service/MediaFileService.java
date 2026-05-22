@@ -1030,6 +1030,10 @@ public class MediaFileService {
                 mediaFile.setMusicBrainzRecordingId(metaData.getMusicBrainzRecordingId());
                 mediaFile.setMusicBrainzArtistId(metaData.getMusicBrainzArtistId());
                 mediaFile.setArtistSortName(metaData.getArtistSortName());
+                mediaFile.setReplayGainTrackGain(metaData.getReplayGainTrackGain());
+                mediaFile.setReplayGainAlbumGain(metaData.getReplayGainAlbumGain());
+                mediaFile.setReplayGainTrackPeak(metaData.getReplayGainTrackPeak());
+                mediaFile.setReplayGainAlbumPeak(metaData.getReplayGainAlbumPeak());
             }
             String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(mediaFile.getPath())));
             mediaFile.setFormat(format);

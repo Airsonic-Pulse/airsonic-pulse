@@ -166,6 +166,18 @@ public class MediaFile {
     @Column(name = "artist_sort_name", nullable = true)
     private String artistSortName;
 
+    @Column(name = "rg_track_gain", nullable = true)
+    private Double replayGainTrackGain;
+
+    @Column(name = "rg_album_gain", nullable = true)
+    private Double replayGainAlbumGain;
+
+    @Column(name = "rg_track_peak", nullable = true)
+    private Double replayGainTrackPeak;
+
+    @Column(name = "rg_album_peak", nullable = true)
+    private Double replayGainAlbumPeak;
+
     @Transient
     private Double averageRating = 0.0;
 
@@ -529,6 +541,38 @@ public class MediaFile {
 
     public void setArtistSortName(String artistSortName) {
         this.artistSortName = artistSortName;
+    }
+
+    public Double getReplayGainTrackGain() {
+        return replayGainTrackGain;
+    }
+
+    public void setReplayGainTrackGain(Double replayGainTrackGain) {
+        this.replayGainTrackGain = replayGainTrackGain;
+    }
+
+    public Double getReplayGainAlbumGain() {
+        return replayGainAlbumGain;
+    }
+
+    public void setReplayGainAlbumGain(Double replayGainAlbumGain) {
+        this.replayGainAlbumGain = replayGainAlbumGain;
+    }
+
+    public Double getReplayGainTrackPeak() {
+        return replayGainTrackPeak;
+    }
+
+    public void setReplayGainTrackPeak(Double replayGainTrackPeak) {
+        this.replayGainTrackPeak = replayGainTrackPeak;
+    }
+
+    public Double getReplayGainAlbumPeak() {
+        return replayGainAlbumPeak;
+    }
+
+    public void setReplayGainAlbumPeak(Double replayGainAlbumPeak) {
+        this.replayGainAlbumPeak = replayGainAlbumPeak;
     }
 
     /**
