@@ -30,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.subsonic.restapi.AlbumID3;
 import org.subsonic.restapi.ArtistID3;
 import org.subsonic.restapi.Child;
+import org.subsonic.restapi.ReplayGain;
 
 import java.time.Instant;
 import java.util.Objects;
@@ -167,6 +168,7 @@ public class JaxbContentService {
         child.setMusicBrainzId(mediaFile.getMusicBrainzRecordingId());
         child.setDisplayArtist(mediaFile.getArtist());
         child.setDisplayAlbumArtist(mediaFile.getAlbumArtist());
+        child.setReplayGain(buildReplayGain(mediaFile));
         if (mediaFile.getMediaType() != null) {
             child.setMediaType(mediaFile.getMediaType().name().toLowerCase());
         }
@@ -212,6 +214,22 @@ public class JaxbContentService {
             }
         }
         return child;
+    }
+
+    private ReplayGain buildReplayGain(MediaFile mediaFile) {
+        Double trackGain = mediaFile.getReplayGainTrackGain();
+        Double albumGain = mediaFile.getReplayGainAlbumGain();
+        Double trackPeak = mediaFile.getReplayGainTrackPeak();
+        Double albumPeak = mediaFile.getReplayGainAlbumPeak();
+        if (trackGain == null && albumGain == null && trackPeak == null && albumPeak == null) {
+            return null;
+        }
+        ReplayGain replayGain = new ReplayGain();
+        replayGain.setTrackGain(trackGain);
+        replayGain.setAlbumGain(albumGain);
+        replayGain.setTrackPeak(trackPeak);
+        replayGain.setAlbumPeak(albumPeak);
+        return replayGain;
     }
 
     private String findCoverArt(MediaFile mediaFile, MediaFile parent) {

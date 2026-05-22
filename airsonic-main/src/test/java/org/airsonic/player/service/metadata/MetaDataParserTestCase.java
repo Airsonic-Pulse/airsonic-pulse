@@ -148,4 +148,47 @@ public class MetaDataParserTestCase {
         assertNull(parser.parseBpm("Infinity"));
         assertNull(parser.parseBpm("99999999999"));
     }
+
+    @Test
+    public void testParseReplayGain() {
+
+        MetaDataParser parser = new MetaDataParser() {
+            @Override
+            public MetaData getRawMetaData(Path file) {
+                return null;
+            }
+
+            @Override
+            public void setMetaData(MediaFile file, MetaData metaData) {
+            }
+
+            @Override
+            public boolean isEditingSupported() {
+                return false;
+            }
+
+            @Override
+            MediaFolderService getMediaFolderService() {
+                return null;
+            }
+
+            @Override
+            public boolean isApplicable(Path path) {
+                return false;
+            }
+        };
+
+        assertEquals(Double.valueOf(-6.5), parser.parseReplayGain("-6.50 dB"));
+        assertEquals(Double.valueOf(-7.2), parser.parseReplayGain("-7.20"));
+        assertEquals(Double.valueOf(3.4), parser.parseReplayGain("3.40 DB"));
+        assertEquals(Double.valueOf(0.988553), parser.parseReplayGain("0.988553"));
+        assertNull(parser.parseReplayGain("NaN"));
+        assertNull(parser.parseReplayGain("Infinity"));
+        assertNull(parser.parseReplayGain(""));
+        assertNull(parser.parseReplayGain("   "));
+        assertNull(parser.parseReplayGain("loud"));
+        assertNull(parser.parseReplayGain(null));
+        assertNull(parser.parseReplayGain("dB"));
+        assertNull(parser.parseReplayGain(" dB "));
+    }
 }

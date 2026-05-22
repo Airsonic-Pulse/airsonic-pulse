@@ -50,6 +50,10 @@ public class MetaData {
     private String musicBrainzRecordingId;
     private String musicBrainzArtistId;
     private String artistSortName;
+    private Double replayGainTrackGain;
+    private Double replayGainAlbumGain;
+    private Double replayGainTrackPeak;
+    private Double replayGainAlbumPeak;
     private final List<Track> tracks = new ArrayList<>();
     private final List<Chapter> chapters = new ArrayList<>();
 
@@ -211,6 +215,38 @@ public class MetaData {
 
     public void setArtistSortName(String artistSortName) {
         this.artistSortName = artistSortName;
+    }
+
+    public Double getReplayGainTrackGain() {
+        return replayGainTrackGain;
+    }
+
+    public void setReplayGainTrackGain(Double replayGainTrackGain) {
+        this.replayGainTrackGain = replayGainTrackGain;
+    }
+
+    public Double getReplayGainAlbumGain() {
+        return replayGainAlbumGain;
+    }
+
+    public void setReplayGainAlbumGain(Double replayGainAlbumGain) {
+        this.replayGainAlbumGain = replayGainAlbumGain;
+    }
+
+    public Double getReplayGainTrackPeak() {
+        return replayGainTrackPeak;
+    }
+
+    public void setReplayGainTrackPeak(Double replayGainTrackPeak) {
+        this.replayGainTrackPeak = replayGainTrackPeak;
+    }
+
+    public Double getReplayGainAlbumPeak() {
+        return replayGainAlbumPeak;
+    }
+
+    public void setReplayGainAlbumPeak(Double replayGainAlbumPeak) {
+        this.replayGainAlbumPeak = replayGainAlbumPeak;
     }
 
     public void addTrack(Track track) {
