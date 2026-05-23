@@ -11,4 +11,5 @@
     <include file="add-artist-sort-name.xml" relativeToChangelogFile="true"/>
     <include file="add-media-file-bpm.xml" relativeToChangelogFile="true"/>
     <include file="add-media-file-replaygain.xml" relativeToChangelogFile="true"/>
+    <include file="add-media-file-genres.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

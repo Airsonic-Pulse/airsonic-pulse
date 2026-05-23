@@ -1019,6 +1019,7 @@ public class MediaFileService {
                 mediaFile.setDiscNumber(metaData.getDiscNumber());
                 mediaFile.setTrackNumber(metaData.getTrackNumber());
                 mediaFile.setGenre(metaData.getGenre());
+                mediaFile.setGenres(packGenres(metaData.getGenres()));
                 mediaFile.setYear(metaData.getYear());
                 mediaFile.setBpm(metaData.getBpm());
                 mediaFile.setDuration(metaData.getDuration());
@@ -1737,5 +1738,29 @@ public class MediaFileService {
     @Transactional
     public void expunge() {
         mediaFileRepository.deleteAllByPresentFalse();
+    }
+
+    /**
+     * Splits every raw GENRE tag value by the configured separators, maps each token through
+     * {@link MetaDataParser#mapGenre(String)} (so ID3v1 numeric codes like {@code "(17)"} become
+     * {@code "Rock"}, matching the single-genre column's behaviour), de-duplicates preserving
+     * order, and joins with the primary separator into a packed column value. Returns null when
+     * the input yields no genres so the column stays null for tagless tracks.
+     */
+    String packGenres(List<String> rawGenres) {
+        if (rawGenres == null || rawGenres.isEmpty()) {
+            return null;
+        }
+        String separators = settingsService.getGenreSeparators();
+        List<String> clean = rawGenres.stream()
+                .flatMap(g -> Genres.split(g, separators).stream())
+                .map(MetaDataParser::mapGenre)
+                .distinct()
+                .toList();
+        if (clean.isEmpty()) {
+            return null;
+        }
+        String separator = (separators == null || separators.isEmpty()) ? ";" : separators.substring(0, 1);
+        return String.join(separator, clean);
     }
 }

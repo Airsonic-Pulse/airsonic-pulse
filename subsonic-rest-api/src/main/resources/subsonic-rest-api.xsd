@@ -238,6 +238,7 @@
     <xs:complexType name="Child">
         <xs:sequence>
             <xs:element name="replayGain" type="sub:ReplayGain" minOccurs="0"/>  <!-- Added in OpenSubsonic -->
+            <xs:element name="genres" type="sub:ItemGenre" minOccurs="0" maxOccurs="unbounded"/>  <!-- Added in OpenSubsonic -->
         </xs:sequence>
         <xs:attribute name="id" type="xs:string" use="required"/>
         <xs:attribute name="parent" type="xs:string" use="optional"/>
@@ -284,6 +285,10 @@
         <xs:attribute name="albumGain" type="xs:double" use="optional"/>
         <xs:attribute name="trackPeak" type="xs:double" use="optional"/>
         <xs:attribute name="albumPeak" type="xs:double" use="optional"/>
+    </xs:complexType>
+
+    <xs:complexType name="ItemGenre">  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="name" type="xs:string" use="required"/>
     </xs:complexType>
 
     <xs:simpleType name="MediaType">

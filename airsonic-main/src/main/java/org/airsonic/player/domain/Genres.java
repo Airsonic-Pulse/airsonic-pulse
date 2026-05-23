@@ -68,4 +68,24 @@ public class Genres {
     public List<Genre> getGenres() {
         return new ArrayList<Genre>(genres.values());
     }
+
+    /**
+     * Splits a (possibly multi-valued) genre string into individual, trimmed, de-duplicated
+     * genre names using the given separator characters. Mirrors the splitting the count-table
+     * builder applies, so a single separator setting governs both counts and the genres list.
+     * <p>
+     * The internal {@code .distinct()} dedups within a single input string; callers that flatMap
+     * this across multiple raw tag values typically apply another {@code .distinct()} downstream
+     * to dedup across frames as well.
+     */
+    public static List<String> split(String genre, String separators) {
+        if (StringUtils.isBlank(genre)) {
+            return List.of();
+        }
+        return Stream.of(StringUtils.split(genre, separators))
+                .map(StringUtils::trim)
+                .filter(StringUtils::isNotBlank)
+                .distinct()
+                .toList();
+    }
 }

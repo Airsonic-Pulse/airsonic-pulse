@@ -100,6 +100,9 @@ public class MediaFile {
     @Column(name = "genre", nullable = true)
     private String genre;
 
+    @Column(name = "genres", nullable = true)
+    private String genres;
+
     @Column(name = "bit_rate", nullable = true)
     private Integer bitRate;
 
@@ -393,6 +396,14 @@ public class MediaFile {
 
     public void setGenre(String genre) {
         this.genre = genre;
+    }
+
+    public String getGenres() {
+        return genres;
+    }
+
+    public void setGenres(String genres) {
+        this.genres = genres;
     }
 
     public Integer getBitRate() {

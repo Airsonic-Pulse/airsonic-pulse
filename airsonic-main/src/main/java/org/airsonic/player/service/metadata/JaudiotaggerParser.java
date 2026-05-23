@@ -104,6 +104,7 @@ public class JaudiotaggerParser extends MetaDataParser {
                 metaData.setYear(parseIntegerPattern(getTagField(tag, FieldKey.YEAR), YEAR_NUMBER_PATTERN));
                 metaData.setBpm(parseBpm(getTagField(tag, FieldKey.BPM)));
                 metaData.setGenre(mapGenre(getTagField(tag, FieldKey.GENRE)));
+                metaData.setGenres(getAllTagFields(tag, FieldKey.GENRE));
                 metaData.setDiscNumber(parseIntegerPattern(getTagField(tag, FieldKey.DISC_NO), null));
                 metaData.setTrackNumber(parseIntegerPattern(getTagField(tag, FieldKey.TRACK), TRACK_NUMBER_PATTERN));
                 metaData.setMusicBrainzReleaseId(getTagField(tag, FieldKey.MUSICBRAINZ_RELEASEID));
@@ -150,6 +151,22 @@ public class JaudiotaggerParser extends MetaDataParser {
         } catch (Exception x) {
             // Ignored.
             return null;
+        }
+    }
+
+    static List<String> getAllTagFields(Tag tag, FieldKey fieldKey) {
+        try {
+            List<String> values = tag.getAll(fieldKey);
+            if (values == null || values.isEmpty()) {
+                return List.of();
+            }
+            return values.stream()
+                    .map(v -> StringUtils.replace(StringUtils.trimToNull(v), "\0", " "))
+                    .filter(v -> v != null)
+                    .toList();
+        } catch (Exception x) {
+            // Ignored.
+            return List.of();
         }
     }
 

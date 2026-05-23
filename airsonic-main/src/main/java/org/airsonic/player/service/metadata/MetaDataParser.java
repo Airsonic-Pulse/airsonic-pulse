@@ -163,7 +163,7 @@ public abstract class MetaDataParser {
      * Sometimes the genre is returned as "(17)" or "(17)Rock", instead of "Rock".  This method
      * maps the genre ID to the corresponding text.
      */
-    String mapGenre(String genre) {
+    public static String mapGenre(String genre) {
         if (genre == null) {
             return null;
         }

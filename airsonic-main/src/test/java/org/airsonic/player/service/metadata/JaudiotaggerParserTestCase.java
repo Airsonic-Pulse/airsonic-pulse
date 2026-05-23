@@ -16,6 +16,7 @@
  */
 package org.airsonic.player.service.metadata;
 
+import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.id3.ID3v24Frame;
 import org.jaudiotagger.tag.id3.ID3v24Tag;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTXXX;
@@ -23,11 +24,13 @@ import org.jaudiotagger.tag.id3.valuepair.TextEncoding;
 import org.jaudiotagger.tag.vorbiscomment.VorbisCommentTag;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * Unit test of the ReplayGain extraction in {@link JaudiotaggerParser}.
+ * Unit test of the ReplayGain and multi-value tag-field extraction in {@link JaudiotaggerParser}.
  */
 public class JaudiotaggerParserTestCase {
 
@@ -62,5 +65,19 @@ public class JaudiotaggerParserTestCase {
         VorbisCommentTag tag = VorbisCommentTag.createNewTag();
         tag.setField("REPLAYGAIN_TRACK_GAIN", "-7.50 dB");
         assertEquals("-7.50 dB", JaudiotaggerParser.getReplayGainField(tag, JaudiotaggerParser.RG_TRACK_GAIN));
+    }
+
+    @Test
+    public void testGetAllTagFieldsReturnsMultipleGenreValues() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.addField(FieldKey.GENRE, "Rock");
+        tag.addField(FieldKey.GENRE, "Metal");
+        assertEquals(List.of("Rock", "Metal"), JaudiotaggerParser.getAllTagFields(tag, FieldKey.GENRE));
+    }
+
+    @Test
+    public void testGetAllTagFieldsAbsentReturnsEmpty() {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        assertEquals(List.of(), JaudiotaggerParser.getAllTagFields(tag, FieldKey.GENRE));
     }
 }

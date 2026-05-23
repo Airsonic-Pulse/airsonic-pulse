@@ -67,6 +67,8 @@ class JaxbContentServiceTest {
     private TranscodingService transcodingService;
     @Mock
     private RatingService ratingService;
+    @Mock
+    private SettingsService settingsService;
 
     @InjectMocks
     private JaxbContentService service;
@@ -337,6 +339,69 @@ class JaxbContentServiceTest {
             Child child = service.createJaxbChild(player, mediaFile, "user");
 
             assertNull(child.getCoverArt());
+        }
+
+        @Test
+        void createJaxbChild_populatesGenresArrayAndKeepsSingleGenre() {
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(400);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(400)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFile.getGenre()).thenReturn("Rock; Metal");
+            when(mediaFile.getGenres()).thenReturn("Rock; Metal");
+            when(settingsService.getGenreSeparators()).thenReturn(";");
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertEquals("Rock; Metal", child.getGenre());
+            assertEquals(2, child.getGenres().size());
+            assertEquals("Rock", child.getGenres().get(0).getName());
+            assertEquals("Metal", child.getGenres().get(1).getName());
+            verify(settingsService).getGenreSeparators();
+        }
+
+        @Test
+        void createJaxbChild_id3v1MappedNameMatchesBetweenGenreAndGenresArray() {
+            // packGenres now maps each token through mapGenre, so the canonical column value for
+            // an ID3v1 "(17)" file is "Rock" — the same name that mediaFile.getGenre() already
+            // returns via the existing mapGenre(getFirst(GENRE)) path. Asserting both come out
+            // equal locks in the symmetry the prior asymmetry-bug violated.
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(600);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(600)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFile.getGenre()).thenReturn("Rock");
+            when(mediaFile.getGenres()).thenReturn("Rock");
+            when(settingsService.getGenreSeparators()).thenReturn(";");
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertEquals("Rock", child.getGenre());
+            assertEquals(1, child.getGenres().size());
+            assertEquals("Rock", child.getGenres().get(0).getName());
+            assertEquals(child.getGenre(), child.getGenres().get(0).getName());
+        }
+
+        @Test
+        void createJaxbChild_noGenresWhenAbsent() {
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(500);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(500)).thenReturn(CoverArt.NULL_ART);
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertNull(child.getGenre());
+            assertTrue(child.getGenres().isEmpty());
         }
     }
 
