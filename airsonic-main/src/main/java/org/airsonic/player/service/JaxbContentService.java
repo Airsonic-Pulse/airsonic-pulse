@@ -22,6 +22,7 @@ import org.airsonic.player.controller.CoverArtController;
 import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.CoverArt;
+import org.airsonic.player.domain.Genres;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.Playlist;
@@ -30,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.subsonic.restapi.AlbumID3;
 import org.subsonic.restapi.ArtistID3;
 import org.subsonic.restapi.Child;
+import org.subsonic.restapi.ItemGenre;
 import org.subsonic.restapi.ReplayGain;
 
 import java.time.Instant;
@@ -46,6 +48,7 @@ public class JaxbContentService {
     private final MediaFileService mediaFileService;
     private final TranscodingService transcodingService;
     private final RatingService ratingService;
+    private final SettingsService settingsService;
 
     JaxbContentService(
             JAXBWriter jaxbWriter,
@@ -55,7 +58,8 @@ public class JaxbContentService {
             AlbumService albumService,
             MediaFileService mediaFileService,
             TranscodingService transcodingService,
-            RatingService ratingService) {
+            RatingService ratingService,
+            SettingsService settingsService) {
         this.jaxbWriter = jaxbWriter;
         this.artistService = artistService;
         this.coverArtService = coverArtService;
@@ -64,6 +68,7 @@ public class JaxbContentService {
         this.mediaFileService = mediaFileService;
         this.transcodingService = transcodingService;
         this.ratingService = ratingService;
+        this.settingsService = settingsService;
     }
 
     public <T extends ArtistID3> T createJaxbArtist(T jaxbArtist, org.airsonic.player.domain.Artist artist, String username) {
@@ -159,6 +164,11 @@ public class JaxbContentService {
         child.setYear(mediaFile.getYear());
         child.setBpm(mediaFile.getBpm());
         child.setGenre(mediaFile.getGenre());
+        for (String genreName : Genres.split(mediaFile.getGenres(), settingsService.getGenreSeparators())) {
+            ItemGenre itemGenre = new ItemGenre();
+            itemGenre.setName(genreName);
+            child.getGenres().add(itemGenre);
+        }
         child.setCreated(jaxbWriter.convertDate(mediaFile.getCreated()));
         child.setStarred(jaxbWriter.convertDate(mediaFileService.getMediaFileStarredDate(mediaFile, username)));
         child.setUserRating(ratingService.getRatingForUser(username, mediaFile));

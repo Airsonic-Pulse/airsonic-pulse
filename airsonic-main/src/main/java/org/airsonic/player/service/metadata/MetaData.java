@@ -39,6 +39,7 @@ public class MetaData {
     private String albumName;
     private String albumSortName;
     private String genre;
+    private List<String> genres = Collections.emptyList();
     private Integer year;
     private Integer bpm;
     private Integer bitRate;
@@ -127,6 +128,14 @@ public class MetaData {
 
     public void setGenre(String genre) {
         this.genre = genre;
+    }
+
+    public List<String> getGenres() {
+        return genres;
+    }
+
+    public void setGenres(List<String> genres) {
+        this.genres = genres != null ? genres : Collections.emptyList();
     }
 
     public Integer getYear() {

@@ -36,9 +36,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -55,6 +57,8 @@ public class MediaFileServiceTest {
     private MediaFileCache mediaFileCache;
     @Mock
     private MediaFolderService mediaFolderService;
+    @Mock
+    private SettingsService settingsService;
 
     @InjectMocks
     private MediaFileService mediaFileService;
@@ -70,7 +74,7 @@ public class MediaFileServiceTest {
 
     @BeforeEach
     public void setUp() {
-        when(mockedFolder.getPath()).thenReturn(CLASS_PATH.resolve("MEDIAS"));
+        lenient().when(mockedFolder.getPath()).thenReturn(CLASS_PATH.resolve("MEDIAS"));
     }
 
     @Test
@@ -97,5 +101,22 @@ public class MediaFileServiceTest {
         verify(mediaFileRepository).findByFolderAndPath(any(), eq("valid/airsonic-test.wav"));
         verify(mediaFileRepository).save(base);
         verify(coverArtService).persistIfNeeded(eq(base));
+    }
+
+    @Test
+    public void packGenresMapsId3v1NumericCodesPerToken() {
+        when(settingsService.getGenreSeparators()).thenReturn(";");
+
+        // A raw ID3v1 numeric-code value: getAll typically returns one entry "(17)" which
+        // mapGenre resolves to "Rock", matching what the single `genre` column already stores.
+        assertEquals("Rock", mediaFileService.packGenres(List.of("(17)")));
+
+        // A packed delimited value with one numeric token mixed in is split first, then each
+        // token mapped individually — never mapGenre-d as a whole packed string.
+        assertEquals("Rock;Pop", mediaFileService.packGenres(List.of("(17); Pop")));
+
+        // Cross-frame multi-value: two frames, one numeric, one text → both mapped, deduped,
+        // joined with the primary separator.
+        assertEquals("Rock;Metal", mediaFileService.packGenres(List.of("(17)", "Metal")));
     }
 }
