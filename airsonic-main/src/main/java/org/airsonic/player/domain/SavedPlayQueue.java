@@ -53,6 +53,8 @@ public class SavedPlayQueue {
     @OneToOne
     @JoinColumn(name = "current_media_file_id", referencedColumnName = "id")
     private MediaFile currentMediaFile;
+    @Column(name = "current_index")
+    private Integer currentIndex;
     @Column(name = "position_millis")
     private Long positionMillis;
     @Column(name = "changed")
@@ -108,6 +110,14 @@ public class SavedPlayQueue {
 
     public void setCurrentMediaFile(MediaFile currentMediaFile) {
         this.currentMediaFile = currentMediaFile;
+    }
+
+    public Integer getCurrentIndex() {
+        return currentIndex;
+    }
+
+    public void setCurrentIndex(Integer currentIndex) {
+        this.currentIndex = currentIndex;
     }
 
     public Long getPositionMillis() {
