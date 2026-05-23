@@ -46,6 +46,8 @@
             <xs:element name="internetRadioStations" type="sub:InternetRadioStations" minOccurs="1" maxOccurs="1"/>
             <xs:element name="bookmarks" type="sub:Bookmarks" minOccurs="1" maxOccurs="1"/>
             <xs:element name="playQueue" type="sub:PlayQueue" minOccurs="1" maxOccurs="1"/>
+            <xs:element name="playQueueByIndex" type="sub:PlayQueueByIndex" minOccurs="1" maxOccurs="1"/>  <!-- Added in OpenSubsonic -->
+
             <xs:element name="shares" type="sub:Shares" minOccurs="1" maxOccurs="1"/>
             <xs:element name="starred" type="sub:Starred" minOccurs="1" maxOccurs="1"/>
             <xs:element name="starred2" type="sub:Starred2" minOccurs="1" maxOccurs="1"/>
@@ -550,6 +552,17 @@
         <xs:attribute name="username" type="xs:string" use="required"/>
         <xs:attribute name="changed" type="xs:dateTime" use="required"/>
         <xs:attribute name="changedBy" type="xs:string" use="required"/> <!-- Name of client app -->
+    </xs:complexType>
+
+    <xs:complexType name="PlayQueueByIndex">  <!-- Added in OpenSubsonic: indexBasedQueue extension -->
+        <xs:sequence>
+            <xs:element name="entry" type="sub:Child" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+        <xs:attribute name="currentIndex" type="xs:int" use="optional"/> <!-- Index of currently playing track in the queue -->
+        <xs:attribute name="position" type="xs:long" use="optional"/>    <!-- Position in milliseconds of currently playing track -->
+        <xs:attribute name="username" type="xs:string" use="required"/>
+        <xs:attribute name="changed" type="xs:dateTime" use="required"/>
+        <xs:attribute name="changedBy" type="xs:string" use="required"/>
     </xs:complexType>
 
     <xs:complexType name="Shares">

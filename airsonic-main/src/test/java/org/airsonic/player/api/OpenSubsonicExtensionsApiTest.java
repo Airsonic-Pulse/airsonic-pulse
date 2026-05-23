@@ -53,6 +53,22 @@ public class OpenSubsonicExtensionsApiTest extends AbstractRESTTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"/rest/getOpenSubsonicExtensions", "/rest/getOpenSubsonicExtensions.view"})
+    void getOpenSubsonicExtensions_returnsIndexBasedQueueExtension(String endpoint) throws Exception {
+        mvc.perform(get(endpoint)
+            .param("v", AIRSONIC_API_VERSION)
+            .param("c", CLIENT_NAME)
+            .param("u", AIRSONIC_USER)
+            .param("p", AIRSONIC_PASSWORD)
+            .param("f", EXPECTED_FORMAT)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.subsonic-response.status").value("ok"))
+            .andExpect(jsonPath("$.subsonic-response.openSubsonicExtensions.openSubsonicExtension[*].name").value(hasItem("indexBasedQueue")))
+            .andExpect(jsonPath("$.subsonic-response.openSubsonicExtensions.openSubsonicExtension[?(@.name=='indexBasedQueue')].versions[0]").value(hasItem(1)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/rest/getOpenSubsonicExtensions", "/rest/getOpenSubsonicExtensions.view"})
     void getOpenSubsonicExtensions_accessibleWithoutAuth(String endpoint) throws Exception {
         mvc.perform(get(endpoint)
             .param("f", EXPECTED_FORMAT)

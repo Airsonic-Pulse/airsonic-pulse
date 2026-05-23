@@ -161,6 +161,47 @@ public class PlayQueueService {
         return savedPlayQueue.getId();
     }
 
+    /**
+     * Saves the play queue indexed by position rather than by media file id, so callers can
+     * disambiguate the duplicate-track case the legacy savePlayQueue cannot express.
+     * <p>
+     * The stored {@code current_index} is recomputed against the FILTERED queue: it is the count
+     * of valid (resolvable) media file ids preceding the requested position. The derived
+     * {@code current_media_file_id} is the media file resolved at the requested position, so the
+     * legacy getPlayQueue endpoint continues to return a valid current track. If the entry AT
+     * the requested position itself fails to resolve (unknown id), both {@code current_index}
+     * and {@code current_media_file_id} are stored as null — no valid current track to address.
+     */
+    @Transactional
+    public int savePlayQueueByIndex(String username, List<Integer> mediaFileIds, Integer currentIndex, Long position, String changedBy) {
+        SavedPlayQueue savedPlayQueue = savedPlayQueueRepository.findByUsername(username).orElse(new SavedPlayQueue(username));
+
+        List<MediaFile> mediaFiles = new ArrayList<>();
+        Integer adjustedIndex = null;
+        MediaFile adjustedCurrent = null;
+        for (int i = 0; i < mediaFileIds.size(); i++) {
+            MediaFile mf = mediaFileService.getMediaFile(mediaFileIds.get(i), true);
+            if (mf == null) {
+                continue;
+            }
+            if (currentIndex != null && i == currentIndex) {
+                adjustedIndex = mediaFiles.size();
+                adjustedCurrent = mf;
+            }
+            mediaFiles.add(mf);
+        }
+
+        savedPlayQueue.setMediaFiles(mediaFiles);
+        savedPlayQueue.setCurrentIndex(adjustedIndex);
+        savedPlayQueue.setCurrentMediaFile(adjustedCurrent);
+        savedPlayQueue.setPositionMillis(position);
+        savedPlayQueue.setChanged(Instant.now());
+        savedPlayQueue.setChangedBy(changedBy);
+        savedPlayQueueRepository.save(savedPlayQueue);
+
+        return savedPlayQueue.getId();
+    }
+
     @Transactional
     public void loadSavedPlayQueue(Player player, String sessionId) {
         SavedPlayQueue savedPlayQueue = savedPlayQueueRepository.findByUsername(player.getUsername()).orElse(null);

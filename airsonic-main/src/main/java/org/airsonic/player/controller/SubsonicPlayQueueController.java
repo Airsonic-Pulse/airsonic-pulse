@@ -103,4 +103,62 @@ public class SubsonicPlayQueueController extends AbstractSubsonicController {
         writeEmptyResponse(request, response);
     }
 
+    @RequestMapping({"/getPlayQueueByIndex", "/getPlayQueueByIndex.view"})
+    public void getPlayQueueByIndex(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        request = wrapRequest(request);
+        String username = securityService.getCurrentUsername(request);
+        Player player = playerService.getPlayer(request, response, username);
+
+        SavedPlayQueue playQueue = playQueueService.loadSavedPlayQueueForRest(username);
+        if (playQueue == null) {
+            writeEmptyResponse(request, response);
+            return;
+        }
+
+        org.subsonic.restapi.PlayQueueByIndex restPlayQueue = new org.subsonic.restapi.PlayQueueByIndex();
+        restPlayQueue.setUsername(playQueue.getUsername());
+        // Prefer the explicitly stored currentIndex (savePlayQueueByIndex path); for queues
+        // saved id-based via the legacy savePlayQueue, fall back to indexOf(currentMediaFile)
+        // — first occurrence, the same imprecision id-based saves inherently have.
+        Integer currentIndex = playQueue.getCurrentIndex();
+        if (currentIndex == null && playQueue.getCurrentMediaFile() != null) {
+            int idx = playQueue.getMediaFiles().indexOf(playQueue.getCurrentMediaFile());
+            currentIndex = idx >= 0 ? idx : null;
+        }
+        restPlayQueue.setCurrentIndex(currentIndex);
+        restPlayQueue.setPosition(playQueue.getPositionMillis());
+        restPlayQueue.setChanged(jaxbWriter.convertDate(playQueue.getChanged()));
+        restPlayQueue.setChangedBy(playQueue.getChangedBy());
+
+        for (MediaFile mediaFile : playQueue.getMediaFiles()) {
+            if (mediaFile != null) {
+                restPlayQueue.getEntry().add(jaxbContentService.createJaxbChild(player, mediaFile, username));
+            }
+        }
+
+        Response res = createResponse();
+        res.setPlayQueueByIndex(restPlayQueue);
+        jaxbWriter.writeResponse(request, response, res);
+    }
+
+    @RequestMapping({"/savePlayQueueByIndex", "/savePlayQueueByIndex.view"})
+    public void savePlayQueueByIndex(HttpServletRequest request, HttpServletResponse response) throws Exception {
+        request = wrapRequest(request);
+        String username = securityService.getCurrentUsername(request);
+        List<Integer> mediaFileIds = Arrays.stream(getIntParameters(request, "id")).boxed().toList();
+        Integer currentIndex = getIntParameter(request, "currentIndex");
+        Long position = getLongParameter(request, "position");
+        String changedBy = getRequiredStringParameter(request, "c");
+
+        boolean indexOutOfRange = currentIndex != null && (currentIndex < 0 || currentIndex >= mediaFileIds.size());
+        if (indexOutOfRange) {
+            error(request, response, SubsonicRESTController.ErrorCode.GENERIC, "currentIndex is out of range");
+            return;
+        }
+
+        playQueueService.savePlayQueueByIndex(username, mediaFileIds, currentIndex, position, changedBy);
+
+        writeEmptyResponse(request, response);
+    }
+
 }

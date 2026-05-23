@@ -12,4 +12,5 @@
     <include file="add-media-file-bpm.xml" relativeToChangelogFile="true"/>
     <include file="add-media-file-replaygain.xml" relativeToChangelogFile="true"/>
     <include file="add-media-file-genres.xml" relativeToChangelogFile="true"/>
+    <include file="add-play-queue-current-index.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
