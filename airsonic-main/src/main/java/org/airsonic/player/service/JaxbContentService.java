@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.subsonic.restapi.AlbumID3;
 import org.subsonic.restapi.ArtistID3;
 import org.subsonic.restapi.Child;
+import org.subsonic.restapi.ItemDate;
 import org.subsonic.restapi.ItemGenre;
 import org.subsonic.restapi.ReplayGain;
 
@@ -120,7 +121,53 @@ public class JaxbContentService {
         jaxbAlbum.setMusicBrainzId(album.getMusicBrainzReleaseId());
         jaxbAlbum.setDisplayArtist(album.getArtist());
         jaxbAlbum.setSortName(album.getSortName());
+        jaxbAlbum.setIsCompilation(album.getCompilation());
+        jaxbAlbum.setOriginalReleaseDate(parseItemDate(album.getOriginalReleaseDate()));
+        jaxbAlbum.setReleaseDate(parseItemDate(album.getReleaseDate()));
         return jaxbAlbum;
+    }
+
+    private static final java.util.regex.Pattern ITEM_DATE_PATTERN =
+            java.util.regex.Pattern.compile("^(\\d{4})(?:-(\\d{1,2})(?:-(\\d{1,2}))?)?$");
+
+    /**
+     * Parses a raw tag date string into an {@link ItemDate}. Accepts {@code YYYY},
+     * {@code YYYY-MM}, or {@code YYYY-MM-DD}; tolerates a trailing time component by taking
+     * only the date part before {@code T} or whitespace. Returns {@code null} when the input
+     * is blank or doesn't match the expected shape, so the element is omitted from the
+     * response rather than emitted with an empty/garbage date.
+     */
+    static ItemDate parseItemDate(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String s = raw.trim();
+        if (s.isEmpty()) {
+            return null;
+        }
+        // Strip an optional trailing time component: "2003-10-12T00:00:00" -> "2003-10-12".
+        int splitAt = s.length();
+        for (int i = 0; i < s.length(); i++) {
+            char c = s.charAt(i);
+            if (c == 'T' || c == ' ') {
+                splitAt = i;
+                break;
+            }
+        }
+        s = s.substring(0, splitAt);
+        java.util.regex.Matcher m = ITEM_DATE_PATTERN.matcher(s);
+        if (!m.matches()) {
+            return null;
+        }
+        ItemDate date = new ItemDate();
+        date.setYear(Integer.valueOf(m.group(1)));
+        if (m.group(2) != null) {
+            date.setMonth(Integer.valueOf(m.group(2)));
+        }
+        if (m.group(3) != null) {
+            date.setDay(Integer.valueOf(m.group(3)));
+        }
+        return date;
     }
 
     public <T extends org.subsonic.restapi.Playlist> T createJaxbPlaylist(T jaxbPlaylist, Playlist playlist) {

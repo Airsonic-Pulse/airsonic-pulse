@@ -191,4 +191,21 @@ public class MetaDataParserTestCase {
         assertNull(parser.parseReplayGain("dB"));
         assertNull(parser.parseReplayGain(" dB "));
     }
+
+    @Test
+    public void testParseCompilation() {
+        assertEquals(Boolean.TRUE, MetaDataParser.parseCompilation("1"));
+        assertEquals(Boolean.TRUE, MetaDataParser.parseCompilation("true"));
+        assertEquals(Boolean.TRUE, MetaDataParser.parseCompilation("TRUE"));
+        assertEquals(Boolean.TRUE, MetaDataParser.parseCompilation(" True "));
+        assertEquals(Boolean.FALSE, MetaDataParser.parseCompilation("0"));
+        assertEquals(Boolean.FALSE, MetaDataParser.parseCompilation("false"));
+        assertEquals(Boolean.FALSE, MetaDataParser.parseCompilation("FALSE"));
+        assertNull(MetaDataParser.parseCompilation(null));
+        assertNull(MetaDataParser.parseCompilation(""));
+        assertNull(MetaDataParser.parseCompilation("   "));
+        assertNull(MetaDataParser.parseCompilation("yes"));
+        assertNull(MetaDataParser.parseCompilation("2"));
+        assertNull(MetaDataParser.parseCompilation("compilation"));
+    }
 }

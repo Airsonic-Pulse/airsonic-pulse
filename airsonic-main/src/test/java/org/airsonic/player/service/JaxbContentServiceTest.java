@@ -185,6 +185,57 @@ class JaxbContentServiceTest {
             assertNull(result.getArtistId());
             assertNull(result.getCoverArt());
         }
+
+        @Test
+        void createJaxbAlbum_setsCompilationAndDates() {
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(20);
+            when(album.getName()).thenReturn("Comp");
+            when(album.getArtist()).thenReturn("Various Artists");
+            when(album.getSongCount()).thenReturn(12);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(20)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(20, "user")).thenReturn(null);
+            when(artistService.getArtist("Various Artists")).thenReturn(null);
+            when(album.getCompilation()).thenReturn(Boolean.TRUE);
+            when(album.getOriginalReleaseDate()).thenReturn("2003-10-12");
+            when(album.getReleaseDate()).thenReturn("2020-05");
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertEquals(Boolean.TRUE, result.isIsCompilation());
+            assertNotNull(result.getOriginalReleaseDate());
+            assertEquals(Integer.valueOf(2003), result.getOriginalReleaseDate().getYear());
+            assertEquals(Integer.valueOf(10), result.getOriginalReleaseDate().getMonth());
+            assertEquals(Integer.valueOf(12), result.getOriginalReleaseDate().getDay());
+            assertNotNull(result.getReleaseDate());
+            assertEquals(Integer.valueOf(2020), result.getReleaseDate().getYear());
+            assertEquals(Integer.valueOf(5), result.getReleaseDate().getMonth());
+            assertNull(result.getReleaseDate().getDay());
+        }
+
+        @Test
+        void createJaxbAlbum_omitsCompilationAndDatesWhenAbsent() {
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(21);
+            when(album.getName()).thenReturn("Plain");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(21)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(21, "user")).thenReturn(null);
+            // Mockito's default for a Boolean-returning method is Boolean.FALSE, not null,
+            // so the absent case needs an explicit null stub to model "tag missing".
+            when(album.getCompilation()).thenReturn(null);
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertNull(result.isIsCompilation());
+            assertNull(result.getOriginalReleaseDate());
+            assertNull(result.getReleaseDate());
+        }
     }
 
     @Nested
@@ -450,6 +501,64 @@ class JaxbContentServiceTest {
 
             assertEquals(5, result.getUserRating());
             assertEquals(4.2, result.getAverageRating());
+        }
+    }
+
+    @Nested
+    class ParseItemDateTest {
+        @Test
+        void parseItemDate_fullDate() {
+            org.subsonic.restapi.ItemDate d = JaxbContentService.parseItemDate("2003-10-12");
+            assertNotNull(d);
+            assertEquals(Integer.valueOf(2003), d.getYear());
+            assertEquals(Integer.valueOf(10), d.getMonth());
+            assertEquals(Integer.valueOf(12), d.getDay());
+        }
+
+        @Test
+        void parseItemDate_yearAndMonth() {
+            org.subsonic.restapi.ItemDate d = JaxbContentService.parseItemDate("2020-05");
+            assertNotNull(d);
+            assertEquals(Integer.valueOf(2020), d.getYear());
+            assertEquals(Integer.valueOf(5), d.getMonth());
+            assertNull(d.getDay());
+        }
+
+        @Test
+        void parseItemDate_yearOnly() {
+            org.subsonic.restapi.ItemDate d = JaxbContentService.parseItemDate("1999");
+            assertNotNull(d);
+            assertEquals(Integer.valueOf(1999), d.getYear());
+            assertNull(d.getMonth());
+            assertNull(d.getDay());
+        }
+
+        @Test
+        void parseItemDate_tolerateTrailingTime() {
+            org.subsonic.restapi.ItemDate d = JaxbContentService.parseItemDate("2003-10-12T00:00:00");
+            assertNotNull(d);
+            assertEquals(Integer.valueOf(2003), d.getYear());
+            assertEquals(Integer.valueOf(10), d.getMonth());
+            assertEquals(Integer.valueOf(12), d.getDay());
+        }
+
+        @Test
+        void parseItemDate_tolerateTrailingSpaceDelimitedTime() {
+            org.subsonic.restapi.ItemDate d = JaxbContentService.parseItemDate("2003-10-12 12:30");
+            assertNotNull(d);
+            assertEquals(Integer.valueOf(2003), d.getYear());
+            assertEquals(Integer.valueOf(10), d.getMonth());
+            assertEquals(Integer.valueOf(12), d.getDay());
+        }
+
+        @Test
+        void parseItemDate_blankOrNullOrMalformedReturnsNull() {
+            assertNull(JaxbContentService.parseItemDate(null));
+            assertNull(JaxbContentService.parseItemDate(""));
+            assertNull(JaxbContentService.parseItemDate("   "));
+            assertNull(JaxbContentService.parseItemDate("not-a-date"));
+            assertNull(JaxbContentService.parseItemDate("20"));
+            assertNull(JaxbContentService.parseItemDate("99999"));
         }
     }
 

@@ -41,6 +41,9 @@ public class MetaData {
     private String genre;
     private List<String> genres = Collections.emptyList();
     private Integer year;
+    private Boolean compilation;
+    private String originalReleaseDate;
+    private String releaseDate;
     private Integer bpm;
     private Integer bitRate;
     private boolean variableBitRate;
@@ -144,6 +147,30 @@ public class MetaData {
 
     public void setYear(Integer year) {
         this.year = year;
+    }
+
+    public Boolean getCompilation() {
+        return compilation;
+    }
+
+    public void setCompilation(Boolean compilation) {
+        this.compilation = compilation;
+    }
+
+    public String getOriginalReleaseDate() {
+        return originalReleaseDate;
+    }
+
+    public void setOriginalReleaseDate(String originalReleaseDate) {
+        this.originalReleaseDate = originalReleaseDate;
+    }
+
+    public String getReleaseDate() {
+        return releaseDate;
+    }
+
+    public void setReleaseDate(String releaseDate) {
+        this.releaseDate = releaseDate;
     }
 
     public Integer getBpm() {

@@ -94,6 +94,15 @@ public class MediaFile {
     @Column(name = "year", nullable = true)
     private Integer year;
 
+    @Column(name = "release_date", nullable = true)
+    private String releaseDate;
+
+    @Column(name = "original_release_date", nullable = true)
+    private String originalReleaseDate;
+
+    @Column(name = "is_compilation", nullable = true)
+    private Boolean compilation;
+
     @Column(name = "bpm", nullable = true)
     private Integer bpm;
 
@@ -380,6 +389,30 @@ public class MediaFile {
 
     public void setYear(Integer year) {
         this.year = year;
+    }
+
+    public String getReleaseDate() {
+        return releaseDate;
+    }
+
+    public void setReleaseDate(String releaseDate) {
+        this.releaseDate = releaseDate;
+    }
+
+    public String getOriginalReleaseDate() {
+        return originalReleaseDate;
+    }
+
+    public void setOriginalReleaseDate(String originalReleaseDate) {
+        this.originalReleaseDate = originalReleaseDate;
+    }
+
+    public Boolean getCompilation() {
+        return compilation;
+    }
+
+    public void setCompilation(Boolean compilation) {
+        this.compilation = compilation;
     }
 
     public Integer getBpm() {
