@@ -102,6 +102,15 @@ public class JaudiotaggerParser extends MetaDataParser {
                 metaData.setTitle(getTagField(tag, FieldKey.TITLE));
                 metaData.setSortName(getTagField(tag, FieldKey.TITLE_SORT));
                 metaData.setYear(parseIntegerPattern(getTagField(tag, FieldKey.YEAR), YEAR_NUMBER_PATTERN));
+                // releaseDate keeps the raw YEAR tag value (may be YYYY / YYYY-MM / YYYY-MM-DD)
+                // so the response can surface month/day when the tag carries them; the existing
+                // integer year above is unchanged.
+                metaData.setReleaseDate(getTagField(tag, FieldKey.YEAR));
+                // originalReleaseDate: prefer the full ORIGINALRELEASEDATE tag, fall back to the
+                // year-only ORIGINAL_YEAR. parseItemDate at response time handles either form.
+                String originalRelease = getTagField(tag, FieldKey.ORIGINALRELEASEDATE);
+                metaData.setOriginalReleaseDate(originalRelease != null ? originalRelease : getTagField(tag, FieldKey.ORIGINAL_YEAR));
+                metaData.setCompilation(parseCompilation(getTagField(tag, FieldKey.IS_COMPILATION)));
                 metaData.setBpm(parseBpm(getTagField(tag, FieldKey.BPM)));
                 metaData.setGenre(mapGenre(getTagField(tag, FieldKey.GENRE)));
                 metaData.setGenres(getAllTagFields(tag, FieldKey.GENRE));

@@ -1,0 +1,41 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+    <changeSet id="add-media-file-album-scalars-dates" author="litebito">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="media_file" columnName="is_compilation" />
+            </not>
+        </preConditions>
+        <addColumn tableName="media_file">
+            <column name="is_compilation" type="boolean">
+                <constraints nullable="true" />
+            </column>
+            <column name="original_release_date" type="${varchar_type}">
+                <constraints nullable="true" />
+            </column>
+            <column name="release_date" type="${varchar_type}">
+                <constraints nullable="true" />
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet id="add-album-scalars-dates" author="litebito">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="album" columnName="is_compilation" />
+            </not>
+        </preConditions>
+        <addColumn tableName="album">
+            <column name="is_compilation" type="boolean">
+                <constraints nullable="true" />
+            </column>
+            <column name="original_release_date" type="${varchar_type}">
+                <constraints nullable="true" />
+            </column>
+            <column name="release_date" type="${varchar_type}">
+                <constraints nullable="true" />
+            </column>
+        </addColumn>
+    </changeSet>
+</databaseChangeLog>

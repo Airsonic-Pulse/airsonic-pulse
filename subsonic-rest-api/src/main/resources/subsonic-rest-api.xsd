@@ -164,6 +164,10 @@
     </xs:complexType>
 
     <xs:complexType name="AlbumID3">
+        <xs:sequence>
+            <xs:element name="originalReleaseDate" type="sub:ItemDate" minOccurs="0"/>  <!-- Added in OpenSubsonic -->
+            <xs:element name="releaseDate" type="sub:ItemDate" minOccurs="0"/>          <!-- Added in OpenSubsonic -->
+        </xs:sequence>
         <xs:attribute name="id" type="xs:string" use="required"/>
         <xs:attribute name="name" type="xs:string" use="required"/>
         <xs:attribute name="artist" type="xs:string" use="optional"/>
@@ -180,6 +184,13 @@
         <xs:attribute name="musicBrainzId" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
         <xs:attribute name="displayArtist" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
         <xs:attribute name="sortName" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="isCompilation" type="xs:boolean" use="optional"/>  <!-- Added in OpenSubsonic -->
+    </xs:complexType>
+
+    <xs:complexType name="ItemDate">  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="year" type="xs:int" use="optional"/>
+        <xs:attribute name="month" type="xs:int" use="optional"/>
+        <xs:attribute name="day" type="xs:int" use="optional"/>
     </xs:complexType>
 
     <xs:complexType name="AlbumWithSongsID3">

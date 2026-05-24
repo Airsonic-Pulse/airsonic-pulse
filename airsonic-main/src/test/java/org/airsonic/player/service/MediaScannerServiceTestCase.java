@@ -326,6 +326,66 @@ public class MediaScannerServiceTestCase {
         assertEquals("Second Sort", album.getSortName());
     }
 
+    // The isCompilation flag and the two raw-string date carriers
+    // (original_release_date, release_date) follow the same carrier-then-aggregate pattern
+    // as album_sort_name: last-write-wins, null-guarded so a later track with no value does
+    // not clobber a previously-set one.
+
+    private void aggregateScalarsAndDates(Map<String, Album> albums, Boolean compilation,
+                                          String originalReleaseDate, String releaseDate) {
+        MediaFile file = new MediaFile();
+        file.setMediaType(MediaFile.MediaType.MUSIC);
+        file.setAlbumName("TestAlbum");
+        file.setArtist("TestArtist");
+        file.setAlbumArtist("TestArtist");
+        file.setParentPath("TestAlbum");
+        file.setCompilation(compilation);
+        file.setOriginalReleaseDate(originalReleaseDate);
+        file.setReleaseDate(releaseDate);
+        ReflectionTestUtils.invokeMethod(mediaScannerService, "updateAlbum",
+            null, file, null, ALBUM_SORT_SCAN_TIME,
+            new HashMap<String, AtomicInteger>(), albums, new HashSet<Integer>());
+    }
+
+    @Test
+    public void testAlbumIsCompilationSetAndNullDoesNotClobber() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateScalarsAndDates(albums, Boolean.TRUE, null, null);
+        assertEquals(Boolean.TRUE, album.getCompilation());
+
+        aggregateScalarsAndDates(albums, null, null, null);
+        assertEquals(Boolean.TRUE, album.getCompilation());
+    }
+
+    @Test
+    public void testAlbumOriginalReleaseDateSetAndNullDoesNotClobber() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateScalarsAndDates(albums, null, "2003-10-12", null);
+        assertEquals("2003-10-12", album.getOriginalReleaseDate());
+
+        aggregateScalarsAndDates(albums, null, null, null);
+        assertEquals("2003-10-12", album.getOriginalReleaseDate());
+    }
+
+    @Test
+    public void testAlbumReleaseDateSetAndNullDoesNotClobber() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateScalarsAndDates(albums, null, null, "2020-05");
+        assertEquals("2020-05", album.getReleaseDate());
+
+        aggregateScalarsAndDates(albums, null, null, null);
+        assertEquals("2020-05", album.getReleaseDate());
+    }
+
     // The artist MB id (FieldKey.MUSICBRAINZ_RELEASEARTISTID) and sort name
     // (FieldKey.ALBUM_ARTIST_SORT) are carried on each track's MediaFile and aggregated onto
     // the Artist in the private updateArtist(). These tests drive that aggregation step

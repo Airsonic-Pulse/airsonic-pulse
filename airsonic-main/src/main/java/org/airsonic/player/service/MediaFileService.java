@@ -1021,6 +1021,9 @@ public class MediaFileService {
                 mediaFile.setGenre(metaData.getGenre());
                 mediaFile.setGenres(packGenres(metaData.getGenres()));
                 mediaFile.setYear(metaData.getYear());
+                mediaFile.setReleaseDate(metaData.getReleaseDate());
+                mediaFile.setOriginalReleaseDate(metaData.getOriginalReleaseDate());
+                mediaFile.setCompilation(metaData.getCompilation());
                 mediaFile.setBpm(metaData.getBpm());
                 mediaFile.setDuration(metaData.getDuration());
                 mediaFile.setBitRate(metaData.getBitRate());

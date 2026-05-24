@@ -323,6 +323,25 @@ public abstract class MetaDataParser {
     }
 
     /**
+     * Parses an {@code IS_COMPILATION}-style tag value into a tri-state {@link Boolean}:
+     * {@code "1"}/{@code "true"} → {@code TRUE}, {@code "0"}/{@code "false"} → {@code FALSE},
+     * absent/blank/unparseable → {@code null}. Comparison is case-insensitive after trim.
+     */
+    static Boolean parseCompilation(String str) {
+        str = StringUtils.trimToNull(str);
+        if (str == null) {
+            return null;
+        }
+        if ("1".equals(str) || "true".equalsIgnoreCase(str)) {
+            return Boolean.TRUE;
+        }
+        if ("0".equals(str) || "false".equalsIgnoreCase(str)) {
+            return Boolean.FALSE;
+        }
+        return null;
+    }
+
+    /**
      * Removes any prefixed track number from the given title string.
      *
      * @param title       The title with or without a prefixed track number, e.g., "02 - Back In Black".
