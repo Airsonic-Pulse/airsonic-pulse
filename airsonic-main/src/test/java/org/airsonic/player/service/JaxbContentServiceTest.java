@@ -22,6 +22,7 @@ import org.airsonic.player.controller.CoverArtController;
 import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.Artist;
+import org.airsonic.player.domain.Contributors;
 import org.airsonic.player.domain.CoverArt;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Player;
@@ -36,10 +37,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.subsonic.restapi.AlbumID3;
 import org.subsonic.restapi.ArtistID3;
 import org.subsonic.restapi.Child;
+import org.subsonic.restapi.Contributor;
 import org.subsonic.restapi.MediaType;
 
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -623,6 +626,123 @@ class JaxbContentServiceTest {
 
             assertNull(child.getGenre());
             assertTrue(child.getGenres().isEmpty());
+        }
+    }
+
+    @Nested
+    class JaxbContributorsTest {
+
+        @Test
+        void buildContributors_nullColumnReturnsEmpty() {
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFile.getContributors()).thenReturn(null);
+            assertTrue(service.buildContributors(mediaFile).isEmpty());
+        }
+
+        @Test
+        void buildContributors_blankColumnReturnsEmpty() {
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFile.getContributors()).thenReturn("");
+            assertTrue(service.buildContributors(mediaFile).isEmpty());
+        }
+
+        @Test
+        void buildContributors_packedColumnReturnsMatchingJaxbContributors() {
+            MediaFile mediaFile = mock(MediaFile.class);
+            String packed = Contributors.pack(List.of(
+                    new org.airsonic.player.domain.Contributor("composer", null, "John Williams"),
+                    new org.airsonic.player.domain.Contributor("lyricist", null, "Bernie Taupin")));
+            when(mediaFile.getContributors()).thenReturn(packed);
+            // Both contributors uncatalogued — fallback path produces empty-id artists.
+            when(artistService.getArtist("John Williams")).thenReturn(null);
+            when(artistService.getArtist("Bernie Taupin")).thenReturn(null);
+
+            List<Contributor> result = service.buildContributors(mediaFile);
+
+            assertEquals(2, result.size());
+            assertEquals("composer", result.get(0).getRole());
+            assertNull(result.get(0).getSubRole());
+            assertEquals("John Williams", result.get(0).getArtist().getName());
+            assertEquals("lyricist", result.get(1).getRole());
+            assertEquals("Bernie Taupin", result.get(1).getArtist().getName());
+        }
+
+        @Test
+        void createJaxbArtistByName_catalogedArtistEmitsRealId() {
+            Artist catalogued = mock(Artist.class);
+            when(catalogued.getId()).thenReturn(42);
+            when(catalogued.getName()).thenReturn("John Williams");
+            when(artistService.getArtist("John Williams")).thenReturn(catalogued);
+
+            ArtistID3 result = service.createJaxbArtistByName("John Williams");
+
+            assertEquals("42", result.getId());
+            assertEquals("John Williams", result.getName());
+        }
+
+        @Test
+        void createJaxbArtistByName_uncatalogedArtistEmitsEmptyIdSentinel() {
+            // No matching Airsonic Artist for this tag-derived name → empty-string id
+            // sentinel + raw tag name + albumCount=0 (the local XSD requires albumCount).
+            when(artistService.getArtist("Unknown Composer")).thenReturn(null);
+
+            ArtistID3 result = service.createJaxbArtistByName("Unknown Composer");
+
+            assertEquals("", result.getId());
+            assertEquals("Unknown Composer", result.getName());
+            assertEquals(0, result.getAlbumCount());
+        }
+
+        @Test
+        void createJaxbChild_populatesContributorsFromPackedColumn() {
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(700);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(700)).thenReturn(CoverArt.NULL_ART);
+            String packed = Contributors.pack(List.of(
+                    new org.airsonic.player.domain.Contributor("composer", null, "John Williams"),
+                    new org.airsonic.player.domain.Contributor("lyricist", null, "Bernie Taupin")));
+            when(mediaFile.getContributors()).thenReturn(packed);
+            Artist catalogued = mock(Artist.class);
+            when(catalogued.getId()).thenReturn(42);
+            when(catalogued.getName()).thenReturn("John Williams");
+            when(artistService.getArtist("John Williams")).thenReturn(catalogued);
+            when(artistService.getArtist("Bernie Taupin")).thenReturn(null);
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertEquals(2, child.getContributors().size());
+            Contributor composer = child.getContributors().get(0);
+            assertEquals("composer", composer.getRole());
+            assertNull(composer.getSubRole());
+            assertEquals("42", composer.getArtist().getId());
+            assertEquals("John Williams", composer.getArtist().getName());
+            Contributor lyricist = child.getContributors().get(1);
+            assertEquals("lyricist", lyricist.getRole());
+            assertNull(lyricist.getSubRole());
+            assertEquals("", lyricist.getArtist().getId());
+            assertEquals("Bernie Taupin", lyricist.getArtist().getName());
+        }
+
+        @Test
+        void createJaxbChild_omitsContributorsWhenColumnNull() {
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(800);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(800)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFile.getContributors()).thenReturn(null);
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertTrue(child.getContributors().isEmpty());
+            // No DB artist lookup performed when the column is empty.
+            verify(artistService, never()).getArtist(anyString());
         }
     }
 

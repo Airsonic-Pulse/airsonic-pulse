@@ -16,4 +16,5 @@
     <include file="add-album-scalars-dates.xml" relativeToChangelogFile="true"/>
     <include file="add-album-multivalue.xml" relativeToChangelogFile="true"/>
     <include file="add-media-file-disc-subtitle.xml" relativeToChangelogFile="true"/>
+    <include file="add-media-file-contributors.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

@@ -16,6 +16,7 @@
  */
 package org.airsonic.player.service.metadata;
 
+import org.airsonic.player.domain.Contributor;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.id3.ID3v24Frame;
 import org.jaudiotagger.tag.id3.ID3v24Tag;
@@ -79,5 +80,79 @@ public class JaudiotaggerParserTestCase {
     public void testGetAllTagFieldsAbsentReturnsEmpty() {
         VorbisCommentTag tag = VorbisCommentTag.createNewTag();
         assertEquals(List.of(), JaudiotaggerParser.getAllTagFields(tag, FieldKey.GENRE));
+    }
+
+    @Test
+    public void testGetContributorsExtractsSingleRoleFromVorbis() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.addField(FieldKey.COMPOSER, "John Williams");
+        assertEquals(List.of(new Contributor("composer", null, "John Williams")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsExtractsMultipleRolesFromVorbis() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.addField(FieldKey.COMPOSER, "John Williams");
+        tag.addField(FieldKey.LYRICIST, "Bernie Taupin");
+        tag.addField(FieldKey.CONDUCTOR, "Leonard Bernstein");
+        tag.addField(FieldKey.PRODUCER, "Rick Rubin");
+        tag.addField(FieldKey.MIXER, "Andy Wallace");
+        // Asserts both presence and the table-declaration order: composer, lyricist,
+        // conductor are followed by producer, mixer because that's the order in
+        // JaudiotaggerParser.CONTRIBUTOR_ROLES.
+        assertEquals(List.of(
+                new Contributor("composer", null, "John Williams"),
+                new Contributor("lyricist", null, "Bernie Taupin"),
+                new Contributor("conductor", null, "Leonard Bernstein"),
+                new Contributor("producer", null, "Rick Rubin"),
+                new Contributor("mixer", null, "Andy Wallace")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsMultipleValuesForOneRole() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.addField(FieldKey.COMPOSER, "John Williams");
+        tag.addField(FieldKey.COMPOSER, "Hans Zimmer");
+        assertEquals(List.of(
+                new Contributor("composer", null, "John Williams"),
+                new Contributor("composer", null, "Hans Zimmer")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsLeavesSubRoleNullForCleanFieldKeys() throws Exception {
+        // Batch 1 covers clean FieldKey roles only — no TMCL frame access — so subRole must
+        // be null for every contributor it produces. The TMCL/TIPL extraction that populates
+        // subRole is the planned Batch 2 follow-up.
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.addField(FieldKey.COMPOSER, "John Williams");
+        tag.addField(FieldKey.LYRICIST, "Bernie Taupin");
+        List<Contributor> contributors = JaudiotaggerParser.getContributors(tag);
+        assertEquals(2, contributors.size());
+        assertNull(contributors.get(0).subRole());
+        assertNull(contributors.get(1).subRole());
+    }
+
+    @Test
+    public void testGetContributorsAbsentReturnsEmpty() {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        assertEquals(List.of(), JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsExtractsFromId3v24() {
+        ID3v24Tag tag = new ID3v24Tag();
+        try {
+            tag.setField(FieldKey.COMPOSER, "John Williams");
+            tag.setField(FieldKey.LYRICIST, "Bernie Taupin");
+        } catch (Exception x) {
+            throw new AssertionError(x);
+        }
+        assertEquals(List.of(
+                new Contributor("composer", null, "John Williams"),
+                new Contributor("lyricist", null, "Bernie Taupin")),
+                JaudiotaggerParser.getContributors(tag));
     }
 }

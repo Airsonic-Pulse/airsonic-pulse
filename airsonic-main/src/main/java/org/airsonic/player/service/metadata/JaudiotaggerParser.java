@@ -21,6 +21,7 @@
 package org.airsonic.player.service.metadata;
 
 import com.google.common.collect.ImmutableSet;
+import org.airsonic.player.domain.Contributor;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.MediaFolderService;
 import org.apache.commons.io.FilenameUtils;
@@ -44,7 +45,9 @@ import org.springframework.stereotype.Service;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.LogManager;
@@ -65,6 +68,24 @@ public class JaudiotaggerParser extends MetaDataParser {
     static final String RG_ALBUM_GAIN = "REPLAYGAIN_ALBUM_GAIN";
     static final String RG_TRACK_PEAK = "REPLAYGAIN_TRACK_PEAK";
     static final String RG_ALBUM_PEAK = "REPLAYGAIN_ALBUM_PEAK";
+
+    // Clean-FieldKey contributor roles — each FieldKey is read via tag.getAll(...) and every
+    // returned value becomes one Contributor with the given role label and no subRole. The
+    // performer-with-instrument credits in TMCL/TIPL frames (which carry the subRole) are not
+    // covered here; that frame-access work is the planned Batch 2 follow-up for #144.
+    private static final List<Map.Entry<FieldKey, String>> CONTRIBUTOR_ROLES = List.of(
+            Map.entry(FieldKey.COMPOSER, "composer"),
+            Map.entry(FieldKey.LYRICIST, "lyricist"),
+            Map.entry(FieldKey.CONDUCTOR, "conductor"),
+            Map.entry(FieldKey.ARRANGER, "arranger"),
+            Map.entry(FieldKey.PRODUCER, "producer"),
+            Map.entry(FieldKey.ENGINEER, "engineer"),
+            Map.entry(FieldKey.MIXER, "mixer"),
+            Map.entry(FieldKey.REMIXER, "remixer"),
+            Map.entry(FieldKey.DJMIXER, "djmixer"),
+            Map.entry(FieldKey.ORCHESTRA, "orchestra"),
+            Map.entry(FieldKey.CHOIR, "choir"),
+            Map.entry(FieldKey.ENSEMBLE, "ensemble"));
 
     @Autowired
     private MediaFolderService mediaFolderService;
@@ -113,6 +134,7 @@ public class JaudiotaggerParser extends MetaDataParser {
                 metaData.setCompilation(parseCompilation(getTagField(tag, FieldKey.IS_COMPILATION)));
                 metaData.setReleaseTypes(getAllTagFields(tag, FieldKey.MUSICBRAINZ_RELEASE_TYPE));
                 metaData.setRecordLabels(getAllTagFields(tag, FieldKey.RECORD_LABEL));
+                metaData.setContributors(getContributors(tag));
                 metaData.setBpm(parseBpm(getTagField(tag, FieldKey.BPM)));
                 metaData.setGenre(mapGenre(getTagField(tag, FieldKey.GENRE)));
                 metaData.setGenres(getAllTagFields(tag, FieldKey.GENRE));
@@ -180,6 +202,24 @@ public class JaudiotaggerParser extends MetaDataParser {
             // Ignored.
             return List.of();
         }
+    }
+
+    /**
+     * Builds the per-track contributor list from clean-FieldKey roles only. Walks
+     * {@link #CONTRIBUTOR_ROLES} in declaration order and turns every non-blank tag value into
+     * a {@link Contributor} with the corresponding lowercase role label and no subRole.
+     * Performer-with-instrument credits (ID3 TMCL / TIPL paired frames, Vorbis
+     * {@code "Name (Instrument)"}) are out of scope here and will be added in a follow-up batch
+     * that mirrors {@link #getReplayGainField}'s frame-access pattern.
+     */
+    static List<Contributor> getContributors(Tag tag) {
+        List<Contributor> result = new ArrayList<>();
+        for (Map.Entry<FieldKey, String> entry : CONTRIBUTOR_ROLES) {
+            for (String name : getAllTagFields(tag, entry.getKey())) {
+                result.add(new Contributor(entry.getValue(), null, name));
+            }
+        }
+        return result;
     }
 
     /**

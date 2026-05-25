@@ -21,6 +21,7 @@ package org.airsonic.player.service;
 import org.airsonic.player.controller.CoverArtController;
 import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.domain.Album;
+import org.airsonic.player.domain.Contributors;
 import org.airsonic.player.domain.CoverArt;
 import org.airsonic.player.domain.Genres;
 import org.airsonic.player.domain.MediaFile;
@@ -31,6 +32,7 @@ import org.springframework.stereotype.Service;
 import org.subsonic.restapi.AlbumID3;
 import org.subsonic.restapi.ArtistID3;
 import org.subsonic.restapi.Child;
+import org.subsonic.restapi.Contributor;
 import org.subsonic.restapi.DiscTitle;
 import org.subsonic.restapi.ItemDate;
 import org.subsonic.restapi.ItemGenre;
@@ -314,6 +316,9 @@ public class JaxbContentService {
         child.setDisplayArtist(mediaFile.getArtist());
         child.setDisplayAlbumArtist(mediaFile.getAlbumArtist());
         child.setReplayGain(buildReplayGain(mediaFile));
+        for (Contributor contributor : buildContributors(mediaFile)) {
+            child.getContributors().add(contributor);
+        }
         if (mediaFile.getMediaType() != null) {
             child.setMediaType(mediaFile.getMediaType().name().toLowerCase());
         }
@@ -359,6 +364,41 @@ public class JaxbContentService {
             }
         }
         return child;
+    }
+
+    List<Contributor> buildContributors(MediaFile mediaFile) {
+        List<org.airsonic.player.domain.Contributor> records = Contributors.split(mediaFile.getContributors());
+        if (records.isEmpty()) {
+            return List.of();
+        }
+        List<Contributor> result = new ArrayList<>(records.size());
+        for (org.airsonic.player.domain.Contributor record : records) {
+            Contributor jaxb = new Contributor();
+            jaxb.setRole(record.role());
+            jaxb.setSubRole(record.subRole());
+            jaxb.setArtist(createJaxbArtistByName(record.name()));
+            result.add(jaxb);
+        }
+        return result;
+    }
+
+    ArtistID3 createJaxbArtistByName(String name) {
+        org.airsonic.player.domain.Artist artist = artistService.getArtist(name);
+        if (artist != null) {
+            ArtistID3 jaxb = new ArtistID3();
+            jaxb.setId(String.valueOf(artist.getId()));
+            jaxb.setName(artist.getName());
+            return jaxb;
+        }
+        // Uncatalogued tag-derived contributor: no Airsonic Artist record matches this name,
+        // so there is no resolvable id under the local XSD's required-id rule. Emit a "" id
+        // sentinel with the raw tag name; a stable synthetic id is a possible future refinement
+        // if clients struggle with the empty value.
+        ArtistID3 jaxb = new ArtistID3();
+        jaxb.setId("");
+        jaxb.setName(name);
+        jaxb.setAlbumCount(0);
+        return jaxb;
     }
 
     private ReplayGain buildReplayGain(MediaFile mediaFile) {

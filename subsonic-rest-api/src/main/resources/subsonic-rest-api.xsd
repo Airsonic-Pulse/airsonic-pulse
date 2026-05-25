@@ -264,6 +264,7 @@
         <xs:sequence>
             <xs:element name="replayGain" type="sub:ReplayGain" minOccurs="0"/>  <!-- Added in OpenSubsonic -->
             <xs:element name="genres" type="sub:ItemGenre" minOccurs="0" maxOccurs="unbounded"/>  <!-- Added in OpenSubsonic -->
+            <xs:element name="contributors" type="sub:Contributor" minOccurs="0" maxOccurs="unbounded"/>  <!-- Added in OpenSubsonic -->
         </xs:sequence>
         <xs:attribute name="id" type="xs:string" use="required"/>
         <xs:attribute name="parent" type="xs:string" use="optional"/>
@@ -314,6 +315,14 @@
 
     <xs:complexType name="ItemGenre">  <!-- Added in OpenSubsonic -->
         <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="Contributor">  <!-- Added in OpenSubsonic -->
+        <xs:sequence>
+            <xs:element name="artist" type="sub:ArtistID3"/>
+        </xs:sequence>
+        <xs:attribute name="role" type="xs:string" use="required"/>
+        <xs:attribute name="subRole" type="xs:string" use="optional"/>
     </xs:complexType>
 
     <xs:simpleType name="MediaType">
