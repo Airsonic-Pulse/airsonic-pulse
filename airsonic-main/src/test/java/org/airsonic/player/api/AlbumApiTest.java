@@ -148,7 +148,7 @@ public class AlbumApiTest {
             .thenReturn(List.of(testSong));
 
         AlbumWithSongsID3 testAlbumWithSongs = TestApiUtil.createTestAlbumWithSongsID3Full(testAlbumId);
-        when(jaxbContentService.createJaxbAlbum(any(), eq(testAlbum), eq(AIRSONIC_USER)))
+        when(jaxbContentService.createJaxbAlbum(any(), eq(testAlbum), eq(AIRSONIC_USER), any()))
             .thenReturn(testAlbumWithSongs);
         Child testSongChild = TestApiUtil.createTestMusicChild();
         when(jaxbContentService.createJaxbChild(any(), eq(testSong), eq(AIRSONIC_USER)))
@@ -204,7 +204,7 @@ public class AlbumApiTest {
             .thenReturn(List.of()); // No songs for this album
 
         AlbumWithSongsID3 testAlbumWithSongs = TestApiUtil.createTestAlbumWithSongsID3Minimum(testAlbumId);
-        when(jaxbContentService.createJaxbAlbum(any(), eq(testAlbum), eq(AIRSONIC_USER)))
+        when(jaxbContentService.createJaxbAlbum(any(), eq(testAlbum), eq(AIRSONIC_USER), any()))
             .thenReturn(testAlbumWithSongs);
 
         String response = mvc.perform(get(endpoint)

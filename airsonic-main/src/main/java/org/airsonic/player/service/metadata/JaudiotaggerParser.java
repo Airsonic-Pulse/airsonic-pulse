@@ -117,6 +117,7 @@ public class JaudiotaggerParser extends MetaDataParser {
                 metaData.setGenre(mapGenre(getTagField(tag, FieldKey.GENRE)));
                 metaData.setGenres(getAllTagFields(tag, FieldKey.GENRE));
                 metaData.setDiscNumber(parseIntegerPattern(getTagField(tag, FieldKey.DISC_NO), null));
+                metaData.setDiscSubtitle(getTagField(tag, FieldKey.DISC_SUBTITLE));
                 metaData.setTrackNumber(parseIntegerPattern(getTagField(tag, FieldKey.TRACK), TRACK_NUMBER_PATTERN));
                 metaData.setMusicBrainzReleaseId(getTagField(tag, FieldKey.MUSICBRAINZ_RELEASEID));
                 metaData.setMusicBrainzRecordingId(getTagField(tag, FieldKey.MUSICBRAINZ_TRACK_ID));

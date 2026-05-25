@@ -31,6 +31,7 @@ import org.springframework.stereotype.Service;
 import org.subsonic.restapi.AlbumID3;
 import org.subsonic.restapi.ArtistID3;
 import org.subsonic.restapi.Child;
+import org.subsonic.restapi.DiscTitle;
 import org.subsonic.restapi.ItemDate;
 import org.subsonic.restapi.ItemGenre;
 import org.subsonic.restapi.RecordLabel;
@@ -39,7 +40,9 @@ import org.subsonic.restapi.ReplayGain;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.TreeMap;
 
 @Service
 public class JaxbContentService {
@@ -101,6 +104,13 @@ public class JaxbContentService {
     }
 
     public <T extends AlbumID3> T createJaxbAlbum(T jaxbAlbum, Album album, String username) {
+        // The 3-arg overload is used by list endpoints (getAlbumList2, getStarred2, getArtist,
+        // search). Passing null tracks here keeps those paths free of per-album track fetches —
+        // discTitles only populates when the caller already has the album's songs in hand.
+        return createJaxbAlbum(jaxbAlbum, album, username, null);
+    }
+
+    public <T extends AlbumID3> T createJaxbAlbum(T jaxbAlbum, Album album, String username, List<MediaFile> albumTracks) {
         jaxbAlbum.setId(String.valueOf(album.getId()));
         jaxbAlbum.setName(album.getName());
         if (album.getArtist() != null) {
@@ -135,7 +145,49 @@ public class JaxbContentService {
             label.setName(labelName);
             jaxbAlbum.getRecordLabels().add(label);
         }
+        for (DiscTitle discTitle : buildDiscTitles(albumTracks)) {
+            jaxbAlbum.getDiscTitles().add(discTitle);
+        }
         return jaxbAlbum;
+    }
+
+    /**
+     * Builds the album's disc-title list by grouping its tracks by disc number and taking the
+     * first non-blank {@code disc_subtitle} per disc, sorted by disc ascending. Discs without
+     * any subtitled track are skipped. Returns an empty list when no tracks are provided or
+     * none carry subtitles — callers naturally omit the {@code <discTitles>} elements then.
+     * <p>
+     * Called only by the 4-arg {@code createJaxbAlbum} overload, so list endpoints never pay
+     * for the grouping (they pass {@code null} via the 3-arg overload).
+     */
+    static List<DiscTitle> buildDiscTitles(List<MediaFile> albumTracks) {
+        if (albumTracks == null || albumTracks.isEmpty()) {
+            return List.of();
+        }
+        Map<Integer, String> subtitleByDisc = new TreeMap<>();
+        for (MediaFile track : albumTracks) {
+            Integer disc = track.getDiscNumber();
+            if (disc == null || subtitleByDisc.containsKey(disc)) {
+                continue;
+            }
+            String subtitle = track.getDiscSubtitle();
+            if (subtitle == null) {
+                continue;
+            }
+            String trimmed = subtitle.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            subtitleByDisc.put(disc, trimmed);
+        }
+        List<DiscTitle> result = new ArrayList<>(subtitleByDisc.size());
+        for (Map.Entry<Integer, String> entry : subtitleByDisc.entrySet()) {
+            DiscTitle dt = new DiscTitle();
+            dt.setDisc(entry.getKey());
+            dt.setTitle(entry.getValue());
+            result.add(dt);
+        }
+        return result;
     }
 
     /**

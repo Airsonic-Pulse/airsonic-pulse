@@ -301,6 +301,111 @@ class JaxbContentServiceTest {
             assertTrue(result.getReleaseTypes().isEmpty());
             assertTrue(result.getRecordLabels().isEmpty());
         }
+
+        @Test
+        void createJaxbAlbum_threeArgOverloadEmitsNoDiscTitlesAndDoesNotFetchSongs() {
+            // The 3-arg overload is the list-endpoint path. It must NOT trigger a per-album
+            // mediaFileService.getSongsForAlbum call — the firm N+1 constraint — and must
+            // emit no <discTitles> elements (no songs available to build them from).
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(40);
+            when(album.getName()).thenReturn("ListPath");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(40)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(40, "user")).thenReturn(null);
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertTrue(result.getDiscTitles().isEmpty());
+            verify(mediaFileService, never()).getSongsForAlbum(org.mockito.ArgumentMatchers.any(),
+                    org.mockito.ArgumentMatchers.any());
+        }
+
+        @Test
+        void createJaxbAlbum_fourArgOverloadPopulatesDiscTitlesFromTracks() {
+            // Realistic multi-disc album: disc 1 "Bonus" + disc 2 "Live in Tokyo", multiple
+            // tracks per disc, first non-blank subtitle per disc wins, sorted ascending.
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(41);
+            when(album.getName()).thenReturn("DetailPath");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(41)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(41, "user")).thenReturn(null);
+
+            java.util.List<MediaFile> tracks = new java.util.ArrayList<>();
+            tracks.add(track(1, "Bonus"));
+            tracks.add(track(1, "Bonus"));
+            tracks.add(track(2, "Live in Tokyo"));
+            tracks.add(track(2, "Live in Tokyo"));
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user", tracks);
+
+            assertEquals(2, result.getDiscTitles().size());
+            assertEquals(1, result.getDiscTitles().get(0).getDisc());
+            assertEquals("Bonus", result.getDiscTitles().get(0).getTitle());
+            assertEquals(2, result.getDiscTitles().get(1).getDisc());
+            assertEquals("Live in Tokyo", result.getDiscTitles().get(1).getTitle());
+        }
+
+        @Test
+        void createJaxbAlbum_fourArgOverloadOmitsDiscsWithoutSubtitle() {
+            // Discs 1/2/3 where only disc 2 carries a subtitle → one DiscTitle for disc 2;
+            // discs 1 and 3 are skipped, not emitted with empty titles.
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(42);
+            when(album.getName()).thenReturn("PartialSubtitles");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(42)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(42, "user")).thenReturn(null);
+
+            java.util.List<MediaFile> tracks = new java.util.ArrayList<>();
+            tracks.add(track(1, null));
+            tracks.add(track(2, "Live"));
+            tracks.add(track(3, ""));
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user", tracks);
+
+            assertEquals(1, result.getDiscTitles().size());
+            assertEquals(2, result.getDiscTitles().get(0).getDisc());
+            assertEquals("Live", result.getDiscTitles().get(0).getTitle());
+        }
+
+        @Test
+        void createJaxbAlbum_fourArgOverloadEmitsNothingWhenNoTracksHaveSubtitles() {
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(43);
+            when(album.getName()).thenReturn("NoSubtitles");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(43)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(43, "user")).thenReturn(null);
+
+            java.util.List<MediaFile> tracks = new java.util.ArrayList<>();
+            tracks.add(track(1, null));
+            tracks.add(track(2, null));
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user", tracks);
+
+            assertTrue(result.getDiscTitles().isEmpty());
+        }
+
+        private MediaFile track(int discNumber, String discSubtitle) {
+            MediaFile mf = new MediaFile();
+            mf.setDiscNumber(discNumber);
+            mf.setDiscSubtitle(discSubtitle);
+            return mf;
+        }
     }
 
     @Nested
