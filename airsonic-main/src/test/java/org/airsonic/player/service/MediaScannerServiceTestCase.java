@@ -386,6 +386,49 @@ public class MediaScannerServiceTestCase {
         assertEquals("2020-05", album.getReleaseDate());
     }
 
+    // The releaseTypes and recordLabels packed carriers follow the same null-guarded
+    // last-write-wins pattern as the Batch A scalars / #136 album_sort_name.
+
+    private void aggregateMultiValue(Map<String, Album> albums, String releaseTypes, String recordLabels) {
+        MediaFile file = new MediaFile();
+        file.setMediaType(MediaFile.MediaType.MUSIC);
+        file.setAlbumName("TestAlbum");
+        file.setArtist("TestArtist");
+        file.setAlbumArtist("TestArtist");
+        file.setParentPath("TestAlbum");
+        file.setReleaseTypes(releaseTypes);
+        file.setRecordLabels(recordLabels);
+        ReflectionTestUtils.invokeMethod(mediaScannerService, "updateAlbum",
+            null, file, null, ALBUM_SORT_SCAN_TIME,
+            new HashMap<String, AtomicInteger>(), albums, new HashSet<Integer>());
+    }
+
+    @Test
+    public void testAlbumReleaseTypesSetAndNullDoesNotClobber() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateMultiValue(albums, "Album\nCompilation", null);
+        assertEquals("Album\nCompilation", album.getReleaseTypes());
+
+        aggregateMultiValue(albums, null, null);
+        assertEquals("Album\nCompilation", album.getReleaseTypes());
+    }
+
+    @Test
+    public void testAlbumRecordLabelsSetAndNullDoesNotClobber() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateMultiValue(albums, null, "Sony/BMG; Columbia\nWarner");
+        assertEquals("Sony/BMG; Columbia\nWarner", album.getRecordLabels());
+
+        aggregateMultiValue(albums, null, null);
+        assertEquals("Sony/BMG; Columbia\nWarner", album.getRecordLabels());
+    }
+
     // The artist MB id (FieldKey.MUSICBRAINZ_RELEASEARTISTID) and sort name
     // (FieldKey.ALBUM_ARTIST_SORT) are carried on each track's MediaFile and aggregated onto
     // the Artist in the private updateArtist(). These tests drive that aggregation step

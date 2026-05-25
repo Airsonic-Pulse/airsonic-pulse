@@ -33,9 +33,12 @@ import org.subsonic.restapi.ArtistID3;
 import org.subsonic.restapi.Child;
 import org.subsonic.restapi.ItemDate;
 import org.subsonic.restapi.ItemGenre;
+import org.subsonic.restapi.RecordLabel;
 import org.subsonic.restapi.ReplayGain;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -124,7 +127,40 @@ public class JaxbContentService {
         jaxbAlbum.setIsCompilation(album.getCompilation());
         jaxbAlbum.setOriginalReleaseDate(parseItemDate(album.getOriginalReleaseDate()));
         jaxbAlbum.setReleaseDate(parseItemDate(album.getReleaseDate()));
+        for (String releaseType : splitMultiValue(album.getReleaseTypes())) {
+            jaxbAlbum.getReleaseTypes().add(releaseType);
+        }
+        for (String labelName : splitMultiValue(album.getRecordLabels())) {
+            RecordLabel label = new RecordLabel();
+            label.setName(labelName);
+            jaxbAlbum.getRecordLabels().add(label);
+        }
         return jaxbAlbum;
+    }
+
+    /**
+     * Internal delimiter for packed multi-value AlbumID3 columns (releaseTypes, recordLabels).
+     * Must match the constant of the same name in {@link MediaFileService}.
+     */
+    static final String MULTI_VALUE_DELIMITER = "\n";
+
+    /**
+     * Splits a packed multi-value column back into a list of trimmed, non-blank values for
+     * response emission. Returns an empty list (not null) so callers can iterate without
+     * null-checking; an empty list naturally omits the repeated element entirely.
+     */
+    static List<String> splitMultiValue(String packed) {
+        if (packed == null || packed.isEmpty()) {
+            return List.of();
+        }
+        List<String> result = new ArrayList<>();
+        for (String token : packed.split(MULTI_VALUE_DELIMITER, -1)) {
+            String trimmed = token.trim();
+            if (!trimmed.isEmpty()) {
+                result.add(trimmed);
+            }
+        }
+        return result;
     }
 
     private static final java.util.regex.Pattern ITEM_DATE_PATTERN =

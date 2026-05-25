@@ -111,6 +111,8 @@ public class JaudiotaggerParser extends MetaDataParser {
                 String originalRelease = getTagField(tag, FieldKey.ORIGINALRELEASEDATE);
                 metaData.setOriginalReleaseDate(originalRelease != null ? originalRelease : getTagField(tag, FieldKey.ORIGINAL_YEAR));
                 metaData.setCompilation(parseCompilation(getTagField(tag, FieldKey.IS_COMPILATION)));
+                metaData.setReleaseTypes(getAllTagFields(tag, FieldKey.MUSICBRAINZ_RELEASE_TYPE));
+                metaData.setRecordLabels(getAllTagFields(tag, FieldKey.RECORD_LABEL));
                 metaData.setBpm(parseBpm(getTagField(tag, FieldKey.BPM)));
                 metaData.setGenre(mapGenre(getTagField(tag, FieldKey.GENRE)));
                 metaData.setGenres(getAllTagFields(tag, FieldKey.GENRE));
