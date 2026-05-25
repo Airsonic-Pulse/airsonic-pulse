@@ -138,8 +138,12 @@ public class SubsonicID3Controller extends AbstractSubsonicController {
             return;
         }
 
-        AlbumWithSongsID3 result = jaxbContentService.createJaxbAlbum(new AlbumWithSongsID3(), album, username);
-        for (MediaFile mediaFile : mediaFileService.getSongsForAlbum(album.getArtist(), album.getName())) {
+        // Load the album's songs once, reuse them for both discTitles (built inside the 4-arg
+        // createJaxbAlbum overload) and the <song> entries below — single getSongsForAlbum
+        // fetch, no per-album duplicate.
+        List<MediaFile> albumSongs = mediaFileService.getSongsForAlbum(album.getArtist(), album.getName());
+        AlbumWithSongsID3 result = jaxbContentService.createJaxbAlbum(new AlbumWithSongsID3(), album, username, albumSongs);
+        for (MediaFile mediaFile : albumSongs) {
             result.getSong().add(jaxbContentService.createJaxbChild(player, mediaFile, username));
         }
 

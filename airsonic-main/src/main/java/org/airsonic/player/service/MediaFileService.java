@@ -1017,6 +1017,7 @@ public class MediaFileService {
                 mediaFile.setTitle(metaData.getTitle());
                 mediaFile.setSortName(metaData.getSortName());
                 mediaFile.setDiscNumber(metaData.getDiscNumber());
+                mediaFile.setDiscSubtitle(metaData.getDiscSubtitle());
                 mediaFile.setTrackNumber(metaData.getTrackNumber());
                 mediaFile.setGenre(metaData.getGenre());
                 mediaFile.setGenres(packGenres(metaData.getGenres()));

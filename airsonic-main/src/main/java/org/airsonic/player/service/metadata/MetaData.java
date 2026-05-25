@@ -31,6 +31,7 @@ import java.util.List;
 public class MetaData {
 
     private Integer discNumber;
+    private String discSubtitle;
     private Integer trackNumber;
     private String title;
     private String sortName;
@@ -69,6 +70,14 @@ public class MetaData {
 
     public void setDiscNumber(Integer discNumber) {
         this.discNumber = discNumber;
+    }
+
+    public String getDiscSubtitle() {
+        return discSubtitle;
+    }
+
+    public void setDiscSubtitle(String discSubtitle) {
+        this.discSubtitle = discSubtitle;
     }
 
     public Integer getTrackNumber() {

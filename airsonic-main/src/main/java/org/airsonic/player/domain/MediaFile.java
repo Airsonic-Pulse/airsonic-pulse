@@ -88,6 +88,9 @@ public class MediaFile {
     @Column(name = "disc_number", nullable = true)
     private Integer discNumber;
 
+    @Column(name = "disc_subtitle", nullable = true)
+    private String discSubtitle;
+
     @Column(name = "track_number", nullable = true)
     private Integer trackNumber;
 
@@ -379,6 +382,14 @@ public class MediaFile {
 
     public void setDiscNumber(Integer discNumber) {
         this.discNumber = discNumber;
+    }
+
+    public String getDiscSubtitle() {
+        return discSubtitle;
+    }
+
+    public void setDiscSubtitle(String discSubtitle) {
+        this.discSubtitle = discSubtitle;
     }
 
     public Integer getTrackNumber() {

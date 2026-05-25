@@ -169,6 +169,7 @@
             <xs:element name="releaseDate" type="sub:ItemDate" minOccurs="0"/>          <!-- Added in OpenSubsonic -->
             <xs:element name="releaseTypes" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>  <!-- Added in OpenSubsonic -->
             <xs:element name="recordLabels" type="sub:RecordLabel" minOccurs="0" maxOccurs="unbounded"/>  <!-- Added in OpenSubsonic -->
+            <xs:element name="discTitles" type="sub:DiscTitle" minOccurs="0" maxOccurs="unbounded"/>  <!-- Added in OpenSubsonic -->
         </xs:sequence>
         <xs:attribute name="id" type="xs:string" use="required"/>
         <xs:attribute name="name" type="xs:string" use="required"/>
@@ -197,6 +198,11 @@
 
     <xs:complexType name="RecordLabel">  <!-- Added in OpenSubsonic -->
         <xs:attribute name="name" type="xs:string" use="required"/>
+    </xs:complexType>
+
+    <xs:complexType name="DiscTitle">  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="disc" type="xs:int" use="required"/>
+        <xs:attribute name="title" type="xs:string" use="required"/>
     </xs:complexType>
 
     <xs:complexType name="AlbumWithSongsID3">
