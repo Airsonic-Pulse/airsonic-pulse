@@ -31,6 +31,7 @@ import javax.cache.spi.CachingProvider;
 
 import java.time.Duration;
 import java.util.EnumSet;
+import java.util.Optional;
 
 @Configuration
 @EnableCaching(proxyTargetClass = true, mode = AdviceMode.ASPECTJ) // AspectJ used so classes calling methods on self can benefit from the cache
@@ -43,6 +44,7 @@ public class CacheConfiguration {
     public static final String COVER_ART_CACHE = "coverArtCache";
     public static final String PLAYLIST_CACHE = "playlistCache";
     public static final String PLAYLIST_USERS_CACHE = "playlistUsersCache";
+    public static final String ARTIST_BY_NAME_CACHE = "artistByNameCache";
 
 
     @Autowired
@@ -59,6 +61,11 @@ public class CacheConfiguration {
     private org.ehcache.config.Configuration createConfig(final ClassLoader cl) {
         ResourcePoolsBuilder pools = ResourcePoolsBuilder.newResourcePoolsBuilder()
                 .heap(1000L, EntryUnit.ENTRIES);
+        // The artist-by-name cache covers every distinct contributor name a track can carry
+        // (composer, lyricist, conductor, performer, …) on top of the album-artist namespace,
+        // so its keyspace is several times the artist row count. Larger heap matches that.
+        ResourcePoolsBuilder artistByNamePools = ResourcePoolsBuilder.newResourcePoolsBuilder()
+                .heap(10000L, EntryUnit.ENTRIES);
         // If needed, but will need to register serializers for the objects being stored
         // .offheap(10L, MemoryUnit.MB)
         // .disk(20, MemoryUnit.MB, false);
@@ -101,6 +108,15 @@ public class CacheConfiguration {
                         CacheConfigurationBuilder.newCacheConfigurationBuilder(Integer.class, PlaylistUserList.class, pools)
                                 .withClassLoader(cl)
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(10)))
+                                .withService(cacheLogging))
+                // Value type is Optional.class (erased) so cached misses can be stored as
+                // Optional.empty — JSR-107 forbids null values, and missing contributor names
+                // (composer/lyricist credits that aren't catalogued artists) dominate the
+                // lookups, so caching misses is the load-bearing part of this cache.
+                .withCache(ARTIST_BY_NAME_CACHE,
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, Optional.class, artistByNamePools)
+                                .withClassLoader(cl)
+                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(1)))
                                 .withService(cacheLogging))
                 .build();
     }

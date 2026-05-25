@@ -23,6 +23,7 @@ package org.airsonic.player.service;
 import org.airsonic.player.config.AirsonicScanConfig;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.CoverArt.EntityType;
+import org.airsonic.player.service.cache.ArtistByNameCache;
 import org.airsonic.player.service.search.IndexManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,7 +73,8 @@ public class MediaScannerService {
         AlbumService albumService,
         TaskSchedulingService taskService,
         SimpMessagingTemplate messagingTemplate,
-        AirsonicScanConfig scanConfig
+        AirsonicScanConfig scanConfig,
+        ArtistByNameCache artistByNameCache
     ) {
         this.settingsService = settingsService;
         this.indexManager = indexManager;
@@ -85,6 +87,7 @@ public class MediaScannerService {
         this.taskService = taskService;
         this.messagingTemplate = messagingTemplate;
         this.scanConfig = scanConfig;
+        this.artistByNameCache = artistByNameCache;
         init();
     }
 
@@ -99,6 +102,7 @@ public class MediaScannerService {
     private final TaskSchedulingService taskService;
     private final SimpMessagingTemplate messagingTemplate;
     private final AirsonicScanConfig scanConfig;
+    private final ArtistByNameCache artistByNameCache;
 
     private int scannerParallelism;
     private AtomicInteger scanCount = new AtomicInteger(0);
@@ -254,6 +258,8 @@ public class MediaScannerService {
 
             indexManager.startIndexing();
             mediaFileService.setMemoryCacheEnabled(false);
+            artistByNameCache.clear();
+            artistByNameCache.setEnabled(false);
 
             // Recurse through all files on disk.
             pool.submit(() -> {
@@ -325,6 +331,8 @@ public class MediaScannerService {
             LOG.error("Failed to scan media library.", x);
         } finally {
             mediaFileService.setMemoryCacheEnabled(true);
+            artistByNameCache.clear();
+            artistByNameCache.setEnabled(true);
             if (settingsService.getClearFullScanSettingAfterScan()) {
                 settingsService.setClearFullScanSettingAfterScan(null);
                 settingsService.setFullScan(null);
