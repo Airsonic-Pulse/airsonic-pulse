@@ -25,6 +25,7 @@ import org.airsonic.player.domain.entity.StarredArtist;
 import org.airsonic.player.repository.ArtistRepository;
 import org.airsonic.player.repository.OffsetBasedPageRequest;
 import org.airsonic.player.repository.StarredArtistRepository;
+import org.airsonic.player.service.cache.ArtistByNameCache;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,12 +54,16 @@ public class ArtistService {
 
     private final MediaFileService mediaFileService;
 
+    private final ArtistByNameCache artistByNameCache;
+
     public ArtistService(ArtistRepository artistRepository, StarredArtistRepository starredArtistRepository,
-            JWTSecurityService jwtSecurityService, MediaFileService mediaFileService) {
+            JWTSecurityService jwtSecurityService, MediaFileService mediaFileService,
+            ArtistByNameCache artistByNameCache) {
         this.artistRepository = artistRepository;
         this.starredArtistRepository = starredArtistRepository;
         this.jwtSecurityService = jwtSecurityService;
         this.mediaFileService = mediaFileService;
+        this.artistByNameCache = artistByNameCache;
     }
 
     private static final Logger LOG = LoggerFactory.getLogger(ArtistService.class);
@@ -97,7 +102,13 @@ public class ArtistService {
             LOG.debug("getArtist: artistName is null");
             return null;
         }
-        return artistRepository.findByName(artistName).orElse(null);
+        Optional<Artist> cached = artistByNameCache.get(artistName);
+        if (cached != null) {
+            return cached.orElse(null);
+        }
+        Optional<Artist> loaded = artistRepository.findByName(artistName);
+        artistByNameCache.put(artistName, loaded);
+        return loaded.orElse(null);
     }
 
     /**
@@ -195,6 +206,7 @@ public class ArtistService {
     @Transactional
     public void expunge() {
         artistRepository.deleteAllByPresentFalse();
+        artistByNameCache.clear();
     }
 
     /**

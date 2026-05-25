@@ -24,6 +24,7 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.repository.ArtistRepository;
 import org.airsonic.player.repository.StarredArtistRepository;
+import org.airsonic.player.service.cache.ArtistByNameCache;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,10 +39,13 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.time.Instant;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -65,6 +69,9 @@ public class ArtistServiceTest {
     @Mock
     private MediaFileService mediaFileService;
 
+    @Mock
+    private ArtistByNameCache artistByNameCache;
+
     private ArtistService artistService;
 
     @Mock
@@ -74,7 +81,7 @@ public class ArtistServiceTest {
     public void setUp() {
         jwtSecurityService = Mockito.spy(new JWTSecurityService(settingsService));
         artistService = new ArtistService(artistRepository, starredArtistRepository, jwtSecurityService,
-                mediaFileService);
+                mediaFileService, artistByNameCache);
     }
 
     @Test
@@ -281,6 +288,123 @@ public class ArtistServiceTest {
         verify(jwtSecurityService).addJWTToken(eq(User.USERNAME_GUEST), any(UriComponentsBuilder.class),
                 eq(now.plusSeconds(300L)));
         verify(mediaFileService, times(2)).getParentOf(mockedMediaFile, true);
+    }
+
+    @Test
+    public void getArtistByName_cacheHit_skipsRepository() {
+        // Cache returns Optional.of(artist) — repository must not be touched.
+        Artist artist = new Artist();
+        artist.setId(7);
+        artist.setName("Cached");
+        when(artistByNameCache.get("Cached")).thenReturn(Optional.of(artist));
+
+        Artist result = artistService.getArtist("Cached");
+
+        assertSame(artist, result);
+        verify(artistByNameCache).get("Cached");
+        verifyNoInteractions(artistRepository);
+        verify(artistByNameCache, never()).put(any(), any());
+    }
+
+    @Test
+    public void getArtistByName_cachedMiss_skipsRepository() {
+        // Cache returns Optional.empty() — that's the "cached miss" path, also no DAO hit.
+        // This is the load-bearing case: most contributor names miss, so caching misses is
+        // what makes the cache pay off.
+        when(artistByNameCache.get("Unknown Composer")).thenReturn(Optional.empty());
+
+        Artist result = artistService.getArtist("Unknown Composer");
+
+        assertNull(result);
+        verify(artistByNameCache).get("Unknown Composer");
+        verifyNoInteractions(artistRepository);
+        verify(artistByNameCache, never()).put(any(), any());
+    }
+
+    @Test
+    public void getArtistByName_cacheAbsent_queriesRepositoryAndPopulatesCache() {
+        // Cache returns null — cache miss, fall through to repository, store the result.
+        Artist artist = new Artist();
+        artist.setId(8);
+        artist.setName("Fresh");
+        when(artistByNameCache.get("Fresh")).thenReturn(null);
+        when(artistRepository.findByName("Fresh")).thenReturn(Optional.of(artist));
+
+        Artist result = artistService.getArtist("Fresh");
+
+        assertSame(artist, result);
+        verify(artistByNameCache).get("Fresh");
+        verify(artistRepository).findByName("Fresh");
+        verify(artistByNameCache).put("Fresh", Optional.of(artist));
+    }
+
+    @Test
+    public void getArtistByName_cacheAbsentAndRepositoryEmpty_storesEmptyOptional() {
+        // Cache absent + repository miss must result in Optional.empty stored in the cache —
+        // otherwise the next request for the same uncatalogued name would query again.
+        when(artistByNameCache.get("New Unknown")).thenReturn(null);
+        when(artistRepository.findByName("New Unknown")).thenReturn(Optional.empty());
+
+        Artist result = artistService.getArtist("New Unknown");
+
+        assertNull(result);
+        verify(artistByNameCache).get("New Unknown");
+        verify(artistRepository).findByName("New Unknown");
+        verify(artistByNameCache).put("New Unknown", Optional.empty());
+    }
+
+    @Test
+    public void getArtistByName_disabledCache_alwaysQueriesRepository() {
+        // When cache is disabled (scan in progress), get() returns null and put() is a no-op
+        // by the cache's own setEnabled contract — the service still routes through the cache
+        // helper. Two successive calls must each hit the repository to guarantee post-scan
+        // commits are visible to readers during the scan window.
+        Artist artist = new Artist();
+        artist.setId(9);
+        artist.setName("Live");
+        when(artistByNameCache.get("Live")).thenReturn(null);
+        when(artistRepository.findByName("Live")).thenReturn(Optional.of(artist));
+
+        Artist first = artistService.getArtist("Live");
+        Artist second = artistService.getArtist("Live");
+
+        assertSame(artist, first);
+        assertSame(artist, second);
+        verify(artistRepository, times(2)).findByName("Live");
+    }
+
+    @Test
+    public void expunge_clearsArtistByNameCache() {
+        // After deleting non-present artists, cached entries pointing at those ids would be
+        // stale — clear() drops them so the next lookup repopulates from post-expunge state.
+        artistService.expunge();
+
+        verify(artistRepository).deleteAllByPresentFalse();
+        verify(artistByNameCache).clear();
+    }
+
+    @Test
+    public void getArtistByName_blankName_doesNotTouchCacheOrRepository() {
+        Artist result = artistService.getArtist("");
+
+        assertNull(result);
+        verifyNoInteractions(artistByNameCache);
+        verifyNoInteractions(artistRepository);
+    }
+
+    @Test
+    public void getArtistByName_returnedValueEqualsCachedValue() {
+        // Sanity: the wrapped Optional is unwrapped consistently — id and name come back
+        // exactly as the cache stored them.
+        Artist artist = new Artist();
+        artist.setId(11);
+        artist.setName("Bernie Taupin");
+        when(artistByNameCache.get("Bernie Taupin")).thenReturn(Optional.of(artist));
+
+        Artist result = artistService.getArtist("Bernie Taupin");
+
+        assertEquals(Integer.valueOf(11), result.getId());
+        assertEquals("Bernie Taupin", result.getName());
     }
 
 }
