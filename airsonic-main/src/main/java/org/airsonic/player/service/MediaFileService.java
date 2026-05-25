@@ -1027,6 +1027,7 @@ public class MediaFileService {
                 mediaFile.setCompilation(metaData.getCompilation());
                 mediaFile.setReleaseTypes(packMultiValue(metaData.getReleaseTypes()));
                 mediaFile.setRecordLabels(packMultiValue(metaData.getRecordLabels()));
+                mediaFile.setContributors(Contributors.pack(metaData.getContributors()));
                 mediaFile.setBpm(metaData.getBpm());
                 mediaFile.setDuration(metaData.getDuration());
                 mediaFile.setBitRate(metaData.getBitRate());

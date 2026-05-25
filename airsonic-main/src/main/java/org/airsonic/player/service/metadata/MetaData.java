@@ -20,6 +20,8 @@
  */
 package org.airsonic.player.service.metadata;
 
+import org.airsonic.player.domain.Contributor;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +49,7 @@ public class MetaData {
     private String releaseDate;
     private List<String> releaseTypes = Collections.emptyList();
     private List<String> recordLabels = Collections.emptyList();
+    private List<Contributor> contributors = Collections.emptyList();
     private Integer bpm;
     private Integer bitRate;
     private boolean variableBitRate;
@@ -198,6 +201,14 @@ public class MetaData {
 
     public void setRecordLabels(List<String> recordLabels) {
         this.recordLabels = recordLabels != null ? recordLabels : Collections.emptyList();
+    }
+
+    public List<Contributor> getContributors() {
+        return contributors;
+    }
+
+    public void setContributors(List<Contributor> contributors) {
+        this.contributors = contributors != null ? contributors : Collections.emptyList();
     }
 
     public Integer getBpm() {
