@@ -1024,6 +1024,8 @@ public class MediaFileService {
                 mediaFile.setReleaseDate(metaData.getReleaseDate());
                 mediaFile.setOriginalReleaseDate(metaData.getOriginalReleaseDate());
                 mediaFile.setCompilation(metaData.getCompilation());
+                mediaFile.setReleaseTypes(packMultiValue(metaData.getReleaseTypes()));
+                mediaFile.setRecordLabels(packMultiValue(metaData.getRecordLabels()));
                 mediaFile.setBpm(metaData.getBpm());
                 mediaFile.setDuration(metaData.getDuration());
                 mediaFile.setBitRate(metaData.getBitRate());
@@ -1765,5 +1767,31 @@ public class MediaFileService {
         }
         String separator = (separators == null || separators.isEmpty()) ? ";" : separators.substring(0, 1);
         return String.join(separator, clean);
+    }
+
+    /**
+     * Internal delimiter for packed multi-value AlbumID3 columns (releaseTypes, recordLabels).
+     * Newline is collision-resistant: release-type controlled vocab and record-label names never
+     * contain it, so a label like {@code "Sony/BMG; Columbia"} round-trips unmangled even though
+     * the genre separator setting may include {@code ';'} or {@code ','}. Must match the constant
+     * by the same name in {@link JaxbContentService}.
+     */
+    static final String MULTI_VALUE_DELIMITER = "\n";
+
+    /**
+     * Packs a multi-value tag list into a single column string for storage. The input is expected
+     * to be already trimmed and blank-filtered by {@link org.airsonic.player.service.metadata.JaudiotaggerParser#getAllTagFields};
+     * this helper de-duplicates preserving order and joins with {@link #MULTI_VALUE_DELIMITER}.
+     * Returns null when the result is empty so the column stays null for tagless tracks.
+     */
+    String packMultiValue(List<String> rawValues) {
+        if (rawValues == null || rawValues.isEmpty()) {
+            return null;
+        }
+        List<String> clean = rawValues.stream().distinct().toList();
+        if (clean.isEmpty()) {
+            return null;
+        }
+        return String.join(MULTI_VALUE_DELIMITER, clean);
     }
 }

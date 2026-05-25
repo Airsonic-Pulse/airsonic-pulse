@@ -236,6 +236,71 @@ class JaxbContentServiceTest {
             assertNull(result.getOriginalReleaseDate());
             assertNull(result.getReleaseDate());
         }
+
+        @Test
+        void createJaxbAlbum_populatesReleaseTypesAndRecordLabels() {
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(30);
+            when(album.getName()).thenReturn("Multi");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(30)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(30, "user")).thenReturn(null);
+            when(album.getReleaseTypes()).thenReturn("Album\nCompilation");
+            when(album.getRecordLabels()).thenReturn("Sony Music\nWarner");
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertEquals(java.util.List.of("Album", "Compilation"), result.getReleaseTypes());
+            assertEquals(2, result.getRecordLabels().size());
+            assertEquals("Sony Music", result.getRecordLabels().get(0).getName());
+            assertEquals("Warner", result.getRecordLabels().get(1).getName());
+        }
+
+        @Test
+        void createJaxbAlbum_recordLabelNameWithGenreSeparatorRoundsTripIntact() {
+            // Locks in that the pack delimiter is collision-resistant: a label name containing
+            // ';' and '/' (e.g. the kind of characters the genre-separator setting often
+            // includes) must NOT be split into multiple labels at response time.
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(31);
+            when(album.getName()).thenReturn("Punct");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(31)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(31, "user")).thenReturn(null);
+            when(album.getRecordLabels()).thenReturn("Sony/BMG; Columbia\nWarner");
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertEquals(2, result.getRecordLabels().size());
+            assertEquals("Sony/BMG; Columbia", result.getRecordLabels().get(0).getName());
+            assertEquals("Warner", result.getRecordLabels().get(1).getName());
+        }
+
+        @Test
+        void createJaxbAlbum_omitsMultiValueWhenAbsent() {
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(32);
+            when(album.getName()).thenReturn("Plain");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(32)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(32, "user")).thenReturn(null);
+            // releaseTypes / recordLabels unstubbed → null on the mock → split yields empty
+            // → no <releaseTypes>/<recordLabels> elements emitted (list stays empty).
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertTrue(result.getReleaseTypes().isEmpty());
+            assertTrue(result.getRecordLabels().isEmpty());
+        }
     }
 
     @Nested

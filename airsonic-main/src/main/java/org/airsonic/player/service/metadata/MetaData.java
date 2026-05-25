@@ -44,6 +44,8 @@ public class MetaData {
     private Boolean compilation;
     private String originalReleaseDate;
     private String releaseDate;
+    private List<String> releaseTypes = Collections.emptyList();
+    private List<String> recordLabels = Collections.emptyList();
     private Integer bpm;
     private Integer bitRate;
     private boolean variableBitRate;
@@ -171,6 +173,22 @@ public class MetaData {
 
     public void setReleaseDate(String releaseDate) {
         this.releaseDate = releaseDate;
+    }
+
+    public List<String> getReleaseTypes() {
+        return releaseTypes;
+    }
+
+    public void setReleaseTypes(List<String> releaseTypes) {
+        this.releaseTypes = releaseTypes != null ? releaseTypes : Collections.emptyList();
+    }
+
+    public List<String> getRecordLabels() {
+        return recordLabels;
+    }
+
+    public void setRecordLabels(List<String> recordLabels) {
+        this.recordLabels = recordLabels != null ? recordLabels : Collections.emptyList();
     }
 
     public Integer getBpm() {

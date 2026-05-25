@@ -37,6 +37,7 @@ import java.nio.file.Paths;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -101,6 +102,35 @@ public class MediaFileServiceTest {
         verify(mediaFileRepository).findByFolderAndPath(any(), eq("valid/airsonic-test.wav"));
         verify(mediaFileRepository).save(base);
         verify(coverArtService).persistIfNeeded(eq(base));
+    }
+
+    @Test
+    public void packMultiValueDedupsAndJoinsWithNewline() {
+        // Single value → no trailing delimiter.
+        assertEquals("Album", mediaFileService.packMultiValue(List.of("Album")));
+        // Multiple values → joined by \n in order.
+        assertEquals("Album\nCompilation", mediaFileService.packMultiValue(List.of("Album", "Compilation")));
+        // Duplicates collapse, original order preserved.
+        assertEquals("Album\nCompilation", mediaFileService.packMultiValue(List.of("Album", "Compilation", "Album")));
+    }
+
+    @Test
+    public void packMultiValueReturnsNullForEmptyOrNull() {
+        assertNull(mediaFileService.packMultiValue(null));
+        assertNull(mediaFileService.packMultiValue(List.of()));
+    }
+
+    @Test
+    public void packMultiValuePreservesPunctuationWithinValues() {
+        // A record-label name with ';' and '/' must round-trip intact — proving the genre
+        // separator was NOT reused as the pack delimiter (genre-separator default ';' would
+        // mangle this name into two false labels).
+        String packed = mediaFileService.packMultiValue(List.of("Sony/BMG; Columbia", "Warner"));
+        // Round-trip through the response-side splitter must give back both originals verbatim.
+        java.util.List<String> roundTripped = JaxbContentService.splitMultiValue(packed);
+        assertEquals(2, roundTripped.size());
+        assertEquals("Sony/BMG; Columbia", roundTripped.get(0));
+        assertEquals("Warner", roundTripped.get(1));
     }
 
     @Test

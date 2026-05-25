@@ -77,6 +77,12 @@ public class Album {
     @Column(name = "is_compilation", nullable = true)
     private Boolean compilation;
 
+    @Column(name = "release_types", nullable = true)
+    private String releaseTypes;
+
+    @Column(name = "record_labels", nullable = true)
+    private String recordLabels;
+
     @Column(name = "genre", nullable = true)
     private String genre;
 
@@ -237,6 +243,22 @@ public class Album {
 
     public void setCompilation(Boolean compilation) {
         this.compilation = compilation;
+    }
+
+    public String getReleaseTypes() {
+        return releaseTypes;
+    }
+
+    public void setReleaseTypes(String releaseTypes) {
+        this.releaseTypes = releaseTypes;
+    }
+
+    public String getRecordLabels() {
+        return recordLabels;
+    }
+
+    public void setRecordLabels(String recordLabels) {
+        this.recordLabels = recordLabels;
     }
 
     public String getGenre() {
