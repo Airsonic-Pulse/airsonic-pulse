@@ -20,6 +20,7 @@ import org.airsonic.player.domain.Contributor;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.id3.ID3v24Frame;
 import org.jaudiotagger.tag.id3.ID3v24Tag;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyTMCL;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTXXX;
 import org.jaudiotagger.tag.id3.valuepair.TextEncoding;
 import org.jaudiotagger.tag.vorbiscomment.VorbisCommentTag;
@@ -123,9 +124,8 @@ public class JaudiotaggerParserTestCase {
 
     @Test
     public void testGetContributorsLeavesSubRoleNullForCleanFieldKeys() throws Exception {
-        // Batch 1 covers clean FieldKey roles only — no TMCL frame access — so subRole must
-        // be null for every contributor it produces. The TMCL/TIPL extraction that populates
-        // subRole is the planned Batch 2 follow-up.
+        // Clean-FieldKey roles (composer, lyricist, conductor, …) never carry an instrument —
+        // subRole is exclusive to performer credits sourced from TMCL / Vorbis PERFORMER.
         VorbisCommentTag tag = VorbisCommentTag.createNewTag();
         tag.addField(FieldKey.COMPOSER, "John Williams");
         tag.addField(FieldKey.LYRICIST, "Bernie Taupin");
@@ -153,6 +153,98 @@ public class JaudiotaggerParserTestCase {
         assertEquals(List.of(
                 new Contributor("composer", null, "John Williams"),
                 new Contributor("lyricist", null, "Bernie Taupin")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    private static ID3v24Tag tagWithTmcl(String... pairs) {
+        if (pairs.length % 2 != 0) {
+            throw new IllegalArgumentException("pairs must be (instrument, name)+");
+        }
+        ID3v24Tag tag = new ID3v24Tag();
+        FrameBodyTMCL body = new FrameBodyTMCL();
+        for (int i = 0; i < pairs.length; i += 2) {
+            body.addPair(pairs[i], pairs[i + 1]);
+        }
+        ID3v24Frame frame = new ID3v24Frame("TMCL");
+        frame.setBody(body);
+        tag.addFrame(frame);
+        return tag;
+    }
+
+    @Test
+    public void testGetContributorsExtractsPerformersFromId3v2Tmcl() {
+        ID3v24Tag tag = tagWithTmcl("Guitar", "Jimi Hendrix", "Bass", "Noel Redding");
+        assertEquals(List.of(
+                new Contributor("performer", "Guitar", "Jimi Hendrix"),
+                new Contributor("performer", "Bass", "Noel Redding")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsSplitsCommaDelimitedPerformersForOneInstrument() {
+        // ID3v2.4 spec allows the value of a TMCL pair to be a comma-delimited list of
+        // performers all sharing the same instrument.
+        ID3v24Tag tag = tagWithTmcl("Vocals", "John Lennon, Paul McCartney");
+        assertEquals(List.of(
+                new Contributor("performer", "Vocals", "John Lennon"),
+                new Contributor("performer", "Vocals", "Paul McCartney")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsAlongsidePerformersOnId3v24() {
+        // Both clean-FieldKey roles AND TMCL performers populate on the same tag — clean
+        // roles emit first (in CONTRIBUTOR_ROLES order), performers appended after.
+        ID3v24Tag tag = tagWithTmcl("Guitar", "Eric Clapton");
+        try {
+            tag.setField(FieldKey.COMPOSER, "George Harrison");
+        } catch (Exception x) {
+            throw new AssertionError(x);
+        }
+        assertEquals(List.of(
+                new Contributor("composer", null, "George Harrison"),
+                new Contributor("performer", "Guitar", "Eric Clapton")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsId3v24WithoutTmclEmitsNoPerformers() {
+        ID3v24Tag tag = new ID3v24Tag();
+        try {
+            tag.setField(FieldKey.COMPOSER, "George Harrison");
+        } catch (Exception x) {
+            throw new AssertionError(x);
+        }
+        assertEquals(List.of(new Contributor("composer", null, "George Harrison")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsParsesNameInstrumentFromVorbisPerformer() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.addField(FieldKey.PERFORMER, "Eric Clapton (Guitar)");
+        assertEquals(List.of(new Contributor("performer", "Guitar", "Eric Clapton")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsBareVorbisPerformerHasNullSubRole() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.addField(FieldKey.PERFORMER, "Eric Clapton");
+        assertEquals(List.of(new Contributor("performer", null, "Eric Clapton")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsExtractsMultipleVorbisPerformers() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.addField(FieldKey.PERFORMER, "Eric Clapton (Guitar)");
+        tag.addField(FieldKey.PERFORMER, "Jack Bruce (Bass)");
+        tag.addField(FieldKey.PERFORMER, "Ginger Baker (Drums)");
+        assertEquals(List.of(
+                new Contributor("performer", "Guitar", "Eric Clapton"),
+                new Contributor("performer", "Bass", "Jack Bruce"),
+                new Contributor("performer", "Drums", "Ginger Baker")),
                 JaudiotaggerParser.getContributors(tag));
     }
 }

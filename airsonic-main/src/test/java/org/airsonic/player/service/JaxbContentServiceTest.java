@@ -728,6 +728,33 @@ class JaxbContentServiceTest {
         }
 
         @Test
+        void createJaxbChild_emitsPerformerWithSubRole() {
+            // End-to-end: a performer Contributor packed into the media_file.contributors
+            // column round-trips through Contributors.split → buildContributors → JAXB with
+            // the instrument carried as subRole. Locks the Batch 2 promise that subRole
+            // populates on the wire.
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(900);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(900)).thenReturn(CoverArt.NULL_ART);
+            String packed = Contributors.pack(List.of(
+                    new org.airsonic.player.domain.Contributor("performer", "Guitar", "Eric Clapton")));
+            when(mediaFile.getContributors()).thenReturn(packed);
+            when(artistService.getArtist("Eric Clapton")).thenReturn(null);
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertEquals(1, child.getContributors().size());
+            Contributor performer = child.getContributors().get(0);
+            assertEquals("performer", performer.getRole());
+            assertEquals("Guitar", performer.getSubRole());
+            assertEquals("Eric Clapton", performer.getArtist().getName());
+        }
+
+        @Test
         void createJaxbChild_omitsContributorsWhenColumnNull() {
             Player player = mock(Player.class);
             MediaFile mediaFile = mock(MediaFile.class);

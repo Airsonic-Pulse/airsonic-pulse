@@ -32,8 +32,10 @@ import org.jaudiotagger.audio.AudioHeader;
 import org.jaudiotagger.tag.FieldKey;
 import org.jaudiotagger.tag.Tag;
 import org.jaudiotagger.tag.TagField;
+import org.jaudiotagger.tag.datatype.Pair;
 import org.jaudiotagger.tag.id3.AbstractID3v2Frame;
 import org.jaudiotagger.tag.id3.AbstractID3v2Tag;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyTMCL;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTXXX;
 import org.jaudiotagger.tag.images.Artwork;
 import org.jaudiotagger.tag.reference.PictureTypes;
@@ -51,6 +53,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.LogManager;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Parses meta data from audio files using the Jaudiotagger library
@@ -70,9 +74,8 @@ public class JaudiotaggerParser extends MetaDataParser {
     static final String RG_ALBUM_PEAK = "REPLAYGAIN_ALBUM_PEAK";
 
     // Clean-FieldKey contributor roles — each FieldKey is read via tag.getAll(...) and every
-    // returned value becomes one Contributor with the given role label and no subRole. The
-    // performer-with-instrument credits in TMCL/TIPL frames (which carry the subRole) are not
-    // covered here; that frame-access work is the planned Batch 2 follow-up for #144.
+    // returned value becomes one Contributor with the given role label and no subRole. Performer
+    // credits with an instrument as subRole are handled separately by addPerformers() below.
     private static final List<Map.Entry<FieldKey, String>> CONTRIBUTOR_ROLES = List.of(
             Map.entry(FieldKey.COMPOSER, "composer"),
             Map.entry(FieldKey.LYRICIST, "lyricist"),
@@ -86,6 +89,10 @@ public class JaudiotaggerParser extends MetaDataParser {
             Map.entry(FieldKey.ORCHESTRA, "orchestra"),
             Map.entry(FieldKey.CHOIR, "choir"),
             Map.entry(FieldKey.ENSEMBLE, "ensemble"));
+
+    // Vorbis PERFORMER convention: "Name (Instrument)" — capture the bare name and a single
+    // trailing parenthetical as instrument. No parens → whole string is the name.
+    private static final Pattern VORBIS_PERFORMER_PATTERN = Pattern.compile("^(.*?)\\s*\\(([^()]+)\\)\\s*$");
 
     @Autowired
     private MediaFolderService mediaFolderService;
@@ -205,12 +212,14 @@ public class JaudiotaggerParser extends MetaDataParser {
     }
 
     /**
-     * Builds the per-track contributor list from clean-FieldKey roles only. Walks
-     * {@link #CONTRIBUTOR_ROLES} in declaration order and turns every non-blank tag value into
-     * a {@link Contributor} with the corresponding lowercase role label and no subRole.
-     * Performer-with-instrument credits (ID3 TMCL / TIPL paired frames, Vorbis
-     * {@code "Name (Instrument)"}) are out of scope here and will be added in a follow-up batch
-     * that mirrors {@link #getReplayGainField}'s frame-access pattern.
+     * Builds the per-track contributor list — clean-FieldKey credits (composer, lyricist, etc.)
+     * plus performer credits that carry an optional instrument as the subRole. Clean roles come
+     * from {@link #CONTRIBUTOR_ROLES} via {@link #getAllTagFields}. Performer extraction is
+     * format-dispatched: ID3v2 reads the dedicated TMCL musician-credits frame (v2.4) for
+     * (instrument, performer) pairs; everything else (Vorbis on FLAC/Ogg/Opus, MP4, etc.) reads
+     * {@code FieldKey.PERFORMER} and parses the common {@code "Name (Instrument)"} convention.
+     * ID3v2.3 IPLS (combined musicians+people in one frame, no spec-mandated key vocabulary)
+     * and MP4 freeform performer atoms are out of scope here.
      */
     static List<Contributor> getContributors(Tag tag) {
         List<Contributor> result = new ArrayList<>();
@@ -219,7 +228,62 @@ public class JaudiotaggerParser extends MetaDataParser {
                 result.add(new Contributor(entry.getValue(), null, name));
             }
         }
+        addPerformers(result, tag);
         return result;
+    }
+
+    /**
+     * Appends performer Contributors with the instrument carried as {@code subRole}. ID3v2.4 keeps
+     * (instrument, performer) pairs in the dedicated TMCL frame; reading them through the
+     * generic {@code FieldKey.PERFORMER} accessor flattens the pairs and loses the instrument,
+     * so frame-level access is required. Non-ID3 formats expose performer values directly under
+     * {@code FieldKey.PERFORMER}, with the {@code "Name (Instrument)"} convention parsed below.
+     * Wraps any jaudiotagger throwable so a malformed frame can't break the scan for one file.
+     */
+    private static void addPerformers(List<Contributor> sink, Tag tag) {
+        try {
+            if (tag instanceof AbstractID3v2Tag id3v2) {
+                List<TagField> frames = id3v2.getFrame("TMCL");
+                if (frames == null) {
+                    return;
+                }
+                for (TagField field : frames) {
+                    if (!(field instanceof AbstractID3v2Frame frame)
+                            || !(frame.getBody() instanceof FrameBodyTMCL tmcl)) {
+                        continue;
+                    }
+                    for (Pair pair : tmcl.getPairing().getMapping()) {
+                        String instrument = StringUtils.trimToNull(pair.getKey());
+                        String rawNames = pair.getValue();
+                        if (rawNames == null) {
+                            continue;
+                        }
+                        // ID3v2.4 spec allows a comma-delimited list of performers per instrument.
+                        for (String name : rawNames.split(",")) {
+                            String cleaned = StringUtils.trimToNull(name);
+                            if (cleaned != null) {
+                                sink.add(new Contributor("performer", instrument, cleaned));
+                            }
+                        }
+                    }
+                }
+                return;
+            }
+            for (String raw : getAllTagFields(tag, FieldKey.PERFORMER)) {
+                Matcher m = VORBIS_PERFORMER_PATTERN.matcher(raw);
+                if (m.matches()) {
+                    String name = StringUtils.trimToNull(m.group(1));
+                    String instrument = StringUtils.trimToNull(m.group(2));
+                    if (name != null) {
+                        sink.add(new Contributor("performer", instrument, name));
+                    }
+                } else {
+                    sink.add(new Contributor("performer", null, raw));
+                }
+            }
+        } catch (Exception x) {
+            // Ignored.
+        }
     }
 
     /**
