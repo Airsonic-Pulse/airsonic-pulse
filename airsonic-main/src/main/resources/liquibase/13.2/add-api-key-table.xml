@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-4.3.xsd">
+
+    <changeSet id="add-api-key-table" author="litebito">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="api_key"/>
+            </not>
+        </preConditions>
+        <createTable tableName="api_key">
+            <column name="id" type="integer" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="username" type="${varchar_type}">
+                <constraints nullable="false" foreignKeyName="fk_api_key_users"
+                             referencedTableName="users" referencedColumnNames="username"
+                             deleteCascade="true"/>
+            </column>
+            <column name="key_hash" type="${varchar_type}">
+                <constraints nullable="false" unique="true" uniqueConstraintName="uk_api_key_hash"/>
+            </column>
+            <column name="name" type="${varchar_type}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="created" type="${timestamp_type}" defaultValueComputed="${curr_date_expr}">
+                <constraints nullable="false"/>
+            </column>
+            <column name="last_used" type="${timestamp_type}"/>
+            <column name="enabled" type="boolean" defaultValueBoolean="true">
+                <constraints nullable="false"/>
+            </column>
+            <column name="expires_at" type="${timestamp_type}"/>
+        </createTable>
+        <rollback>
+            <dropTable tableName="api_key"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

@@ -111,6 +111,8 @@ public class SubsonicRESTController extends AbstractSubsonicController {
         PROTOCOL_MISMATCH_SERVER_TOO_OLD(30, "Incompatible Airsonic-Pulse REST protocol version. Server must upgrade."),
         NOT_AUTHENTICATED(40, "Wrong username or password."),
         NOT_AUTHENTICATED_UPGRADE_TO_NON_HASHED(41, "Wrong username or password, but try authenticating via non-hashed password."),
+        PASSWORD_AUTH_NOT_SUPPORTED(42, "Provided authentication mechanism not supported. Try a different authentication mechanism."),
+        CONFLICTING_AUTH_PARAMS(43, "Multiple conflicting authentication mechanisms provided."),
         NOT_AUTHORIZED(50, "User is not authorized for the given operation."),
         NOT_FOUND(70, "Requested data was not found.");
 

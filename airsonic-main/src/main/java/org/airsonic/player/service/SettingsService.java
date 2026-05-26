@@ -125,6 +125,7 @@ public class SettingsService {
     private static final String KEY_SONOS_CALLBACK_HOST_ADDRESS = "SonosCallbackHostAddress";
     private static final String KEY_SONOS_LINK_METHOD = "SonosLinkMethod";
     private static final String KEY_JWT_KEY = "JWTKey";
+    private static final String KEY_API_KEY_PEPPER = "ApiKeyPepper";
     private static final String KEY_REMEMBER_ME_KEY = "RememberMeKey";
     private static final String KEY_ENCRYPTION_PASSWORD = "EncryptionKeyPassword";
     private static final String KEY_ENCRYPTION_SALT = "EncryptionKeySalt";
@@ -1470,6 +1471,14 @@ public class SettingsService {
 
     public void setJWTKey(String jwtKey) {
         setString(KEY_JWT_KEY, jwtKey);
+    }
+
+    public String getApiKeyPepper() {
+        return getString(KEY_API_KEY_PEPPER, null);
+    }
+
+    public void setApiKeyPepper(String apiKeyPepper) {
+        setString(KEY_API_KEY_PEPPER, apiKeyPepper);
     }
 
     public String getEncryptionPassword() {
