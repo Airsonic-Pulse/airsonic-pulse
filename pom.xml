@@ -422,6 +422,16 @@
                                 <ignoredUsedUndeclaredDependency>com.sun.mail:jakarta.mail*</ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>org.glassfish.jaxb:jaxb-runtime</ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>com.jayway.jsonpath:json-path:</ignoredUsedUndeclaredDependency>
+                                <!--
+                                  Logback ListAppender is used by tests to capture log events
+                                  (e.g. asserting the show-once contract on apiKey raw keys).
+                                  Logback is the project's runtime logger via the transitive
+                                  spring-boot-starter-logging at compile scope, so a direct
+                                  test-scope declaration here would override that and strip
+                                  the JARs from the WAR. Whitelist on both axes instead.
+                                -->
+                                <ignoredUsedUndeclaredDependency>ch.qos.logback:logback-classic</ignoredUsedUndeclaredDependency>
+                                <ignoredUsedUndeclaredDependency>ch.qos.logback:logback-core</ignoredUsedUndeclaredDependency>
                             </ignoredUsedUndeclaredDependencies>
                             <ignoredUnusedDeclaredDependencies>
                                 <ignoredUnusedDeclaredDependency>com.google.code.findbugs:jsr305:*</ignoredUnusedDeclaredDependency>
@@ -448,6 +458,11 @@
                                 <ignoredUnusedDeclaredDependency>com.twelvemonkeys.imageio:imageio-webp</ignoredUnusedDeclaredDependency>
                                 <ignoredUnusedDeclaredDependency>org.apache.httpcomponents.client5:httpclient5</ignoredUnusedDeclaredDependency>
                             </ignoredUnusedDeclaredDependencies>
+                            <ignoredNonTestScopedDependencies>
+                                <!-- See logback comment in ignoredUsedUndeclaredDependencies above. -->
+                                <ignoredNonTestScopedDependency>ch.qos.logback:logback-classic</ignoredNonTestScopedDependency>
+                                <ignoredNonTestScopedDependency>ch.qos.logback:logback-core</ignoredNonTestScopedDependency>
+                            </ignoredNonTestScopedDependencies>
                         </configuration>
                     </execution>
                 </executions>
