@@ -22,7 +22,6 @@ import org.airsonic.player.config.AirsonicHomeConfig;
 import org.airsonic.player.domain.ApiKey;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.User.Role;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,7 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.file.Path;
@@ -61,9 +59,6 @@ public class ApiKeyRepositoryTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
-
     @TempDir
     private static Path tempDir;
 
@@ -76,17 +71,14 @@ public class ApiKeyRepositoryTest {
 
     @BeforeEach
     public void setUp() {
-        jdbcTemplate.execute("delete from api_key where username = '" + TEST_USER + "'");
-        userRepository.findById(TEST_USER).ifPresent(u -> userRepository.delete(u));
+        // No manual cleanup — class-level @Transactional rolls back the test transaction at
+        // method end, including the user saved here and any api_key rows inserted by the test.
+        // Postgres would reject a manual cleanup DELETE that runs in a transaction already
+        // aborted by uniqueKeyHashIsEnforced's constraint violation (SQLSTATE 25P02); relying
+        // on framework rollback is portable across HSQLDB/Postgres/MariaDB.
         User user = new User(TEST_USER, "alice@example.com", false, 0L, 0L, 0L,
                 Set.of(Role.STREAM));
         userRepository.saveAndFlush(user);
-    }
-
-    @AfterEach
-    public void clean() {
-        jdbcTemplate.execute("delete from api_key where username = '" + TEST_USER + "'");
-        userRepository.findById(TEST_USER).ifPresent(u -> userRepository.delete(u));
     }
 
     @Test
