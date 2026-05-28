@@ -1,6 +1,7 @@
 package org.airsonic.player.security;
 
 import org.airsonic.player.controller.JAXBWriter;
+import org.airsonic.player.service.ApiKeyService;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
@@ -59,6 +60,9 @@ public class GlobalSecurityConfig {
     @Autowired
     private JAXBWriter jaxbWriter;
 
+    @Autowired
+    private ApiKeyService apiKeyService;
+
     @EventListener
     public void loginFailureListener(AbstractAuthenticationFailureEvent event) {
         if (event.getSource() instanceof AbstractAuthenticationToken token) {
@@ -94,6 +98,7 @@ public class GlobalSecurityConfig {
         jwtAuth.addAdditionalCheck("/ws/Sonos", sonosJwtVerification);
         auth.authenticationProvider(jwtAuth);
         auth.authenticationProvider(multipleCredsProvider);
+        auth.authenticationProvider(new APIKeyAuthenticationProvider(apiKeyService, securityService));
     }
 
     @Bean
@@ -139,6 +144,14 @@ public class GlobalSecurityConfig {
         RESTRequestParameterProcessingFilter restAuthenticationFilter = new RESTRequestParameterProcessingFilter(jaxbWriter);
         restAuthenticationFilter.setAuthenticationManager(authenticationManager);
 
+        // The apiKey filter runs BEFORE the legacy REST filter so that:
+        //   1. An apiKey request short-circuits the legacy u/p/t/s reads (the legacy filter
+        //      sees an already-authenticated SecurityContext and returns it untouched).
+        //   2. The downgrade-attack guard fires before any legacy path is even considered —
+        //      apiKey + u/p/t/s → CONFLICTING_AUTH_PARAMS(43), never falls through.
+        APIKeyRequestParameterProcessingFilter apiKeyFilter =
+                new APIKeyRequestParameterProcessingFilter(authenticationManager, apiKeyService, jaxbWriter);
+
         // Try to load the 'remember me' key.
         //
         // Note that using a fixed key compromises security as perfect
@@ -159,6 +172,7 @@ public class GlobalSecurityConfig {
             //.addFilterBefore(restAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
             .httpBasic(Customizer.withDefaults())
             .addFilterAfter(restAuthenticationFilter, BasicAuthenticationFilter.class)
+            .addFilterBefore(apiKeyFilter, RESTRequestParameterProcessingFilter.class)
             .csrf(csrf -> csrf.ignoringRequestMatchers("/ws/Sonos/**").requireCsrfProtectionMatcher(csrfSecurityRequestMatcher))
             .headers(header -> header.frameOptions(fo -> fo.sameOrigin()))
             .authorizeHttpRequests((authorize) -> authorize.requestMatchers("/recover*", "/accessDenied*", "/style/**", "/icons/**", "/flash/**", "/script/**",

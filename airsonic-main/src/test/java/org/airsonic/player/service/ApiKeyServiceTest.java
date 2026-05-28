@@ -27,6 +27,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
@@ -47,6 +48,7 @@ import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -399,5 +401,59 @@ class ApiKeyServiceTest {
         }
         // Sanity: at least we tested some generation path
         verify(apiKeyRepository, times(1)).save(any(ApiKey.class));
+    }
+
+    @Test
+    void markUsed_nullLastUsed_writes() {
+        ApiKey k = new ApiKey("alice", "h", "k", Instant.now(), null);
+        k.setId(7);
+        when(apiKeyRepository.save(any(ApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.markUsed(k, Duration.ofMinutes(5));
+
+        verify(apiKeyRepository).save(k);
+        assertNotNull(k.getLastUsed());
+    }
+
+    @Test
+    void markUsed_lastUsedOlderThanThreshold_writes() {
+        ApiKey k = new ApiKey("alice", "h", "k", Instant.now(), null);
+        k.setId(7);
+        k.setLastUsed(Instant.now().minus(10, ChronoUnit.MINUTES));
+        Instant before = k.getLastUsed();
+        when(apiKeyRepository.save(any(ApiKey.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        service.markUsed(k, Duration.ofMinutes(5));
+
+        verify(apiKeyRepository).save(k);
+        assertTrue(k.getLastUsed().isAfter(before));
+    }
+
+    @Test
+    void markUsed_lastUsedWithinThreshold_doesNotWrite() {
+        // The load-bearing throttle assertion — repeated auth hits within the throttle window
+        // must NOT incur a DB write per request.
+        ApiKey k = new ApiKey("alice", "h", "k", Instant.now(), null);
+        k.setId(7);
+        k.setLastUsed(Instant.now().minus(30, ChronoUnit.SECONDS));
+
+        service.markUsed(k, Duration.ofMinutes(5));
+
+        verify(apiKeyRepository, never()).save(any());
+    }
+
+    @Test
+    void markUsed_nullEntityOrThrottle_isNoOp() {
+        service.markUsed(null, Duration.ofMinutes(5));
+        service.markUsed(new ApiKey(), null);
+        verifyNoInteractions(apiKeyRepository);
+    }
+
+    @Test
+    void markUsed_entityWithoutId_isNoOp() {
+        // Defensive — should never happen via the filter path, but guard anyway.
+        ApiKey unsaved = new ApiKey("alice", "h", "k", Instant.now(), null);
+        service.markUsed(unsaved, Duration.ofMinutes(5));
+        verifyNoInteractions(apiKeyRepository);
     }
 }
