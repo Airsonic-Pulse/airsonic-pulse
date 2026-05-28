@@ -33,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.HexFormat;
@@ -170,6 +171,26 @@ public class ApiKeyService {
             k.setEnabled(enabled);
             return apiKeyRepository.save(k);
         });
+    }
+
+    /**
+     * Update {@code last_used} on the given key, but only when the stored value is null or
+     * older than {@code throttle}. Called from the auth hot path (per-request authentication)
+     * — the throttle keeps the DB write rare, since the entity is already in hand from a
+     * preceding {@link #resolve} the caller doesn't pay an extra read.
+     */
+    @Transactional
+    public void markUsed(ApiKey apiKey, Duration throttle) {
+        if (apiKey == null || apiKey.getId() == null || throttle == null) {
+            return;
+        }
+        Instant now = Instant.now();
+        Instant lastUsed = apiKey.getLastUsed();
+        if (lastUsed != null && lastUsed.isAfter(now.minus(throttle))) {
+            return;
+        }
+        apiKey.setLastUsed(now);
+        apiKeyRepository.save(apiKey);
     }
 
     String hash(String rawKey) {

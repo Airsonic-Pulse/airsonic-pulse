@@ -65,7 +65,8 @@ public class SubsonicRESTController extends AbstractSubsonicController {
             buildExtension("formPost", 1),
             buildExtension("transcodeOffset", 1),
             buildExtension("songLyrics", 1),
-            buildExtension("indexBasedQueue", 1)
+            buildExtension("indexBasedQueue", 1),
+            buildExtension("apiKeyAuthentication", 1)
         );
     }
 
