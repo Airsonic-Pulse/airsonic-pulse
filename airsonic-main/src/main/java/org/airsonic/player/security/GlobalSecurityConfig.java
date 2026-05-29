@@ -178,7 +178,8 @@ public class GlobalSecurityConfig {
             .authorizeHttpRequests((authorize) -> authorize.requestMatchers("/recover*", "/accessDenied*", "/style/**", "/icons/**", "/flash/**", "/script/**",
                     "/login", "/error", "/sonos/**", "/sonoslink/**", "/ws/Sonos/**",
                     "/rest/getOpenSubsonicExtensions*").permitAll().requestMatchers("/personalSettings*",
-                    "/playerSettings*", "/shareSettings*", "/credentialsSettings*").hasRole("SETTINGS")
+                    "/playerSettings*", "/shareSettings*", "/credentialsSettings*", "/apikeySettings*",
+                    "/apikeySettings/**").hasRole("SETTINGS")
                     .requestMatchers("/generalSettings*", "/advancedSettings*", "/userSettings*", "/musicFolderSettings*",
                             "/databaseSettings*", "/transcodeSettings*", "/rest/startScan*").hasRole("ADMIN")
                     .requestMatchers("/deletePlaylist*", "/savePlaylist*").hasRole("PLAYLIST").requestMatchers("/download*").hasRole("DOWNLOAD")

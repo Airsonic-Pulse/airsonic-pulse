@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+
+<html><head>
+
+  <th:block th:replace="~{head :: common_head}" />
+  <th:block th:replace="~{jquery}" />
+  <script type="text/javascript" th:src="@{/script/utils.js}"></script>
+
+  <script type="text/javascript" th:inline="javascript">
+    // JS-escaped i18n strings (Thymeleaf [[...]] produces a JSON-safe literal).
+    // Using the [(...)] unescaped form would break the moment a translation
+    // contained an apostrophe or quote, with both a UX (broken JS) and an
+    // injection (translator-controlled string in JS context) consequence.
+    var msgConfirmRevoke = /*[[#{apikeysettings.confirmrevoke}]]*/ "";
+    var msgCopied = /*[[#{apikeysettings.copied}]]*/ "";
+    var msgCopyFailed = /*[[#{apikeysettings.copyfailed}]]*/ "";
+
+    function copyGeneratedKey() {
+      var input = document.getElementById("freshlyGeneratedKey");
+      if (!input) return;
+      input.removeAttribute("disabled");
+      input.select();
+      input.setSelectionRange(0, 99999);
+      var ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(input.value);
+          ok = true;
+        } else {
+          ok = document.execCommand("copy");
+        }
+      } catch (e) {
+        ok = false;
+      }
+      input.setAttribute("disabled", "disabled");
+      input.blur();
+      $().toastmessage(ok ? "showSuccessToast" : "showWarningToast", ok ? msgCopied : msgCopyFailed);
+    }
+
+    function confirmRevoke() {
+      return confirm(msgConfirmRevoke);
+    }
+  </script>
+</head>
+
+<body class="mainframe bgcolor1">
+<script type="text/javascript" th:src="@{/script/wz_tooltip.js}"></script>
+<script type="text/javascript" th:src="@{/script/tip_balloon.js}"></script>
+
+<th:block th:replace="~{settingsHeader::header(cat='apikey',toast=${settings_toast},restricted=${!adminRole})}" />
+
+<h2 th:text="#{apikeysettings.title(${username})}"></h2>
+
+<p th:text="#{apikeysettings.intro}"></p>
+
+<th:block th:if="${apikey_error}">
+  <p class="warning" th:text="#{__${apikey_error}__}"></p>
+</th:block>
+
+<th:block th:if="${freshlyGeneratedKey}">
+  <div class="warning"
+       style="border:2px solid #c00;padding:0.8em;margin-bottom:1em;background-color:#fee">
+    <h3 th:text="#{apikeysettings.newkey.title}"></h3>
+    <p th:text="#{apikeysettings.newkey.warning}"></p>
+    <p>
+      <strong th:text="#{apikeysettings.name}"></strong>:
+      <span th:text="${freshlyGeneratedName}"></span>
+    </p>
+    <p>
+      <input type="text" id="freshlyGeneratedKey" th:value="${freshlyGeneratedKey}"
+             readonly="readonly" disabled="disabled"
+             style="width:34em;font-family:monospace" />
+      <input type="button" th:value="#{apikeysettings.copy}" onclick="copyGeneratedKey()" />
+    </p>
+  </div>
+</th:block>
+
+<div>
+  <h3 th:text="#{apikeysettings.existingkeys}"></h3>
+  <th:block th:if="${#lists.isEmpty(keys)}">
+    <p th:text="#{apikeysettings.nokeys}"></p>
+  </th:block>
+  <table th:unless="${#lists.isEmpty(keys)}" id="apiKeysTable">
+    <tr>
+      <th style="padding:0 0.5em 0 0.5em;border-style:double" th:text="#{apikeysettings.name}"></th>
+      <th style="padding:0 0.5em 0 0.5em;border-style:double" th:text="#{apikeysettings.created}"></th>
+      <th style="padding:0 0.5em 0 0.5em;border-style:double" th:text="#{apikeysettings.lastused}"></th>
+      <th style="padding:0 0.5em 0 0.5em;border-style:double" th:text="#{apikeysettings.expires}"></th>
+      <th style="padding:0 0.5em 0 0.5em;border-style:double" th:text="#{apikeysettings.enabled}"></th>
+      <th style="padding:0 0.5em 0 0.5em;border-style:double" th:text="#{apikeysettings.actions}"></th>
+    </tr>
+    <tr th:each="key:${keys}">
+      <td style="padding:0 0.5em 0 0.5em" th:text="${key.name}"></td>
+      <td style="padding:0 0.5em 0 0.5em" th:text="${#temporals.format(key.created,'SHORT')}"></td>
+      <td style="padding:0 0.5em 0 0.5em">
+        <span th:if="${key.lastUsed != null}" th:text="${#temporals.format(key.lastUsed,'SHORT')}"></span>
+        <span th:if="${key.lastUsed == null}" th:text="#{apikeysettings.never}"></span>
+      </td>
+      <td style="padding:0 0.5em 0 0.5em">
+        <span th:if="${key.expiresAt != null}" th:text="${#temporals.format(key.expiresAt,'SHORT')}"></span>
+        <span th:if="${key.expiresAt == null}" th:text="#{apikeysettings.noexpiry}"></span>
+      </td>
+      <td style="padding:0 0.5em 0 0.5em;text-align:center">
+        <span th:if="${key.enabled}" th:text="#{apikeysettings.yes}"></span>
+        <span th:unless="${key.enabled}" th:text="#{apikeysettings.no}"></span>
+      </td>
+      <td style="padding:0 0.5em 0 0.5em">
+        <form method="post" th:action="@{/apikeySettings/setEnabled}" style="display:inline">
+          <input type="hidden" name="id" th:value="${key.id}" />
+          <input type="hidden" name="enabled" th:value="${!key.enabled}" />
+          <input type="submit"
+                 th:value="${key.enabled} ? #{apikeysettings.disable} : #{apikeysettings.enable}" />
+        </form>
+        <form method="post" th:action="@{/apikeySettings/revoke}" style="display:inline"
+              onsubmit="return confirmRevoke()">
+          <input type="hidden" name="id" th:value="${key.id}" />
+          <input type="submit" th:value="#{apikeysettings.revoke}" />
+        </form>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<div style="margin-top:2em">
+  <h3 th:text="#{apikeysettings.generate}"></h3>
+  <form method="post" th:action="@{/apikeySettings/generate}">
+    <table class="indent">
+      <tr>
+        <td th:text="#{apikeysettings.name}"></td>
+        <td><input type="text" name="name" size="30" maxlength="120" required="required" /></td>
+      </tr>
+      <tr>
+        <td th:text="#{apikeysettings.expires}"></td>
+        <td>
+          <input type="datetime-local" name="expiresAt" />
+          <span style="font-size:90%;color:#666" th:text="#{apikeysettings.expires.hint}"></span>
+        </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>
+          <input type="submit" th:value="#{apikeysettings.generate.submit}" />
+        </td>
+      </tr>
+    </table>
+  </form>
+</div>
+
+</body></html>
