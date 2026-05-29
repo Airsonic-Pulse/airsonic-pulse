@@ -29,10 +29,10 @@
 
     <h2 style="white-space: normal">
     <th:block th:if="${restricted}" >
-        <th:block th:replace="~{::links(${ {'personal', 'credentials', 'player', 'share'} })}" />
+        <th:block th:replace="~{::links(${ {'personal', 'credentials', 'apikey', 'player', 'share'} })}" />
     </th:block>
     <th:block th:unless="${restricted}" >
-        <th:block th:replace="~{::links(${ {'musicFolder', 'general', 'advanced', 'personal', 'credentials', 'user', 'player', 'share', 'dlna', 'sonos', 'transcoding', 'internetRadio', 'podcast', 'database'} })}" />
+        <th:block th:replace="~{::links(${ {'musicFolder', 'general', 'advanced', 'personal', 'credentials', 'apikey', 'user', 'player', 'share', 'dlna', 'sonos', 'transcoding', 'internetRadio', 'podcast', 'database'} })}" />
     </th:block>
     </h2>
 
