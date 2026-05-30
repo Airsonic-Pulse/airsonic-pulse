@@ -24,6 +24,7 @@ import org.airsonic.player.controller.SubsonicRESTController;
 import org.airsonic.player.controller.SubsonicRESTController.APIException;
 import org.airsonic.player.controller.SubsonicRESTController.ErrorCode;
 import org.airsonic.player.domain.Version;
+import org.airsonic.player.service.cache.LegacyAuthWarningCache;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -68,6 +69,11 @@ public class RESTRequestParameterProcessingFilter extends AbstractAuthentication
     );
     private static final Version serverVersion = new Version(JAXBWriter.getRestProtocolVersion());
 
+    static final String LEGACY_METHOD_PASSWORD = "legacy username/password";
+    static final String LEGACY_METHOD_SALTED_TOKEN = "legacy token+salt";
+
+    private LegacyAuthWarningCache legacyAuthWarningCache;
+
     protected RESTRequestParameterProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher, JAXBWriter jaxbWriter) {
         super(requiresAuthenticationRequestMatcher);
         setAuthenticationFailureHandler(new RESTAuthenticationFailureHandler(jaxbWriter));
@@ -77,6 +83,14 @@ public class RESTRequestParameterProcessingFilter extends AbstractAuthentication
 
     public RESTRequestParameterProcessingFilter(JAXBWriter jaxbWriter) {
         this(requiresAuthenticationRequestMatcher, jaxbWriter);
+    }
+
+    /**
+     * Wire the deprecation-warning throttle. Optional — when unset, the post-auth hook
+     * silently skips the warning step (used by tests that exercise only the auth path).
+     */
+    public void setLegacyAuthWarningCache(LegacyAuthWarningCache legacyAuthWarningCache) {
+        this.legacyAuthWarningCache = legacyAuthWarningCache;
     }
 
     @Override
@@ -138,8 +152,51 @@ public class RESTRequestParameterProcessingFilter extends AbstractAuthentication
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain,
             Authentication authResult) throws IOException, ServletException {
         super.successfulAuthentication(request, response, chain, authResult);
+        maybeWarnLegacyAuth(request, authResult);
         // carry on with the request
         chain.doFilter(request, response);
+    }
+
+    /**
+     * Identify legacy {@code u/p} or {@code t/s} use by inspecting the request parameters
+     * directly. The token class is not a reliable signal: this method also runs when
+     * {@link #attemptAuthentication} short-circuits to a previously-authenticated context
+     * (apiKey or HTTP Basic), in which case {@code authResult} is whatever token the prior
+     * filter installed — not a legacy token. The legacy-Subsonic params, however, are only
+     * present when the caller is actually using {@code u/p} or {@code t/s}.
+     */
+    void maybeWarnLegacyAuth(HttpServletRequest request, Authentication authResult) {
+        if (legacyAuthWarningCache == null || authResult == null) {
+            return;
+        }
+        String method = identifyLegacyAuthMethod(request);
+        if (method == null) {
+            return;
+        }
+        String username = StringUtils.trimToNull(authResult.getName());
+        if (username == null) {
+            return;
+        }
+        String client = StringUtils.trimToNull(request.getParameter("c"));
+        if (client == null) {
+            return;
+        }
+        legacyAuthWarningCache.warnIfFirstSeen(username, client, method);
+    }
+
+    static String identifyLegacyAuthMethod(HttpServletRequest request) {
+        if (StringUtils.trimToNull(request.getParameter("u")) == null) {
+            return null;
+        }
+        String t = StringUtils.trimToNull(request.getParameter("t"));
+        String s = StringUtils.trimToNull(request.getParameter("s"));
+        if (t != null && s != null) {
+            return LEGACY_METHOD_SALTED_TOKEN;
+        }
+        if (StringUtils.trimToNull(request.getParameter("p")) != null) {
+            return LEGACY_METHOD_PASSWORD;
+        }
+        return null;
     }
 
     public static String decrypt(String s) {

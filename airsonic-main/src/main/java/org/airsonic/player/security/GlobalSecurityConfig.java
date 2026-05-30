@@ -5,6 +5,7 @@ import org.airsonic.player.service.ApiKeyService;
 import org.airsonic.player.service.JWTSecurityService;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.cache.LegacyAuthWarningCache;
 import org.airsonic.player.service.sonos.SonosLinkSecurityInterceptor.SonosJWTVerification;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -62,6 +63,9 @@ public class GlobalSecurityConfig {
 
     @Autowired
     private ApiKeyService apiKeyService;
+
+    @Autowired
+    private LegacyAuthWarningCache legacyAuthWarningCache;
 
     @EventListener
     public void loginFailureListener(AbstractAuthenticationFailureEvent event) {
@@ -143,6 +147,7 @@ public class GlobalSecurityConfig {
 
         RESTRequestParameterProcessingFilter restAuthenticationFilter = new RESTRequestParameterProcessingFilter(jaxbWriter);
         restAuthenticationFilter.setAuthenticationManager(authenticationManager);
+        restAuthenticationFilter.setLegacyAuthWarningCache(legacyAuthWarningCache);
 
         // The apiKey filter runs BEFORE the legacy REST filter so that:
         //   1. An apiKey request short-circuits the legacy u/p/t/s reads (the legacy filter

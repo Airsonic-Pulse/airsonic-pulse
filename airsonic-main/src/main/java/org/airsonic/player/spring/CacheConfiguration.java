@@ -45,6 +45,7 @@ public class CacheConfiguration {
     public static final String PLAYLIST_CACHE = "playlistCache";
     public static final String PLAYLIST_USERS_CACHE = "playlistUsersCache";
     public static final String ARTIST_BY_NAME_CACHE = "artistByNameCache";
+    public static final String LEGACY_AUTH_WARNING_CACHE = "legacyAuthWarningCache";
 
 
     @Autowired
@@ -115,6 +116,16 @@ public class CacheConfiguration {
                 // lookups, so caching misses is the load-bearing part of this cache.
                 .withCache(ARTIST_BY_NAME_CACHE,
                         CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, Optional.class, artistByNamePools)
+                                .withClassLoader(cl)
+                                .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(1)))
+                                .withService(cacheLogging))
+                // Per-(user, client, method) suppression marker for the legacy-auth deprecation
+                // WARN (#145). Bounded heap is the DoS guard against an attacker varying client
+                // strings to balloon the entry count; the 24h TTL keeps the warning useful while
+                // not spamming operator logs. Value is Boolean.TRUE (JSR-107 forbids null values
+                // and the presence/absence of the key is the only signal).
+                .withCache(LEGACY_AUTH_WARNING_CACHE,
+                        CacheConfigurationBuilder.newCacheConfigurationBuilder(String.class, Boolean.class, artistByNamePools)
                                 .withClassLoader(cl)
                                 .withExpiry(ExpiryPolicyBuilder.timeToLiveExpiration(Duration.ofDays(1)))
                                 .withService(cacheLogging))
