@@ -25,6 +25,7 @@ import org.airsonic.player.domain.Artist;
 import org.airsonic.player.domain.Contributors;
 import org.airsonic.player.domain.CoverArt;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.Playlist;
 import org.junit.jupiter.api.Nested;
@@ -66,6 +67,8 @@ class JaxbContentServiceTest {
     private AlbumService albumService;
     @Mock
     private MediaFileService mediaFileService;
+    @Mock
+    private MediaFolderService mediaFolderService;
     @Mock
     private TranscodingService transcodingService;
     @Mock
@@ -118,6 +121,73 @@ class JaxbContentServiceTest {
             assertEquals("1", result.getId());
             assertEquals("NoArt", result.getName());
             assertEquals(0, result.getAlbumCount());
+        }
+
+        @Test
+        void createJaxbArtist_setsRatings_whenArtistDirectoryResolvable() {
+            ArtistID3 jaxbArtist = new ArtistID3();
+            Artist artist = mock(Artist.class);
+            MediaFile artistDir = mock(MediaFile.class);
+            List<MusicFolder> folders = List.of(mock(MusicFolder.class));
+            when(artist.getId()).thenReturn(7);
+            when(artist.getName()).thenReturn("Rated Artist");
+            when(artist.getAlbumCount()).thenReturn(2);
+            when(coverArtService.getArtistArt(7)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFolderService.getMusicFoldersForUser("user")).thenReturn(folders);
+            when(mediaFileService.getArtistByName("Rated Artist", folders)).thenReturn(artistDir);
+            when(ratingService.getRatingForUser("user", artistDir)).thenReturn(4);
+            when(ratingService.getAverageRating(artistDir)).thenReturn(3.7);
+
+            ArtistID3 result = service.createJaxbArtist(jaxbArtist, artist, "user");
+
+            assertEquals(4, result.getUserRating());
+            assertEquals(3.7, result.getAverageRating());
+        }
+
+        @Test
+        void createJaxbArtist_omitsUserRating_whenUserHasNoRatingButAverageExists() {
+            ArtistID3 jaxbArtist = new ArtistID3();
+            Artist artist = mock(Artist.class);
+            MediaFile artistDir = mock(MediaFile.class);
+            List<MusicFolder> folders = List.of(mock(MusicFolder.class));
+            when(artist.getId()).thenReturn(8);
+            when(artist.getName()).thenReturn("Average Only");
+            when(artist.getAlbumCount()).thenReturn(1);
+            when(coverArtService.getArtistArt(8)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFolderService.getMusicFoldersForUser("user")).thenReturn(folders);
+            when(mediaFileService.getArtistByName("Average Only", folders)).thenReturn(artistDir);
+            when(ratingService.getRatingForUser("user", artistDir)).thenReturn(null);
+            when(ratingService.getAverageRating(artistDir)).thenReturn(2.5);
+
+            ArtistID3 result = service.createJaxbArtist(jaxbArtist, artist, "user");
+
+            assertNull(result.getUserRating());
+            assertEquals(2.5, result.getAverageRating());
+        }
+
+        @Test
+        void createJaxbArtist_omitsBothRatings_whenArtistIsVirtual() {
+            // Virtual artist: derived from albumArtist tag with no physical directory. The
+            // resolver returns null; rating lookups against a null MediaFile return null;
+            // JAXB omits both attributes — no exception, no implicit MediaFile creation.
+            ArtistID3 jaxbArtist = new ArtistID3();
+            Artist artist = mock(Artist.class);
+            List<MusicFolder> folders = List.of(mock(MusicFolder.class));
+            when(artist.getId()).thenReturn(9);
+            when(artist.getName()).thenReturn("Virtual Artist");
+            when(artist.getAlbumCount()).thenReturn(0);
+            when(coverArtService.getArtistArt(9)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFolderService.getMusicFoldersForUser("user")).thenReturn(folders);
+            when(mediaFileService.getArtistByName("Virtual Artist", folders)).thenReturn(null);
+            when(ratingService.getRatingForUser("user", null)).thenReturn(null);
+            when(ratingService.getAverageRating(null)).thenReturn(null);
+
+            ArtistID3 result = service.createJaxbArtist(jaxbArtist, artist, "user");
+
+            assertNull(result.getUserRating());
+            assertNull(result.getAverageRating());
+            assertEquals("9", result.getId());
+            assertEquals("Virtual Artist", result.getName());
         }
     }
 
