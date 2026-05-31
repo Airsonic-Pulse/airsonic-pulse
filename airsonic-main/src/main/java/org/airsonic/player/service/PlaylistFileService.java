@@ -38,6 +38,7 @@ public class PlaylistFileService {
     private final SettingsService settingsService;
     private final UserRepository userRepository;
     private final PathWatcherService pathWatcherService;
+    private final PlaylistImportThrottle importThrottle;
     private final List<PlaylistExportHandler> exportHandlers;
     private final List<PlaylistImportHandler> importHandlers;
 
@@ -45,12 +46,14 @@ public class PlaylistFileService {
                                SettingsService settingsService,
                                UserRepository userRepository,
                                PathWatcherService pathWatcherService,
+                               PlaylistImportThrottle importThrottle,
                                List<PlaylistExportHandler> exportHandlers,
                                List<PlaylistImportHandler> importHandlers) {
         this.playlistService = playlistService;
         this.settingsService = settingsService;
         this.userRepository = userRepository;
         this.pathWatcherService = pathWatcherService;
+        this.importThrottle = importThrottle;
         this.exportHandlers = exportHandlers;
         this.importHandlers = importHandlers;
     }
@@ -75,7 +78,13 @@ public class PlaylistFileService {
 
     private void handleModifiedPlaylist(Path path, WatchEvent<Path> event) {
         Path fullPath = path.resolve(event.context());
-        importPlaylist(fullPath, playlistService.getAllPlaylists());
+        // Coalesce filesystem-event bursts for the same path and bound concurrent imports
+        // against the HikariCP pool (issue #215). The Runnable evaluates
+        // getAllPlaylists() only when the debounce window elapses and a permit is
+        // acquired, so a 35,000-event rsync becomes at most one DB-fetch + one import
+        // per distinct file.
+        importThrottle.submit(fullPath,
+                () -> importPlaylist(fullPath, playlistService.getAllPlaylists()));
     }
 
     public void importPlaylists() {
