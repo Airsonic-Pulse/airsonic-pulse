@@ -55,6 +55,7 @@ public class JaxbContentService {
     private final PlaylistService playlistService;
     private final AlbumService albumService;
     private final MediaFileService mediaFileService;
+    private final MediaFolderService mediaFolderService;
     private final TranscodingService transcodingService;
     private final RatingService ratingService;
     private final SettingsService settingsService;
@@ -66,6 +67,7 @@ public class JaxbContentService {
             PlaylistService playlistService,
             AlbumService albumService,
             MediaFileService mediaFileService,
+            MediaFolderService mediaFolderService,
             TranscodingService transcodingService,
             RatingService ratingService,
             SettingsService settingsService) {
@@ -75,6 +77,7 @@ public class JaxbContentService {
         this.playlistService = playlistService;
         this.albumService = albumService;
         this.mediaFileService = mediaFileService;
+        this.mediaFolderService = mediaFolderService;
         this.transcodingService = transcodingService;
         this.ratingService = ratingService;
         this.settingsService = settingsService;
@@ -91,6 +94,16 @@ public class JaxbContentService {
         jaxbArtist.setMediaType("artist");
         jaxbArtist.setSortName(artist.getSortName());
         jaxbArtist.setMusicBrainzId(artist.getMusicBrainzArtistId());
+        // Ratings key on MediaFile id, so resolve the artist's directory MediaFile (the
+        // physical row that carries rating-eligible ids). Virtual artists derived from
+        // albumArtist tags have no directory and resolve to null; RatingService treats a
+        // null MediaFile as "no rating", so userRating and averageRating come back null
+        // and JAXB omits the attributes — matching the #201 (#179) convention on the
+        // MediaFile-keyed overload.
+        MediaFile artistMediaFile = mediaFileService.getArtistByName(artist.getName(),
+                mediaFolderService.getMusicFoldersForUser(username));
+        jaxbArtist.setUserRating(ratingService.getRatingForUser(username, artistMediaFile));
+        jaxbArtist.setAverageRating(ratingService.getAverageRating(artistMediaFile));
         return jaxbArtist;
     }
 

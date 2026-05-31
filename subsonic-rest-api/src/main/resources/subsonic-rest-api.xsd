@@ -151,6 +151,8 @@
         <xs:attribute name="mediaType" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
         <xs:attribute name="musicBrainzId" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
         <xs:attribute name="sortName" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="userRating" type="sub:UserRating" use="optional"/>  <!-- Added in OpenSubsonic -->
+        <xs:attribute name="averageRating" type="sub:AverageRating" use="optional"/>  <!-- Added in OpenSubsonic -->
     </xs:complexType>
 
     <xs:complexType name="ArtistWithAlbumsID3">
