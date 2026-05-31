@@ -62,6 +62,9 @@ public class PlaylistFileServiceTestImport {
     private PathWatcherService pathWatcherService;
 
     @Mock
+    private PlaylistImportThrottle importThrottle;
+
+    @Mock
     private PlaylistService playlistService;
 
     @TempDir
@@ -82,6 +85,7 @@ public class PlaylistFileServiceTestImport {
                 settingsService,
                 userRepository,
                 pathWatcherService,
+                importThrottle,
                 Collections.emptyList(),
                 Lists.newArrayList(defaultPlaylistImportHandler));
     }

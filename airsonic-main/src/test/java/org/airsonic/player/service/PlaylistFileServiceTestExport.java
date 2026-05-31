@@ -63,6 +63,9 @@ public class PlaylistFileServiceTestExport {
     private PathWatcherService pathWatcherService;
 
     @Mock
+    private PlaylistImportThrottle importThrottle;
+
+    @Mock
     MusicFolder mockedFolder;
 
     @TempDir
@@ -81,6 +84,7 @@ public class PlaylistFileServiceTestExport {
                 settingsService,
                 userRepository,
                 pathWatcherService,
+                importThrottle,
                 new ArrayList<>(List.of(defaultPlaylistExportHandler)),
                 new ArrayList<>());
     }
