@@ -419,7 +419,12 @@ public class JaxbContentService {
         Double albumGain = mediaFile.getReplayGainAlbumGain();
         Double trackPeak = mediaFile.getReplayGainTrackPeak();
         Double albumPeak = mediaFile.getReplayGainAlbumPeak();
-        if (trackGain == null && albumGain == null && trackPeak == null && albumPeak == null) {
+        // Operator-supplied fallback emitted on every replayGain element when configured —
+        // clients are expected to apply it only when the per-track values are absent. When
+        // unset (the default), the attribute is omitted and there is no behavior change.
+        Double fallbackGain = settingsService.getReplayGainFallback();
+        if (trackGain == null && albumGain == null && trackPeak == null && albumPeak == null
+                && fallbackGain == null) {
             return null;
         }
         ReplayGain replayGain = new ReplayGain();
@@ -427,6 +432,7 @@ public class JaxbContentService {
         replayGain.setAlbumGain(albumGain);
         replayGain.setTrackPeak(trackPeak);
         replayGain.setAlbumPeak(albumPeak);
+        replayGain.setFallbackGain(fallbackGain);
         return replayGain;
     }
 

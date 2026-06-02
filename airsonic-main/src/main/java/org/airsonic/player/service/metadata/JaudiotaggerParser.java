@@ -38,6 +38,8 @@ import org.jaudiotagger.tag.id3.AbstractID3v2Tag;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTMCL;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTXXX;
 import org.jaudiotagger.tag.images.Artwork;
+import org.jaudiotagger.tag.mp4.Mp4Tag;
+import org.jaudiotagger.tag.mp4.field.Mp4TagReverseDnsField;
 import org.jaudiotagger.tag.reference.PictureTypes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -72,6 +74,19 @@ public class JaudiotaggerParser extends MetaDataParser {
     static final String RG_ALBUM_GAIN = "REPLAYGAIN_ALBUM_GAIN";
     static final String RG_TRACK_PEAK = "REPLAYGAIN_TRACK_PEAK";
     static final String RG_ALBUM_PEAK = "REPLAYGAIN_ALBUM_PEAK";
+
+    // Opus carries EBU R128 gain (an integer Q7.8 fixed-point value referenced to -23 LUFS)
+    // rather than ReplayGain dB referenced to -18 dBFS. Both can co-exist on the same file;
+    // RG is preferred when present and R128 is converted to RG-equivalent dB otherwise. See
+    // {@link #parseR128GainQ78} for the conversion.
+    static final String R128_TRACK_GAIN = "R128_TRACK_GAIN";
+    static final String R128_ALBUM_GAIN = "R128_ALBUM_GAIN";
+
+    // MP4 stores ReplayGain in iTunes-style reverse-DNS freeform atoms keyed by lowercase
+    // descriptor (replaygain_track_gain, replaygain_album_gain, replaygain_track_peak,
+    // replaygain_album_peak). jaudiotagger 3.0.1 exposes them through Mp4Tag.getFields()
+    // with the prefix below; no Mp4FieldKey enum value covers them.
+    static final String MP4_ITUNES_FREEFORM_PREFIX = "----:com.apple.iTunes:";
 
     // Clean-FieldKey contributor roles — each FieldKey is read via tag.getAll(...) and every
     // returned value becomes one Contributor with the given role label and no subRole. Performer
@@ -154,8 +169,8 @@ public class JaudiotaggerParser extends MetaDataParser {
                 // from the release-artist tags rather than the per-track artist tags.
                 metaData.setMusicBrainzArtistId(getTagField(tag, FieldKey.MUSICBRAINZ_RELEASEARTISTID));
                 metaData.setArtistSortName(getTagField(tag, FieldKey.ALBUM_ARTIST_SORT));
-                metaData.setReplayGainTrackGain(parseReplayGain(getReplayGainField(tag, RG_TRACK_GAIN)));
-                metaData.setReplayGainAlbumGain(parseReplayGain(getReplayGainField(tag, RG_ALBUM_GAIN)));
+                metaData.setReplayGainTrackGain(parseTrackGain(tag));
+                metaData.setReplayGainAlbumGain(parseAlbumGain(tag));
                 metaData.setReplayGainTrackPeak(parseReplayGain(getReplayGainField(tag, RG_TRACK_PEAK)));
                 metaData.setReplayGainAlbumPeak(parseReplayGain(getReplayGainField(tag, RG_ALBUM_PEAK)));
 
@@ -287,9 +302,11 @@ public class JaudiotaggerParser extends MetaDataParser {
     }
 
     /**
-     * Reads a ReplayGain value by name. ReplayGain has no jaudiotagger {@link FieldKey}, so it is
-     * read directly: from ID3v2 it lives in a TXXX frame keyed by a (case-insensitive) description,
-     * while Vorbis comments (FLAC/Ogg/Opus) expose it as a plain keyed field.
+     * Reads a ReplayGain or R128 value by name. ReplayGain has no jaudiotagger
+     * {@link FieldKey}, so it is read directly: from ID3v2 it lives in a TXXX frame keyed by a
+     * (case-insensitive) description; Vorbis comments (FLAC/Ogg/Opus) expose it as a plain
+     * keyed field; MP4 stores it as an iTunes-style reverse-DNS freeform atom keyed by the
+     * lowercase descriptor under {@link #MP4_ITUNES_FREEFORM_PREFIX}.
      */
     static String getReplayGainField(Tag tag, String name) {
         try {
@@ -306,9 +323,69 @@ public class JaudiotaggerParser extends MetaDataParser {
                 }
                 return null;
             }
+            if (tag instanceof Mp4Tag mp4) {
+                List<TagField> fields = mp4.getFields(MP4_ITUNES_FREEFORM_PREFIX + name.toLowerCase());
+                if (fields != null) {
+                    for (TagField field : fields) {
+                        if (field instanceof Mp4TagReverseDnsField rdns) {
+                            return StringUtils.trimToNull(rdns.getContent());
+                        }
+                    }
+                }
+                return null;
+            }
             return StringUtils.trimToNull(tag.getFirst(name));
         } catch (Exception x) {
             // Ignored.
+            return null;
+        }
+    }
+
+    /**
+     * Returns the track gain in ReplayGain-equivalent dB, preferring the ReplayGain tag when
+     * present and falling back to the Opus R128 tag otherwise. A present-but-unparseable RG
+     * tag returns {@code null} and does NOT fall through to R128 — the operator's authored
+     * tag takes precedence over any inferred R128 value. See {@link #parseR128GainQ78} for
+     * the R128↔RG conversion.
+     */
+    Double parseTrackGain(Tag tag) {
+        String rg = getReplayGainField(tag, RG_TRACK_GAIN);
+        if (rg != null) {
+            return parseReplayGain(rg);
+        }
+        return parseR128GainQ78(getReplayGainField(tag, R128_TRACK_GAIN));
+    }
+
+    /**
+     * Returns the album gain in ReplayGain-equivalent dB, preferring the ReplayGain tag when
+     * present and falling back to the Opus R128 tag otherwise. Same precedence rule as
+     * {@link #parseTrackGain}.
+     */
+    Double parseAlbumGain(Tag tag) {
+        String rg = getReplayGainField(tag, RG_ALBUM_GAIN);
+        if (rg != null) {
+            return parseReplayGain(rg);
+        }
+        return parseR128GainQ78(getReplayGainField(tag, R128_ALBUM_GAIN));
+    }
+
+    /**
+     * Converts an Opus R128 integer gain (Q7.8 fixed-point, referenced to -23 LUFS) to a
+     * ReplayGain-equivalent dB value (ReplayGain 2 is anchored at -18 LUFS):
+     * {@code dB = q78 / 256 + 5}. The +5 dB shift accounts for the difference between EBU
+     * R128's -23 LUFS reference and the ReplayGain 2 -18 LUFS reference; the same mapping is
+     * used by <a href="https://github.com/Moonbase59/loudgain">loudgain</a>,
+     * <a href="https://github.com/complexlogic/rsgain">rsgain</a>, mutagen, and kid3.
+     * Returns {@code null} on blank, non-integer, or out-of-int-range input.
+     */
+    static Double parseR128GainQ78(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        try {
+            int q78 = Integer.parseInt(raw.trim());
+            return q78 / 256.0 + 5.0;
+        } catch (NumberFormatException e) {
             return null;
         }
     }

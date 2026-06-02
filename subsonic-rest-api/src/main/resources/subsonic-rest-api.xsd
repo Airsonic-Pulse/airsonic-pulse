@@ -313,6 +313,7 @@
         <xs:attribute name="albumGain" type="xs:double" use="optional"/>
         <xs:attribute name="trackPeak" type="xs:double" use="optional"/>
         <xs:attribute name="albumPeak" type="xs:double" use="optional"/>
+        <xs:attribute name="fallbackGain" type="xs:double" use="optional"/>  <!-- Added in OpenSubsonic -->
     </xs:complexType>
 
     <xs:complexType name="ItemGenre">  <!-- Added in OpenSubsonic -->
