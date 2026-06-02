@@ -73,6 +73,7 @@ public class SettingsService {
     private static final String KEY_COVER_ART_SOURCE = "CoverArtSource";
     private static final String KEY_COVER_ART_CONCURRENCY = "CoverArtConcurrency";
     private static final String KEY_COVER_ART_QUALITY = "CoverArtQuality";
+    private static final String KEY_REPLAY_GAIN_FALLBACK = "ReplayGainFallback";
     private static final String KEY_WELCOME_TITLE = "WelcomeTitle";
     private static final String KEY_WELCOME_SUBTITLE = "WelcomeSubtitle";
     private static final String KEY_WELCOME_MESSAGE = "WelcomeMessage2";
@@ -749,6 +750,36 @@ public class SettingsService {
 
     public void setCoverArtQuality(Integer quality) {
         setInt(KEY_COVER_ART_QUALITY, quality);
+    }
+
+    /**
+     * Returns the operator-supplied ReplayGain fallback (in dB) emitted on every
+     * {@code replayGain} response element. {@code null} when unset (the default), in which
+     * case the {@code fallbackGain} attribute is omitted. Stored as a string so the null /
+     * not-set state round-trips through the underlying configuration without aliasing the
+     * numeric zero.
+     */
+    public Double getReplayGainFallback() {
+        String raw = getString(KEY_REPLAY_GAIN_FALLBACK, null);
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return Double.parseDouble(raw);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    public void setReplayGainFallback(Double dB) {
+        // Guard against NaN / +Infinity / -Infinity — these survive Double.toString /
+        // parseDouble round-trip, would later serialize as xs:double "NaN" / "Infinity",
+        // and are rejected by many Subsonic clients. Treat them as "clear the setting".
+        if (dB != null && !Double.isFinite(dB)) {
+            setString(KEY_REPLAY_GAIN_FALLBACK, null);
+            return;
+        }
+        setString(KEY_REPLAY_GAIN_FALLBACK, dB == null ? null : dB.toString());
     }
 
     public String getWelcomeTitle() {

@@ -635,6 +635,81 @@ class JaxbContentServiceTest {
             assertNull(child.getCoverArt());
         }
 
+        // Mockito 5's RETURNS_DEFAULTS returns boxed-zero (0.0) for Double-returning mocked
+        // methods rather than null, so unstubbed mediaFile.getReplayGain*() reads as 0.0 — a
+        // valid gain value as far as buildReplayGain is concerned. These tests stub all four
+        // explicitly to null so the omission and emission logic is the only thing under test.
+        @Test
+        void createJaxbChild_replayGain_omitsElement_whenAllSourcesNull() {
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(310);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(310)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFile.getReplayGainTrackGain()).thenReturn(null);
+            when(mediaFile.getReplayGainAlbumGain()).thenReturn(null);
+            when(mediaFile.getReplayGainTrackPeak()).thenReturn(null);
+            when(mediaFile.getReplayGainAlbumPeak()).thenReturn(null);
+            when(settingsService.getReplayGainFallback()).thenReturn(null);
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertNull(child.getReplayGain(),
+                    "replayGain element must be omitted when no source produces any value");
+        }
+
+        @Test
+        void createJaxbChild_replayGain_emitsFallbackOnly_whenTagsAbsentButFallbackSet() {
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(320);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(320)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFile.getReplayGainTrackGain()).thenReturn(null);
+            when(mediaFile.getReplayGainAlbumGain()).thenReturn(null);
+            when(mediaFile.getReplayGainTrackPeak()).thenReturn(null);
+            when(mediaFile.getReplayGainAlbumPeak()).thenReturn(null);
+            when(settingsService.getReplayGainFallback()).thenReturn(-10.0);
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertNotNull(child.getReplayGain(),
+                    "replayGain element must be emitted whenever fallbackGain is configured");
+            assertEquals(-10.0, child.getReplayGain().getFallbackGain());
+            assertNull(child.getReplayGain().getTrackGain());
+            assertNull(child.getReplayGain().getAlbumGain());
+            assertNull(child.getReplayGain().getTrackPeak());
+            assertNull(child.getReplayGain().getAlbumPeak());
+        }
+
+        @Test
+        void createJaxbChild_replayGain_emitsFallbackAlongsideTagValues() {
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(330);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(330)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFile.getReplayGainTrackGain()).thenReturn(-6.5);
+            when(mediaFile.getReplayGainAlbumGain()).thenReturn(null);
+            when(mediaFile.getReplayGainTrackPeak()).thenReturn(0.988);
+            when(mediaFile.getReplayGainAlbumPeak()).thenReturn(null);
+            when(settingsService.getReplayGainFallback()).thenReturn(-8.0);
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertNotNull(child.getReplayGain());
+            assertEquals(-6.5, child.getReplayGain().getTrackGain());
+            assertEquals(0.988, child.getReplayGain().getTrackPeak());
+            assertEquals(-8.0, child.getReplayGain().getFallbackGain());
+            assertNull(child.getReplayGain().getAlbumGain());
+        }
+
         @Test
         void createJaxbChild_populatesGenresArrayAndKeepsSingleGenre() {
             Player player = mock(Player.class);

@@ -23,6 +23,8 @@ import org.jaudiotagger.tag.id3.ID3v24Tag;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTMCL;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTXXX;
 import org.jaudiotagger.tag.id3.valuepair.TextEncoding;
+import org.jaudiotagger.tag.mp4.Mp4Tag;
+import org.jaudiotagger.tag.mp4.field.Mp4TagReverseDnsField;
 import org.jaudiotagger.tag.vorbiscomment.VorbisCommentTag;
 import org.junit.jupiter.api.Test;
 
@@ -67,6 +69,105 @@ public class JaudiotaggerParserTestCase {
         VorbisCommentTag tag = VorbisCommentTag.createNewTag();
         tag.setField("REPLAYGAIN_TRACK_GAIN", "-7.50 dB");
         assertEquals("-7.50 dB", JaudiotaggerParser.getReplayGainField(tag, JaudiotaggerParser.RG_TRACK_GAIN));
+    }
+
+    private static Mp4Tag mp4TagWithItunesFreeform(String descriptorLower, String value) {
+        Mp4Tag tag = new Mp4Tag();
+        // jaudiotagger's 4-string Mp4TagReverseDnsField(id, issuer, descriptor, content) sets
+        // the field's id directly to the first argument (the iTunes reverse-DNS atom name);
+        // that's what Mp4Tag.getFields(String) matches against and what
+        // JaudiotaggerParser.getReplayGainField composes its lookup key for.
+        String id = JaudiotaggerParser.MP4_ITUNES_FREEFORM_PREFIX + descriptorLower;
+        Mp4TagReverseDnsField field = new Mp4TagReverseDnsField(id, "com.apple.iTunes",
+                descriptorLower, value);
+        tag.addField(field);
+        return tag;
+    }
+
+    @Test
+    public void testGetReplayGainFieldFromMp4FreeformAtom() {
+        Mp4Tag tag = mp4TagWithItunesFreeform("replaygain_track_gain", "-7.50 dB");
+        assertEquals("-7.50 dB",
+                JaudiotaggerParser.getReplayGainField(tag, JaudiotaggerParser.RG_TRACK_GAIN));
+    }
+
+    @Test
+    public void testGetReplayGainFieldMp4MissingAtomReturnsNull() {
+        Mp4Tag tag = mp4TagWithItunesFreeform("replaygain_track_gain", "-7.50 dB");
+        assertNull(JaudiotaggerParser.getReplayGainField(tag, JaudiotaggerParser.RG_ALBUM_PEAK));
+    }
+
+    @Test
+    public void testParseR128GainQ78ReferenceShiftAt0() {
+        // Q7.8 of 0 → 0/256 + 5 = 5.0 dB (a track already at -23 LUFS reads as +5 dB in RG terms)
+        assertEquals(Double.valueOf(5.0), JaudiotaggerParser.parseR128GainQ78("0"));
+    }
+
+    @Test
+    public void testParseR128GainQ78PositiveValues() {
+        // Q7.8 of 256 = 1 dB raw → 1 + 5 = 6 dB; -512 = -2 raw → -2 + 5 = 3 dB
+        assertEquals(Double.valueOf(6.0), JaudiotaggerParser.parseR128GainQ78("256"));
+        assertEquals(Double.valueOf(3.0), JaudiotaggerParser.parseR128GainQ78("-512"));
+        // Trimming
+        assertEquals(Double.valueOf(6.0), JaudiotaggerParser.parseR128GainQ78("  256  "));
+    }
+
+    @Test
+    public void testParseR128GainQ78MalformedReturnsNull() {
+        assertNull(JaudiotaggerParser.parseR128GainQ78(null));
+        assertNull(JaudiotaggerParser.parseR128GainQ78(""));
+        assertNull(JaudiotaggerParser.parseR128GainQ78("not-an-int"));
+        assertNull(JaudiotaggerParser.parseR128GainQ78("-7.50 dB"));
+    }
+
+    @Test
+    public void testParseR128GainQ78OutOfIntRangeReturnsNull() {
+        // Integer.parseInt rejects values outside [Integer.MIN_VALUE, Integer.MAX_VALUE] with
+        // NumberFormatException — the catch in parseR128GainQ78 normalizes that to null.
+        assertNull(JaudiotaggerParser.parseR128GainQ78("999999999999"));
+        assertNull(JaudiotaggerParser.parseR128GainQ78("-999999999999"));
+    }
+
+    @Test
+    public void testParseTrackGainPrefersRgWhenBothPresent() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.setField(JaudiotaggerParser.RG_TRACK_GAIN, "-6.50 dB");
+        tag.setField(JaudiotaggerParser.R128_TRACK_GAIN, "256"); // would be 6.0 dB after shift
+        JaudiotaggerParser parser = new JaudiotaggerParser(null);
+        assertEquals(Double.valueOf(-6.5), parser.parseTrackGain(tag));
+    }
+
+    @Test
+    public void testParseTrackGainFallsBackToR128WhenOnlyR128() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.setField(JaudiotaggerParser.R128_TRACK_GAIN, "0"); // 5.0 dB after shift
+        JaudiotaggerParser parser = new JaudiotaggerParser(null);
+        assertEquals(Double.valueOf(5.0), parser.parseTrackGain(tag));
+    }
+
+    @Test
+    public void testParseAlbumGainPrefersRgWhenBothPresent() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.setField(JaudiotaggerParser.RG_ALBUM_GAIN, "-4.25 dB");
+        tag.setField(JaudiotaggerParser.R128_ALBUM_GAIN, "256");
+        JaudiotaggerParser parser = new JaudiotaggerParser(null);
+        assertEquals(Double.valueOf(-4.25), parser.parseAlbumGain(tag));
+    }
+
+    @Test
+    public void testParseAlbumGainFallsBackToR128WhenOnlyR128() throws Exception {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        tag.setField(JaudiotaggerParser.R128_ALBUM_GAIN, "-512"); // 3.0 dB after shift
+        JaudiotaggerParser parser = new JaudiotaggerParser(null);
+        assertEquals(Double.valueOf(3.0), parser.parseAlbumGain(tag));
+    }
+
+    @Test
+    public void testParseTrackGainNeitherTagPresentReturnsNull() {
+        VorbisCommentTag tag = VorbisCommentTag.createNewTag();
+        JaudiotaggerParser parser = new JaudiotaggerParser(null);
+        assertNull(parser.parseTrackGain(tag));
+        assertNull(parser.parseAlbumGain(tag));
     }
 
     @Test
