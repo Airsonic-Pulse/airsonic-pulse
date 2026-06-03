@@ -115,6 +115,12 @@ public class Album {
     @Column(name = "mb_release_id", nullable = true)
     private String musicBrainzReleaseId;
 
+    @Column(name = "rg_album_gain", nullable = true)
+    private Double replayGainAlbumGain;
+
+    @Column(name = "rg_album_peak", nullable = true)
+    private Double replayGainAlbumPeak;
+
     public Album() {
     }
 
@@ -335,6 +341,22 @@ public class Album {
 
     public void setMusicBrainzReleaseId(String musicBrainzReleaseId) {
         this.musicBrainzReleaseId = musicBrainzReleaseId;
+    }
+
+    public Double getReplayGainAlbumGain() {
+        return replayGainAlbumGain;
+    }
+
+    public void setReplayGainAlbumGain(Double replayGainAlbumGain) {
+        this.replayGainAlbumGain = replayGainAlbumGain;
+    }
+
+    public Double getReplayGainAlbumPeak() {
+        return replayGainAlbumPeak;
+    }
+
+    public void setReplayGainAlbumPeak(Double replayGainAlbumPeak) {
+        this.replayGainAlbumPeak = replayGainAlbumPeak;
     }
 
     public List<StarredAlbum> getStarredAlbums() {

@@ -163,6 +163,7 @@ public class JaxbContentService {
         for (DiscTitle discTitle : buildDiscTitles(albumTracks)) {
             jaxbAlbum.getDiscTitles().add(discTitle);
         }
+        jaxbAlbum.setReplayGain(buildReplayGain(album));
         return jaxbAlbum;
     }
 
@@ -431,6 +432,24 @@ public class JaxbContentService {
         replayGain.setTrackGain(trackGain);
         replayGain.setAlbumGain(albumGain);
         replayGain.setTrackPeak(trackPeak);
+        replayGain.setAlbumPeak(albumPeak);
+        replayGain.setFallbackGain(fallbackGain);
+        return replayGain;
+    }
+
+    private ReplayGain buildReplayGain(Album album) {
+        // Album-level ReplayGain carries only albumGain / albumPeak (aggregated last-non-null
+        // from member tracks during scan) plus the operator-configured fallbackGain. trackGain
+        // and trackPeak are per-track and have no album-level meaning, so they're left null —
+        // JAXB omits the unset attributes on the reused ReplayGain complexType.
+        Double albumGain = album.getReplayGainAlbumGain();
+        Double albumPeak = album.getReplayGainAlbumPeak();
+        Double fallbackGain = settingsService.getReplayGainFallback();
+        if (albumGain == null && albumPeak == null && fallbackGain == null) {
+            return null;
+        }
+        ReplayGain replayGain = new ReplayGain();
+        replayGain.setAlbumGain(albumGain);
         replayGain.setAlbumPeak(albumPeak);
         replayGain.setFallbackGain(fallbackGain);
         return replayGain;
