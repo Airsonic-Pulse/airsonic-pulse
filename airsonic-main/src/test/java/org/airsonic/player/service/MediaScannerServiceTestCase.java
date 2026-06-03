@@ -429,6 +429,75 @@ public class MediaScannerServiceTestCase {
         assertEquals("Sony/BMG; Columbia\nWarner", album.getRecordLabels());
     }
 
+    // Album-level ReplayGain (rg_album_gain / rg_album_peak) is aggregated from each track's
+    // own rg_album_* columns during scan. Same null-guarded last-write-wins idiom as the
+    // scalars/dates: a non-null track value persists; a later track with null does not clobber.
+    // trackGain/trackPeak are per-track only and don't aggregate.
+
+    private void aggregateAlbumReplayGain(Map<String, Album> albums, Double albumGain, Double albumPeak) {
+        MediaFile file = new MediaFile();
+        file.setMediaType(MediaFile.MediaType.MUSIC);
+        file.setAlbumName("TestAlbum");
+        file.setArtist("TestArtist");
+        file.setAlbumArtist("TestArtist");
+        file.setParentPath("TestAlbum");
+        file.setReplayGainAlbumGain(albumGain);
+        file.setReplayGainAlbumPeak(albumPeak);
+        ReflectionTestUtils.invokeMethod(mediaScannerService, "updateAlbum",
+            null, file, null, ALBUM_SORT_SCAN_TIME,
+            new HashMap<String, AtomicInteger>(), albums, new HashSet<Integer>());
+    }
+
+    @Test
+    public void testAlbumReplayGainSetFromTrack() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateAlbumReplayGain(albums, -7.50, 0.988);
+
+        assertEquals(-7.50, album.getReplayGainAlbumGain());
+        assertEquals(0.988, album.getReplayGainAlbumPeak());
+    }
+
+    @Test
+    public void testAlbumReplayGainNullDoesNotClobber() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateAlbumReplayGain(albums, -7.50, 0.988);
+        aggregateAlbumReplayGain(albums, null, null);
+
+        assertEquals(-7.50, album.getReplayGainAlbumGain());
+        assertEquals(0.988, album.getReplayGainAlbumPeak());
+    }
+
+    @Test
+    public void testAlbumReplayGainLastWriteWins() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateAlbumReplayGain(albums, -7.50, 0.988);
+        aggregateAlbumReplayGain(albums, -9.25, 0.751);
+
+        assertEquals(-9.25, album.getReplayGainAlbumGain());
+        assertEquals(0.751, album.getReplayGainAlbumPeak());
+    }
+
+    @Test
+    public void testAlbumReplayGainAbsentWhenNoTracksTagged() {
+        Album album = newSortNameTestAlbum();
+        Map<String, Album> albums = new HashMap<>();
+        albums.put("TestAlbum|TestArtist", album);
+
+        aggregateAlbumReplayGain(albums, null, null);
+
+        assertNull(album.getReplayGainAlbumGain());
+        assertNull(album.getReplayGainAlbumPeak());
+    }
+
     // The artist MB id (FieldKey.MUSICBRAINZ_RELEASEARTISTID) and sort name
     // (FieldKey.ALBUM_ARTIST_SORT) are carried on each track's MediaFile and aggregated onto
     // the Artist in the private updateArtist(). These tests drive that aggregation step

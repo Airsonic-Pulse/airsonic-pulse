@@ -18,4 +18,5 @@
     <include file="add-media-file-disc-subtitle.xml" relativeToChangelogFile="true"/>
     <include file="add-media-file-contributors.xml" relativeToChangelogFile="true"/>
     <include file="add-api-key-table.xml" relativeToChangelogFile="true"/>
+    <include file="add-album-replaygain.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

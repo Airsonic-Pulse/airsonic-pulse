@@ -473,6 +473,108 @@ class JaxbContentServiceTest {
             assertTrue(result.getDiscTitles().isEmpty());
         }
 
+        // Album-level ReplayGain emission. Mockito 5 returns boxed 0.0 (not null) for Double
+        // return types, so the absent case needs explicit null stubs to model "no value".
+
+        @Test
+        void createJaxbAlbum_replayGain_omitsElementWhenAllSourcesNull() {
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(50);
+            when(album.getName()).thenReturn("NoRG");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(50)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(50, "user")).thenReturn(null);
+            when(album.getReplayGainAlbumGain()).thenReturn(null);
+            when(album.getReplayGainAlbumPeak()).thenReturn(null);
+            when(settingsService.getReplayGainFallback()).thenReturn(null);
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertNull(result.getReplayGain(),
+                    "replayGain element must be omitted when no source produces any value");
+        }
+
+        @Test
+        void createJaxbAlbum_replayGain_emitsAlbumValuesWithoutTrackValues() {
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(51);
+            when(album.getName()).thenReturn("RGTagged");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(51)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(51, "user")).thenReturn(null);
+            when(album.getReplayGainAlbumGain()).thenReturn(-7.50);
+            when(album.getReplayGainAlbumPeak()).thenReturn(0.988);
+            when(settingsService.getReplayGainFallback()).thenReturn(null);
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertNotNull(result.getReplayGain());
+            assertEquals(-7.50, result.getReplayGain().getAlbumGain());
+            assertEquals(0.988, result.getReplayGain().getAlbumPeak());
+            assertNull(result.getReplayGain().getTrackGain(),
+                    "trackGain has no album-level meaning and must be omitted");
+            assertNull(result.getReplayGain().getTrackPeak(),
+                    "trackPeak has no album-level meaning and must be omitted");
+            assertNull(result.getReplayGain().getFallbackGain());
+        }
+
+        @Test
+        void createJaxbAlbum_replayGain_emitsFallbackOnly_whenAlbumValuesAbsentButFallbackSet() {
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(52);
+            when(album.getName()).thenReturn("FallbackOnly");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(52)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(52, "user")).thenReturn(null);
+            when(album.getReplayGainAlbumGain()).thenReturn(null);
+            when(album.getReplayGainAlbumPeak()).thenReturn(null);
+            when(settingsService.getReplayGainFallback()).thenReturn(-10.0);
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertNotNull(result.getReplayGain(),
+                    "replayGain element must be emitted whenever fallbackGain is configured");
+            assertEquals(-10.0, result.getReplayGain().getFallbackGain());
+            assertNull(result.getReplayGain().getAlbumGain());
+            assertNull(result.getReplayGain().getAlbumPeak());
+            assertNull(result.getReplayGain().getTrackGain());
+            assertNull(result.getReplayGain().getTrackPeak());
+        }
+
+        @Test
+        void createJaxbAlbum_replayGain_emitsFallbackAlongsideAlbumValues() {
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(53);
+            when(album.getName()).thenReturn("AlbumPlusFallback");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(53)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(53, "user")).thenReturn(null);
+            when(album.getReplayGainAlbumGain()).thenReturn(-6.5);
+            when(album.getReplayGainAlbumPeak()).thenReturn(0.95);
+            when(settingsService.getReplayGainFallback()).thenReturn(-8.0);
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertNotNull(result.getReplayGain());
+            assertEquals(-6.5, result.getReplayGain().getAlbumGain());
+            assertEquals(0.95, result.getReplayGain().getAlbumPeak());
+            assertEquals(-8.0, result.getReplayGain().getFallbackGain());
+            assertNull(result.getReplayGain().getTrackGain());
+            assertNull(result.getReplayGain().getTrackPeak());
+        }
+
         private MediaFile track(int discNumber, String discSubtitle) {
             MediaFile mf = new MediaFile();
             mf.setDiscNumber(discNumber);

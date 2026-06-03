@@ -172,6 +172,7 @@
             <xs:element name="releaseTypes" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>  <!-- Added in OpenSubsonic -->
             <xs:element name="recordLabels" type="sub:RecordLabel" minOccurs="0" maxOccurs="unbounded"/>  <!-- Added in OpenSubsonic -->
             <xs:element name="discTitles" type="sub:DiscTitle" minOccurs="0" maxOccurs="unbounded"/>  <!-- Added in OpenSubsonic -->
+            <xs:element name="replayGain" type="sub:ReplayGain" minOccurs="0"/>  <!-- Added in OpenSubsonic -->
         </xs:sequence>
         <xs:attribute name="id" type="xs:string" use="required"/>
         <xs:attribute name="name" type="xs:string" use="required"/>

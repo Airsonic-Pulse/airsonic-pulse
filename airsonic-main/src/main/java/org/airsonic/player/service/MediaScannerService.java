@@ -504,6 +504,12 @@ public class MediaScannerService {
         if (file.getRecordLabels() != null) {
             album.setRecordLabels(file.getRecordLabels());
         }
+        if (file.getReplayGainAlbumGain() != null) {
+            album.setReplayGainAlbumGain(file.getReplayGainAlbumGain());
+        }
+        if (file.getReplayGainAlbumPeak() != null) {
+            album.setReplayGainAlbumPeak(file.getReplayGainAlbumPeak());
+        }
 
         if (album.getArt() == null && parent != null) {
             CoverArt art = coverArtService.getMediaFileArt(parent.getId());
