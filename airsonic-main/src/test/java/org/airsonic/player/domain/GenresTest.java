@@ -68,4 +68,55 @@ public class GenresTest {
         String packed = String.join(";", source);
         assertEquals(source, Genres.split(packed, ";"));
     }
+
+    @Test
+    public void testIncrementSongCountAccumulatesPerToken() {
+        Genres g = new Genres();
+        g.incrementSongCount("Rock");
+        g.incrementSongCount("Rock");
+        g.incrementSongCount("Metal");
+
+        Genre rock = findGenre(g, "Rock");
+        Genre metal = findGenre(g, "Metal");
+        assertEquals(2, rock.getSongCount());
+        assertEquals(0, rock.getAlbumCount());
+        assertEquals(1, metal.getSongCount());
+        assertEquals(0, metal.getAlbumCount());
+    }
+
+    @Test
+    public void testIncrementAlbumCountAccumulatesPerToken() {
+        Genres g = new Genres();
+        g.incrementAlbumCount("Rock");
+        g.incrementAlbumCount("Rock");
+        g.incrementAlbumCount("Metal");
+
+        Genre rock = findGenre(g, "Rock");
+        Genre metal = findGenre(g, "Metal");
+        assertEquals(2, rock.getAlbumCount());
+        assertEquals(0, rock.getSongCount());
+        assertEquals(1, metal.getAlbumCount());
+        assertEquals(0, metal.getSongCount());
+    }
+
+    @Test
+    public void testIncrementIgnoresBlankAndNullTokens() {
+        Genres g = new Genres();
+        g.incrementSongCount(null);
+        g.incrementSongCount("");
+        g.incrementSongCount("   ");
+        g.incrementAlbumCount(null);
+        g.incrementAlbumCount("");
+        g.incrementAlbumCount("   ");
+
+        assertTrue(g.getGenres().isEmpty(),
+                "blank/null tokens must not create rows");
+    }
+
+    private static Genre findGenre(Genres g, String name) {
+        return g.getGenres().stream()
+                .filter(x -> name.equals(x.getName()))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("genre row missing: " + name));
+    }
 }

@@ -429,6 +429,140 @@ public class MediaScannerServiceTestCase {
         assertEquals("Sony/BMG; Columbia\nWarner", album.getRecordLabels());
     }
 
+    // updateGenres() reads the genre count table source — prefers media_file.genres (PR #134's
+    // packed multi-value column, populated alongside the scalar on audio file rows), falls back
+    // to splitting the scalar media_file.genre on the same separators when the packed column is
+    // absent (album folder rows; pre-#134 legacy rows). These tests drive the private feeder so
+    // the multi-frame, fallback, and no-genre semantics can be covered without audio fixtures.
+
+    private org.airsonic.player.domain.Genres invokeUpdateGenres(MediaFile file, String separators) {
+        // Stub locally per call so changes don't leak to unrelated tests; the spy bean's other
+        // methods (mostly DB-backed property reads) continue to pass through unchanged.
+        when(settingsService.getGenreSeparators()).thenReturn(separators);
+        org.airsonic.player.domain.Genres bin = new org.airsonic.player.domain.Genres();
+        ReflectionTestUtils.invokeMethod(mediaScannerService, "updateGenres", file, bin);
+        return bin;
+    }
+
+    private MediaFile audioFile(String genre, String packedGenres) {
+        MediaFile file = new MediaFile();
+        file.setMediaType(MediaFile.MediaType.MUSIC);
+        file.setGenre(genre);
+        file.setGenres(packedGenres);
+        return file;
+    }
+
+    private MediaFile albumFolder(String genre) {
+        MediaFile file = new MediaFile();
+        file.setMediaType(MediaFile.MediaType.ALBUM);
+        file.setGenre(genre);
+        // genres[] is intentionally not set — album folders never get the packed column populated.
+        return file;
+    }
+
+    private int songCountOf(org.airsonic.player.domain.Genres g, String name) {
+        return g.getGenres().stream()
+                .filter(x -> name.equals(x.getName()))
+                .findFirst()
+                .map(org.airsonic.player.domain.Genre::getSongCount)
+                .orElse(0);
+    }
+
+    private int albumCountOf(org.airsonic.player.domain.Genres g, String name) {
+        return g.getGenres().stream()
+                .filter(x -> name.equals(x.getName()))
+                .findFirst()
+                .map(org.airsonic.player.domain.Genre::getAlbumCount)
+                .orElse(0);
+    }
+
+    @Test
+    public void testUpdateGenresMultiFrameAudioFileCountsAllGenres() {
+        // PR #134's packed column carries every genre frame; the feeder must increment all rows.
+        MediaFile file = audioFile("Rock", "Rock;Pop;Indie");
+        org.airsonic.player.domain.Genres g = invokeUpdateGenres(file, ";");
+        assertEquals(1, songCountOf(g, "Rock"));
+        assertEquals(1, songCountOf(g, "Pop"));
+        assertEquals(1, songCountOf(g, "Indie"));
+        assertEquals(3, g.getGenres().size());
+    }
+
+    @Test
+    public void testUpdateGenresSingleGenreAudioFileIncrementsOnce() {
+        MediaFile file = audioFile("Rock", "Rock");
+        org.airsonic.player.domain.Genres g = invokeUpdateGenres(file, ";");
+        assertEquals(1, songCountOf(g, "Rock"));
+        assertEquals(1, g.getGenres().size());
+    }
+
+    @Test
+    public void testUpdateGenresAudioFileFallsBackToScalarWhenPackedNull() {
+        // Mirrors pre-#134 legacy rows where genres[] was never written: the scalar still flows.
+        MediaFile file = audioFile("Rock", null);
+        org.airsonic.player.domain.Genres g = invokeUpdateGenres(file, ";");
+        assertEquals(1, songCountOf(g, "Rock"));
+        assertEquals(1, g.getGenres().size());
+    }
+
+    @Test
+    public void testUpdateGenresScalarFallbackSplitsOnSeparators() {
+        // Legacy scalar tag containing a separator gets split via the same Genres.split idiom,
+        // so the fallback path produces the same row set as a properly packed column would.
+        MediaFile file = audioFile("Rock; Pop", null);
+        org.airsonic.player.domain.Genres g = invokeUpdateGenres(file, ";");
+        assertEquals(1, songCountOf(g, "Rock"));
+        assertEquals(1, songCountOf(g, "Pop"));
+        assertEquals(2, g.getGenres().size());
+    }
+
+    @Test
+    public void testUpdateGenresNoGenreLeavesTableUntouched() {
+        MediaFile file = audioFile(null, null);
+        org.airsonic.player.domain.Genres g = invokeUpdateGenres(file, ";");
+        assertTrue(g.getGenres().isEmpty());
+    }
+
+    @Test
+    public void testUpdateGenresBlankGenreLeavesTableUntouched() {
+        MediaFile file = audioFile("   ", null);
+        org.airsonic.player.domain.Genres g = invokeUpdateGenres(file, ";");
+        assertTrue(g.getGenres().isEmpty());
+    }
+
+    @Test
+    public void testUpdateGenresAlbumFolderIncrementsAlbumCountViaScalar() {
+        // Album folders are written by MediaFileService without the packed column, so they hit
+        // the scalar fallback. Verifies album_count increments and song_count stays zero.
+        MediaFile file = albumFolder("Rock");
+        org.airsonic.player.domain.Genres g = invokeUpdateGenres(file, ";");
+        assertEquals(1, albumCountOf(g, "Rock"));
+        assertEquals(0, songCountOf(g, "Rock"));
+        assertEquals(1, g.getGenres().size());
+    }
+
+    @Test
+    public void testUpdateGenresAlbumFolderScalarSplitsOnSeparators() {
+        // Same as the audio scalar split, but exercised through the isAlbum() branch.
+        MediaFile file = albumFolder("Rock; Metal");
+        org.airsonic.player.domain.Genres g = invokeUpdateGenres(file, ";");
+        assertEquals(1, albumCountOf(g, "Rock"));
+        assertEquals(1, albumCountOf(g, "Metal"));
+        assertEquals(2, g.getGenres().size());
+    }
+
+    @Test
+    public void testUpdateGenresMultipleSeparatorCharsHonoured() {
+        // The getGenreSeparators setting accepts a charset string ("'; ,'") — Genres.split honours
+        // every char. Lock that in so a future change to the default doesn't silently regress the
+        // multi-separator behaviour of the count-table feeder.
+        MediaFile file = audioFile("Rock", "Rock;Pop,Indie");
+        org.airsonic.player.domain.Genres g = invokeUpdateGenres(file, ";,");
+        assertEquals(1, songCountOf(g, "Rock"));
+        assertEquals(1, songCountOf(g, "Pop"));
+        assertEquals(1, songCountOf(g, "Indie"));
+        assertEquals(3, g.getGenres().size());
+    }
+
     // Album-level ReplayGain (rg_album_gain / rg_album_peak) is aggregated from each track's
     // own rg_album_* columns during scan. Same null-guarded last-write-wins idiom as the
     // scalars/dates: a non-null track value persists; a later track with null does not clobber.
