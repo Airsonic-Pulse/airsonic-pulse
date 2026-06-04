@@ -406,14 +406,23 @@ public class MediaScannerService {
     }
 
     private void updateGenres(MediaFile file, Genres genres) {
-        String genre = file.getGenre();
-        if (genre == null) {
+        // Prefer the packed multi-value media_file.genres column (PR #134) so multi-frame tags
+        // contribute to the count of every genre they carry, not just the primary scalar.
+        // Album-folder rows do not get a packed column populated during scan, so fall back to
+        // splitting the scalar genre on the same separators for parity. Both sources are already
+        // canonicalized by JaudiotaggerParser.mapGenre (e.g. ID3v1 "(17)" -> "Rock").
+        String separators = settingsService.getGenreSeparators();
+        String packed = file.getGenres();
+        List<String> resolved = packed != null
+                ? Genres.split(packed, separators)
+                : Genres.split(file.getGenre(), separators);
+        if (resolved.isEmpty()) {
             return;
         }
         if (file.isAlbum()) {
-            genres.incrementAlbumCount(genre, settingsService.getGenreSeparators());
+            resolved.forEach(genres::incrementAlbumCount);
         } else if (file.isAudio()) {
-            genres.incrementSongCount(genre, settingsService.getGenreSeparators());
+            resolved.forEach(genres::incrementSongCount);
         }
     }
 
