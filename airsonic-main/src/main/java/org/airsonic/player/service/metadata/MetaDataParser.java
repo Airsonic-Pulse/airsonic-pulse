@@ -42,6 +42,20 @@ public abstract class MetaDataParser {
     protected static final Pattern TRACK_NUMBER_PATTERN = Pattern.compile("(\\d+)/\\d+");
     protected static final Pattern YEAR_NUMBER_PATTERN = Pattern.compile("(\\d{4}).*");
 
+    // ReplayGain 2.0 tag names — the canonical Vorbis-comment / TXXX-descriptor / iTunes-freeform
+    // keys for the four-field ReplayGain set. Lifted here so JaudiotaggerParser and FFmpegParser
+    // share one source of truth and clients can't observe a key-mismatch between formats.
+    static final String RG_TRACK_GAIN = "REPLAYGAIN_TRACK_GAIN";
+    static final String RG_ALBUM_GAIN = "REPLAYGAIN_ALBUM_GAIN";
+    static final String RG_TRACK_PEAK = "REPLAYGAIN_TRACK_PEAK";
+    static final String RG_ALBUM_PEAK = "REPLAYGAIN_ALBUM_PEAK";
+
+    // Opus EBU R128 gain tag names — Q7.8 fixed-point integer values referenced to -23 LUFS,
+    // not RG-2 dB. Both can co-exist on the same file; ReplayGain is preferred when present,
+    // and R128 is converted to RG-equivalent dB via {@link #parseR128GainQ78}.
+    static final String R128_TRACK_GAIN = "R128_TRACK_GAIN";
+    static final String R128_ALBUM_GAIN = "R128_ALBUM_GAIN";
+
     /**
      * Parses meta data for the given file.
      *
@@ -318,6 +332,27 @@ public abstract class MetaDataParser {
             double d = Double.parseDouble(str);
             return Double.isFinite(d) ? d : null;
         } catch (NumberFormatException x) {
+            return null;
+        }
+    }
+
+    /**
+     * Converts an Opus R128 integer gain (Q7.8 fixed-point, referenced to -23 LUFS) to a
+     * ReplayGain-equivalent dB value (ReplayGain 2 is anchored at -18 LUFS):
+     * {@code dB = q78 / 256 + 5}. The +5 dB shift accounts for the difference between EBU
+     * R128's -23 LUFS reference and the ReplayGain 2 -18 LUFS reference; the same mapping is
+     * used by <a href="https://github.com/Moonbase59/loudgain">loudgain</a>,
+     * <a href="https://github.com/complexlogic/rsgain">rsgain</a>, mutagen, and kid3.
+     * Returns {@code null} on blank, non-integer, or out-of-int-range input.
+     */
+    static Double parseR128GainQ78(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        try {
+            int q78 = Integer.parseInt(raw.trim());
+            return q78 / 256.0 + 5.0;
+        } catch (NumberFormatException e) {
             return null;
         }
     }

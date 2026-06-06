@@ -208,4 +208,39 @@ public class MetaDataParserTestCase {
         assertNull(MetaDataParser.parseCompilation("2"));
         assertNull(MetaDataParser.parseCompilation("compilation"));
     }
+
+    // parseR128GainQ78 — Q7.8 fixed-point R128 gain → ReplayGain-equivalent dB.
+    // Behavior lifted unchanged from JaudiotaggerParser so FFmpegParser can reuse it for
+    // .opus files (jaudiotagger 3.0.1 has no Opus reader; see #258 and #226 PR1).
+
+    @Test
+    public void testParseR128GainQ78ReferenceShiftAt0() {
+        // Q7.8 of 0 → 0/256 + 5 = 5.0 dB (a track already at -23 LUFS reads as +5 dB in RG terms)
+        assertEquals(Double.valueOf(5.0), MetaDataParser.parseR128GainQ78("0"));
+    }
+
+    @Test
+    public void testParseR128GainQ78PositiveValues() {
+        // Q7.8 of 256 = 1 dB raw → 1 + 5 = 6 dB; -512 = -2 raw → -2 + 5 = 3 dB
+        assertEquals(Double.valueOf(6.0), MetaDataParser.parseR128GainQ78("256"));
+        assertEquals(Double.valueOf(3.0), MetaDataParser.parseR128GainQ78("-512"));
+        // Trimming
+        assertEquals(Double.valueOf(6.0), MetaDataParser.parseR128GainQ78("  256  "));
+    }
+
+    @Test
+    public void testParseR128GainQ78MalformedReturnsNull() {
+        assertNull(MetaDataParser.parseR128GainQ78(null));
+        assertNull(MetaDataParser.parseR128GainQ78(""));
+        assertNull(MetaDataParser.parseR128GainQ78("not-an-int"));
+        assertNull(MetaDataParser.parseR128GainQ78("-7.50 dB"));
+    }
+
+    @Test
+    public void testParseR128GainQ78OutOfIntRangeReturnsNull() {
+        // Integer.parseInt rejects values outside [Integer.MIN_VALUE, Integer.MAX_VALUE] with
+        // NumberFormatException — the catch in parseR128GainQ78 normalizes that to null.
+        assertNull(MetaDataParser.parseR128GainQ78("999999999999"));
+        assertNull(MetaDataParser.parseR128GainQ78("-999999999999"));
+    }
 }
