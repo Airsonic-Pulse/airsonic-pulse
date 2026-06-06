@@ -213,7 +213,7 @@ public class IndexManagerTestCase {
         });
 
         albums = albumRepository.findByPresentFalse();
-        assertEquals(4, candidates.size());
+        assertEquals(4, albums.size());
 
         /* Does not scan, only expunges the index. */
         indexManager.startIndexing();
