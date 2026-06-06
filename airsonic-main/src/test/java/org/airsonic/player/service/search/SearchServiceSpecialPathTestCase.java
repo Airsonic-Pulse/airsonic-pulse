@@ -38,7 +38,13 @@ import static org.springframework.util.ObjectUtils.isEmpty;
  * This test case is a FalsePattern for search,
  * but there may be problems with the data flow prior to creating the search index.
  */
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+// Default web environment (MOCK) is required: GlobalSecurityConfig.extSecurityFilterChain
+// uses MvcRequestMatcher, which needs mvcHandlerMappingIntrospector — only available when a
+// servlet context is bootstrapped. WebEnvironment.NONE fails ApplicationContext load with
+// "No bean named '... mvcHandlerMappingIntrospector ...' available". The siblings
+// IndexManagerTestCase and SearchServiceTestCase already rely on default-MOCK for the
+// same reason.
+@SpringBootTest
 @EnableConfigurationProperties
 public class SearchServiceSpecialPathTestCase {
 
@@ -49,16 +55,17 @@ public class SearchServiceSpecialPathTestCase {
 
     private List<MusicFolder> getMusicFolders() {
         if (isEmpty(musicFolders)) {
+            // Use the no-id MusicFolder constructor so JPA's IDENTITY generator assigns
+            // unique IDs at persist time. The original hardcoded ids (1, 2, 3) collided
+            // with the music_folder rows seeded by Liquibase, producing an
+            // ObjectOptimisticLockingFailure when createMusicFolder tried to write back
+            // to an existing row.
             musicFolders = new ArrayList<>();
-
-            Path musicDir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible");
-            musicFolders.add(new MusicFolder(1, musicDir, "accessible", Type.MEDIA, true, Instant.now().truncatedTo(ChronoUnit.MICROS)));
-
-            Path music2Dir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible's");
-            musicFolders.add(new MusicFolder(2, music2Dir, "accessible's", Type.MEDIA, true, Instant.now().truncatedTo(ChronoUnit.MICROS)));
-
-            Path music3Dir = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath").resolve("accessible+s");
-            musicFolders.add(new MusicFolder(3, music3Dir, "accessible+s", Type.MEDIA, true, Instant.now().truncatedTo(ChronoUnit.MICROS)));
+            Path basePath = MusicFolderTestData.resolveBaseMediaPath().resolve("Search").resolve("SpecialPath");
+            Instant now = Instant.now().truncatedTo(ChronoUnit.MICROS);
+            musicFolders.add(new MusicFolder(basePath.resolve("accessible"), "accessible", Type.MEDIA, true, now));
+            musicFolders.add(new MusicFolder(basePath.resolve("accessible's"), "accessible's", Type.MEDIA, true, now));
+            musicFolders.add(new MusicFolder(basePath.resolve("accessible+s"), "accessible+s", Type.MEDIA, true, now));
         }
         return musicFolders;
     }
@@ -122,7 +129,7 @@ public class SearchServiceSpecialPathTestCase {
                 .filter(m -> "accessible+s".equals(m.getName()))
                 .collect(Collectors.toList());
         randomAlbums = searchService.getRandomAlbums(Integer.MAX_VALUE, folder03);
-        assertEquals(1, folder03.size(), "Albums in \"accessible+s\" ");
+        assertEquals(1, randomAlbums.size(), "Albums in \"accessible+s\" ");
 
     }
 
