@@ -95,58 +95,7 @@ public class FFmpegParser extends MetaDataParser {
                 process.destroy();
             }
 
-            metaData.setDuration(result.at("/format/duration").asDouble());
-            // Bitrate is in Kb/s
-            metaData.setBitRate(result.at("/format/bit_rate").asInt() / 1000);
-
-            metaData.setAlbumArtist(getData(result, "album_artist"));
-            metaData.setArtist(getData(result, "artist"));
-            metaData.setAlbumName(getData(result, "album"));
-            metaData.setGenre(getData(result, "genre"));
-            metaData.setTitle(getData(result, "title"));
-            String data = getData(result, "track");
-            if (data != null) {
-                data = data.replaceFirst("^[\\s\\p{C}]*0+(?!$)", "");
-                if (NumberUtils.isCreatable(data)) {
-                    metaData.setTrackNumber(NumberUtils.createInteger(data));
-                }
-            }
-            data = getData(result, "disc");
-            if (data != null) {
-                data = data.replaceFirst("^[\\s\\p{C}]*0+(?!$)", "");
-                if (NumberUtils.isCreatable(data)) {
-                    metaData.setDiscNumber(NumberUtils.createInteger(data));
-                }
-            }
-
-            data = getData(result, "discnumber");
-            if (data != null) {
-                data = data.replaceFirst("^[\\s\\p{C}]*0+(?!$)", "");
-                if (NumberUtils.isCreatable(data)) {
-                    metaData.setDiscNumber(NumberUtils.createInteger(data));
-                }
-            }
-            data = getData(result, "date");
-            if (NumberUtils.isCreatable(data)) {
-                metaData.setYear(NumberUtils.createInteger(data));
-            }
-
-            // Find the first (if any) stream that has dimensions and use those.
-            // 'width' and 'height' are display dimensions; compare to 'coded_width', 'coded_height'.
-            for (JsonNode stream : result.at("/streams")) {
-                Track track = new Track(stream.get("index").asInt(), stream.get("codec_type").asText(), stream.at("/tags/language").asText(), stream.get("codec_name").asText());
-                metaData.addTrack(track);
-
-                if (track.isVideo() && stream.has("width") && stream.has("height")) {
-                    metaData.setWidth(stream.get("width").asInt());
-                    metaData.setHeight(stream.get("height").asInt());
-                }
-            }
-            ObjectMapper mapper = Util.getObjectMapper();
-            for (JsonNode chapterJson : result.at("/chapters")) {
-                Chapter chapter = mapper.convertValue(chapterJson, Chapter.class);
-                metaData.addChapter(chapter);
-            }
+            populateFromJson(result, metaData);
         } catch (Throwable x) {
             LOG.warn("Error when parsing metadata in {}", file, x);
         }
@@ -154,7 +103,150 @@ public class FFmpegParser extends MetaDataParser {
         return metaData;
     }
 
-    private static String getData(JsonNode node, String keyName) {
+    /**
+     * Populates the supplied {@link MetaData} from an already-parsed {@code ffprobe} JSON tree.
+     * Factored out of {@link #getRawMetaData} so unit tests can feed synthesized JSON without
+     * shelling out to ffprobe — the subprocess invocation is the only thing
+     * {@code getRawMetaData} adds on top.
+     */
+    void populateFromJson(JsonNode result, MetaData metaData) {
+        metaData.setDuration(result.at("/format/duration").asDouble());
+        // Bitrate is in Kb/s
+        metaData.setBitRate(result.at("/format/bit_rate").asInt() / 1000);
+
+        metaData.setAlbumArtist(getData(result, "album_artist"));
+        metaData.setArtist(getData(result, "artist"));
+        metaData.setAlbumName(getData(result, "album"));
+        metaData.setGenre(getData(result, "genre"));
+        metaData.setTitle(getData(result, "title"));
+
+        // Sort-name trio. ffprobe surfaces ID3v2 sort frames as hyphenated names
+        // (TSOT → title-sort, TSOA → album-sort, TSO2 → album_artist_sort) and Vorbis
+        // comments case-preserved (TITLESORT etc.); getData covers the case variations.
+        metaData.setSortName(getDataAny(result, "title-sort", "TITLESORT", "TSOT"));
+        metaData.setAlbumSortName(getDataAny(result, "album-sort", "ALBUMSORT", "TSOA"));
+        metaData.setArtistSortName(getDataAny(result, "album-artist-sort", "album_artist_sort", "ALBUMARTISTSORT", "TSO2"));
+
+        metaData.setBpm(parseBpm(getDataAny(result, "TBPM", "BPM")));
+        metaData.setCompilation(parseCompilation(getDataAny(result, "compilation", "TCMP")));
+        metaData.setDiscSubtitle(getDataAny(result, "DISCSUBTITLE", "TSST"));
+
+        // MusicBrainz IDs — Picard writes spaced "MusicBrainz Album Id" in iTunes-style atoms
+        // and TXXX descriptors; Vorbis comments use the underscored uppercase form.
+        metaData.setMusicBrainzReleaseId(getDataAny(result,
+                "MUSICBRAINZ_ALBUMID", "MusicBrainz Album Id", "musicbrainz_albumid"));
+        metaData.setMusicBrainzRecordingId(getDataAny(result,
+                "MUSICBRAINZ_TRACKID", "MusicBrainz Track Id", "musicbrainz_trackid"));
+        metaData.setMusicBrainzArtistId(getDataAny(result,
+                "MUSICBRAINZ_ALBUMARTISTID", "MusicBrainz Album Artist Id", "musicbrainz_albumartistid"));
+
+        // ReplayGain four-field plus Opus R128 fallback for the gains. parseTrackGain/parseAlbumGain
+        // prefer REPLAYGAIN_* when present; R128 fires only when RG is null (a present-but-unparseable
+        // RG returns null without R128 fallthrough — operator's authored tag wins).
+        metaData.setReplayGainTrackGain(parseTrackGain(result));
+        metaData.setReplayGainAlbumGain(parseAlbumGain(result));
+        metaData.setReplayGainTrackPeak(parseReplayGain(getData(result, RG_TRACK_PEAK)));
+        metaData.setReplayGainAlbumPeak(parseReplayGain(getData(result, RG_ALBUM_PEAK)));
+
+        String data = getData(result, "track");
+        if (data != null) {
+            data = data.replaceFirst("^[\\s\\p{C}]*0+(?!$)", "");
+            if (NumberUtils.isCreatable(data)) {
+                metaData.setTrackNumber(NumberUtils.createInteger(data));
+            }
+        }
+        data = getData(result, "disc");
+        if (data != null) {
+            data = data.replaceFirst("^[\\s\\p{C}]*0+(?!$)", "");
+            if (NumberUtils.isCreatable(data)) {
+                metaData.setDiscNumber(NumberUtils.createInteger(data));
+            }
+        }
+
+        data = getData(result, "discnumber");
+        if (data != null) {
+            data = data.replaceFirst("^[\\s\\p{C}]*0+(?!$)", "");
+            if (NumberUtils.isCreatable(data)) {
+                metaData.setDiscNumber(NumberUtils.createInteger(data));
+            }
+        }
+        data = getData(result, "date");
+        // Raw date is exposed as releaseDate so the response can surface month/day when the tag
+        // carries them; the integer year derives from the same source via parseYear, which
+        // extracts the leading 4 digits for full YYYY-MM-DD values — matches JaudiotaggerParser
+        // (FieldKey.YEAR + YEAR_NUMBER_PATTERN) so the same input file yields the same year
+        // through either parser.
+        metaData.setReleaseDate(data);
+        metaData.setYear(parseYear(data));
+        // originalReleaseDate fallback order mirrors JaudiotaggerParser: ORIGINALRELEASEDATE
+        // (Vorbis) → ORIGINAL_YEAR / TDOR (ID3v2.4) → TORY (ID3v2.3).
+        metaData.setOriginalReleaseDate(getDataAny(result,
+                "originalreleasedate", "originalyear", "TDOR", "TORY"));
+
+        // Find the first (if any) stream that has dimensions and use those.
+        // 'width' and 'height' are display dimensions; compare to 'coded_width', 'coded_height'.
+        for (JsonNode stream : result.at("/streams")) {
+            Track track = new Track(stream.get("index").asInt(), stream.get("codec_type").asText(), stream.at("/tags/language").asText(), stream.get("codec_name").asText());
+            metaData.addTrack(track);
+
+            if (track.isVideo() && stream.has("width") && stream.has("height")) {
+                metaData.setWidth(stream.get("width").asInt());
+                metaData.setHeight(stream.get("height").asInt());
+            }
+        }
+        ObjectMapper mapper = Util.getObjectMapper();
+        for (JsonNode chapterJson : result.at("/chapters")) {
+            Chapter chapter = mapper.convertValue(chapterJson, Chapter.class);
+            metaData.addChapter(chapter);
+        }
+    }
+
+    /**
+     * Returns the track gain in ReplayGain-equivalent dB, preferring the ReplayGain tag when
+     * present and falling back to the Opus R128 tag otherwise. A present-but-unparseable RG
+     * tag returns {@code null} and does NOT fall through to R128 — the operator's authored
+     * tag takes precedence over any inferred R128 value. Mirrors
+     * {@link JaudiotaggerParser#parseTrackGain} exactly so clients can't observe drift
+     * between the two parsers for the same file.
+     */
+    Double parseTrackGain(JsonNode node) {
+        String rg = getData(node, RG_TRACK_GAIN);
+        if (rg != null) {
+            return parseReplayGain(rg);
+        }
+        return parseR128GainQ78(getData(node, R128_TRACK_GAIN));
+    }
+
+    /**
+     * Returns the album gain in ReplayGain-equivalent dB, preferring the ReplayGain tag when
+     * present and falling back to the Opus R128 tag otherwise. Same precedence rule as
+     * {@link #parseTrackGain}.
+     */
+    Double parseAlbumGain(JsonNode node) {
+        String rg = getData(node, RG_ALBUM_GAIN);
+        if (rg != null) {
+            return parseReplayGain(rg);
+        }
+        return parseR128GainQ78(getData(node, R128_ALBUM_GAIN));
+    }
+
+    /**
+     * Walks {@code keys} in order, returning the first non-null value from {@link #getData}.
+     * Used where a single semantic field has several common physical tag names (e.g. Vorbis
+     * upper-snake vs ID3v2 four-letter frame vs MP4 freeform), since {@code getData}'s
+     * internal case-variation handles only one base key at a time.
+     */
+    static String getDataAny(JsonNode node, String... keys) {
+        for (String key : keys) {
+            String value = getData(node, key);
+            if (value != null) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    static String getData(JsonNode node, String keyName) {
         // Create a list of key variations to handle different cases
         List<String> keyVariations = ImmutableList.of(
             keyName.toLowerCase(),

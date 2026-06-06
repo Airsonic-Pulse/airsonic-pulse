@@ -49,26 +49,26 @@ public class JaudiotaggerParserTestCase {
     @Test
     public void testGetReplayGainFieldFromId3v2Txxx() {
         ID3v24Tag tag = tagWithTxxx("REPLAYGAIN_TRACK_GAIN", "-7.20 dB");
-        assertEquals("-7.20 dB", JaudiotaggerParser.getReplayGainField(tag, JaudiotaggerParser.RG_TRACK_GAIN));
+        assertEquals("-7.20 dB", JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_TRACK_GAIN));
     }
 
     @Test
     public void testGetReplayGainFieldDescriptionMatchIsCaseInsensitive() {
         ID3v24Tag tag = tagWithTxxx("replaygain_track_gain", "-6.50 dB");
-        assertEquals("-6.50 dB", JaudiotaggerParser.getReplayGainField(tag, JaudiotaggerParser.RG_TRACK_GAIN));
+        assertEquals("-6.50 dB", JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_TRACK_GAIN));
     }
 
     @Test
     public void testGetReplayGainFieldMissingFrameReturnsNull() {
         ID3v24Tag tag = tagWithTxxx("REPLAYGAIN_TRACK_GAIN", "-7.20 dB");
-        assertNull(JaudiotaggerParser.getReplayGainField(tag, JaudiotaggerParser.RG_ALBUM_PEAK));
+        assertNull(JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_ALBUM_PEAK));
     }
 
     @Test
     public void testGetReplayGainFieldFromVorbisComment() throws Exception {
         VorbisCommentTag tag = VorbisCommentTag.createNewTag();
         tag.setField("REPLAYGAIN_TRACK_GAIN", "-7.50 dB");
-        assertEquals("-7.50 dB", JaudiotaggerParser.getReplayGainField(tag, JaudiotaggerParser.RG_TRACK_GAIN));
+        assertEquals("-7.50 dB", JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_TRACK_GAIN));
     }
 
     private static Mp4Tag mp4TagWithItunesFreeform(String descriptorLower, String value) {
@@ -88,51 +88,24 @@ public class JaudiotaggerParserTestCase {
     public void testGetReplayGainFieldFromMp4FreeformAtom() {
         Mp4Tag tag = mp4TagWithItunesFreeform("replaygain_track_gain", "-7.50 dB");
         assertEquals("-7.50 dB",
-                JaudiotaggerParser.getReplayGainField(tag, JaudiotaggerParser.RG_TRACK_GAIN));
+                JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_TRACK_GAIN));
     }
 
     @Test
     public void testGetReplayGainFieldMp4MissingAtomReturnsNull() {
         Mp4Tag tag = mp4TagWithItunesFreeform("replaygain_track_gain", "-7.50 dB");
-        assertNull(JaudiotaggerParser.getReplayGainField(tag, JaudiotaggerParser.RG_ALBUM_PEAK));
+        assertNull(JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_ALBUM_PEAK));
     }
 
-    @Test
-    public void testParseR128GainQ78ReferenceShiftAt0() {
-        // Q7.8 of 0 → 0/256 + 5 = 5.0 dB (a track already at -23 LUFS reads as +5 dB in RG terms)
-        assertEquals(Double.valueOf(5.0), JaudiotaggerParser.parseR128GainQ78("0"));
-    }
-
-    @Test
-    public void testParseR128GainQ78PositiveValues() {
-        // Q7.8 of 256 = 1 dB raw → 1 + 5 = 6 dB; -512 = -2 raw → -2 + 5 = 3 dB
-        assertEquals(Double.valueOf(6.0), JaudiotaggerParser.parseR128GainQ78("256"));
-        assertEquals(Double.valueOf(3.0), JaudiotaggerParser.parseR128GainQ78("-512"));
-        // Trimming
-        assertEquals(Double.valueOf(6.0), JaudiotaggerParser.parseR128GainQ78("  256  "));
-    }
-
-    @Test
-    public void testParseR128GainQ78MalformedReturnsNull() {
-        assertNull(JaudiotaggerParser.parseR128GainQ78(null));
-        assertNull(JaudiotaggerParser.parseR128GainQ78(""));
-        assertNull(JaudiotaggerParser.parseR128GainQ78("not-an-int"));
-        assertNull(JaudiotaggerParser.parseR128GainQ78("-7.50 dB"));
-    }
-
-    @Test
-    public void testParseR128GainQ78OutOfIntRangeReturnsNull() {
-        // Integer.parseInt rejects values outside [Integer.MIN_VALUE, Integer.MAX_VALUE] with
-        // NumberFormatException — the catch in parseR128GainQ78 normalizes that to null.
-        assertNull(JaudiotaggerParser.parseR128GainQ78("999999999999"));
-        assertNull(JaudiotaggerParser.parseR128GainQ78("-999999999999"));
-    }
+    // parseR128GainQ78 itself was lifted to MetaDataParser (so FFmpegParser can reuse the
+    // same Q7.8 + 5 dB shift). Its dedicated unit tests now live in MetaDataParserTestCase,
+    // alongside the other base-class parse helpers (parseBpm, parseReplayGain, parseCompilation).
 
     @Test
     public void testParseTrackGainPrefersRgWhenBothPresent() throws Exception {
         VorbisCommentTag tag = VorbisCommentTag.createNewTag();
-        tag.setField(JaudiotaggerParser.RG_TRACK_GAIN, "-6.50 dB");
-        tag.setField(JaudiotaggerParser.R128_TRACK_GAIN, "256"); // would be 6.0 dB after shift
+        tag.setField(MetaDataParser.RG_TRACK_GAIN, "-6.50 dB");
+        tag.setField(MetaDataParser.R128_TRACK_GAIN, "256"); // would be 6.0 dB after shift
         JaudiotaggerParser parser = new JaudiotaggerParser(null);
         assertEquals(Double.valueOf(-6.5), parser.parseTrackGain(tag));
     }
@@ -140,7 +113,7 @@ public class JaudiotaggerParserTestCase {
     @Test
     public void testParseTrackGainFallsBackToR128WhenOnlyR128() throws Exception {
         VorbisCommentTag tag = VorbisCommentTag.createNewTag();
-        tag.setField(JaudiotaggerParser.R128_TRACK_GAIN, "0"); // 5.0 dB after shift
+        tag.setField(MetaDataParser.R128_TRACK_GAIN, "0"); // 5.0 dB after shift
         JaudiotaggerParser parser = new JaudiotaggerParser(null);
         assertEquals(Double.valueOf(5.0), parser.parseTrackGain(tag));
     }
@@ -148,8 +121,8 @@ public class JaudiotaggerParserTestCase {
     @Test
     public void testParseAlbumGainPrefersRgWhenBothPresent() throws Exception {
         VorbisCommentTag tag = VorbisCommentTag.createNewTag();
-        tag.setField(JaudiotaggerParser.RG_ALBUM_GAIN, "-4.25 dB");
-        tag.setField(JaudiotaggerParser.R128_ALBUM_GAIN, "256");
+        tag.setField(MetaDataParser.RG_ALBUM_GAIN, "-4.25 dB");
+        tag.setField(MetaDataParser.R128_ALBUM_GAIN, "256");
         JaudiotaggerParser parser = new JaudiotaggerParser(null);
         assertEquals(Double.valueOf(-4.25), parser.parseAlbumGain(tag));
     }
@@ -157,7 +130,7 @@ public class JaudiotaggerParserTestCase {
     @Test
     public void testParseAlbumGainFallsBackToR128WhenOnlyR128() throws Exception {
         VorbisCommentTag tag = VorbisCommentTag.createNewTag();
-        tag.setField(JaudiotaggerParser.R128_ALBUM_GAIN, "-512"); // 3.0 dB after shift
+        tag.setField(MetaDataParser.R128_ALBUM_GAIN, "-512"); // 3.0 dB after shift
         JaudiotaggerParser parser = new JaudiotaggerParser(null);
         assertEquals(Double.valueOf(3.0), parser.parseAlbumGain(tag));
     }
