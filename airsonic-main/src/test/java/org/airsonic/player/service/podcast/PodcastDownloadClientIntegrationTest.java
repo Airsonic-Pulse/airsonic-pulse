@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
@@ -144,6 +145,12 @@ public class PodcastDownloadClientIntegrationTest {
                     folder.setPath(Path.of(folderPath));
                     musicFolderRepository.saveAndFlush(folder);
                 });
+        // Clean up any MediaFile child rows the download created under the channel path —
+        // testDownload writes "test/Test.mp3" as a child of channelMediaFile; without this,
+        // a PODCAST media_file row with present=false is left behind, breaking the pre-state
+        // assertion in IndexManagerTestCase.testExpunge:177 under matrix-DB ordering.
+        mediaFileRepository.findByFolderAndParentPath(channelMediaFile.getFolder(), "test", Sort.unsorted())
+                .forEach(mediaFileRepository::delete);
         mediaFileRepository.delete(channelMediaFile);
         podcastEpisodeRepository.delete(podcastEpisode);
         deleteDirectory(tempFolder.resolve("test"));
