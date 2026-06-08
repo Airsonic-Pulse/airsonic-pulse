@@ -32,7 +32,7 @@ import java.util.stream.Stream;
 @Service
 public class PlaylistFileService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(PlaylistService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(PlaylistFileService.class);
 
     private final PlaylistService playlistService;
     private final SettingsService settingsService;
