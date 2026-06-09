@@ -114,7 +114,11 @@ public class FFmpegParser extends MetaDataParser {
         // Bitrate is in Kb/s
         metaData.setBitRate(result.at("/format/bit_rate").asInt() / 1000);
 
-        metaData.setAlbumArtist(getData(result, "album_artist"));
+        // Vorbis comments (FLAC/OGG/Opus) use the no-separator canonical key ALBUMARTIST;
+        // ID3v2 TPE2 and MP4 aART are normalized to album_artist by ffprobe. getData's
+        // case-variation covers the lower/upper/capitalize forms of one base key but
+        // can't bridge the separator difference, so both aliases are listed explicitly.
+        metaData.setAlbumArtist(getDataAny(result, "album_artist", "ALBUMARTIST"));
         metaData.setArtist(getData(result, "artist"));
         metaData.setAlbumName(getData(result, "album"));
         metaData.setGenre(getData(result, "genre"));
