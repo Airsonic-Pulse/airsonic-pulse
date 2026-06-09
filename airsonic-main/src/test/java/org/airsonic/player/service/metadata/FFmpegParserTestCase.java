@@ -107,6 +107,25 @@ public class FFmpegParserTestCase {
         assertNull(m.getArtistSortName());
     }
 
+    // ----- albumArtist (Vorbis canonical ALBUMARTIST vs ID3/MP4 album_artist, fixes #261) -----
+
+    @Test
+    public void testAlbumArtistFromVorbisAlbumartist() {
+        // Vorbis comments (FLAC/OGG/Opus): canonical key is ALBUMARTIST, no separator.
+        assertEquals("Daft Punk", parse(tags("ALBUMARTIST", "Daft Punk")).getAlbumArtist());
+    }
+
+    @Test
+    public void testAlbumArtistFromId3Mp4Normalized() {
+        // ID3v2 TPE2 and MP4 aART surface as album_artist after ffprobe normalization.
+        assertEquals("Daft Punk", parse(tags("album_artist", "Daft Punk")).getAlbumArtist());
+    }
+
+    @Test
+    public void testAlbumArtistAbsentReturnsNull() {
+        assertNull(parse(tags()).getAlbumArtist());
+    }
+
     // ----- bpm -----
 
     @Test
@@ -364,18 +383,14 @@ public class FFmpegParserTestCase {
      */
     @Test
     public void testOpusFileWithR128AndMusicBrainzTagsEndToEnd() {
-        // Note: the existing FFmpegParser reads albumArtist via getData("album_artist") with
-        // lower/upper/capitalize variations — it does NOT match the Vorbis-canonical
-        // "ALBUMARTIST" form (no separator). Real .opus files typically use ALBUMARTIST, so
-        // the existing albumArtist extraction has a Vorbis blind spot. That's a PRE-EXISTING
-        // gap (out of scope for #226 PR1, which is about the new 13.2.x fields); this test
-        // uses "ALBUM_ARTIST" so albumArtist still populates and the test stays focused on
-        // the R128 / new-field surface.
+        // Uses the Vorbis-canonical ALBUMARTIST key (no separator) — see the
+        // dedicated alias-resolution tests above for the album_artist / ALBUMARTIST
+        // pairing (fixes #261).
         MetaData m = parse(tags(
                 "ARTIST", "Daft Punk",
                 "ALBUM", "Discovery",
                 "TITLE", "One More Time",
-                "ALBUM_ARTIST", "Daft Punk",
+                "ALBUMARTIST", "Daft Punk",
                 "DATE", "2001",
                 "GENRE", "Electronic",
                 "TBPM", "123",
