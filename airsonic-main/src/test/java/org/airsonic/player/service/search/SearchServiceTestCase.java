@@ -31,6 +31,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.subsonic.restapi.ArtistID3;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -63,18 +64,27 @@ public class SearchServiceTestCase {
         System.setProperty("airsonic.home", airsonicHome.toString());
     }
 
+    // Holds the persisted MusicFolder references so cleanup can use the IDs JPA assigned at
+    // persist time. The original code called MusicFolderTestData.getTestMusicFolders() in
+    // @AfterEach too, which returned fresh id-less instances; deleteMusicFolder(null) is a
+    // no-op, so the rows leaked across test classes and broke any subsequent INSERT against
+    // the same path on matrix DBs with idx_music_folder_path unique constraint.
+    private List<MusicFolder> persistedFolders;
+
     @BeforeEach
     public void setup() {
+        persistedFolders = new ArrayList<>();
         for (MusicFolder musicFolder : MusicFolderTestData.getTestMusicFolders()) {
             mediaFolderService.createMusicFolder(musicFolder);
+            persistedFolders.add(musicFolder);
         }
         TestCaseUtils.execScan(mediaScannerService);
     }
 
     @AfterEach
     public void cleanup() {
-        for (MusicFolder musicFolder : MusicFolderTestData.getTestMusicFolders()) {
-            mediaFolderService.deleteMusicFolder(musicFolder.getId());
+        for (MusicFolder folder : persistedFolders) {
+            mediaFolderService.deleteMusicFolder(folder.getId());
         }
         mediaFolderService.expunge();
     }

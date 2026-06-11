@@ -117,6 +117,16 @@ public class MediaScannerServiceTestCase {
         jdbcTemplate.execute("DELETE FROM media_file");
         jdbcTemplate.execute("DELETE FROM album");
         jdbcTemplate.execute("DELETE FROM artist");
+        // Defensive sweep against leaked music_folder rows from earlier test classes whose
+        // @AfterEach failed to delete by the JPA-assigned ID. The shared MEDIAS/Music and
+        // MEDIAS/Music2 paths conflict with idx_music_folder_path on matrix DBs (Postgres,
+        // MariaDB) and crash the saveAll below as DataIntegrityViolation; HSQLDB tolerates
+        // the residue. The wider multi-offender cleanup antipattern is tracked in #266.
+        Path baseMediaPath = MusicFolderTestData.resolveBaseMediaPath();
+        musicFolderRepository.deleteAll(
+            musicFolderRepository.findAll().stream()
+                .filter(f -> f.getPath().startsWith(baseMediaPath))
+                .toList());
         TestCaseUtils.waitForScanFinish(mediaScannerService);
         mediaFolderService.clearMusicFolderCache();
         mediaFolderService.clearMediaFileCache();

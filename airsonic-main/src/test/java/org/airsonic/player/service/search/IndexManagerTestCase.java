@@ -102,7 +102,15 @@ public class IndexManagerTestCase {
         // audit; this sweep keeps testExpunge robust under any suite ordering.
         artistRepository.deleteAll(artistRepository.findByPresentFalse());
         albumRepository.deleteAll(albumRepository.findByPresentFalse());
+        // Defensive sweep against leaked music_folder rows on the MEDIAS/Music path from
+        // earlier test classes whose @AfterEach failed to delete by the JPA-assigned ID.
+        // Same matrix-DB failure mode as the Artist/Album sweep above (duplicate-key under
+        // idx_music_folder_path); HSQLDB tolerates the residue.
         Path musicDir = MusicFolderTestData.resolveMusicFolderPath();
+        musicFolderRepository.deleteAll(
+            musicFolderRepository.findAll().stream()
+                .filter(f -> f.getPath().equals(musicDir))
+                .toList());
         MusicFolder folder = new MusicFolder(musicDir, "Music", Type.MEDIA, true, Instant.now().truncatedTo(ChronoUnit.MICROS));
         musicFolders.add(folder);
         musicFolderRepository.saveAndFlush(folder);
