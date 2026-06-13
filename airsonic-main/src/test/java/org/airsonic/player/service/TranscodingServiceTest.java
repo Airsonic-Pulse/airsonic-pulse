@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -60,5 +61,27 @@ public class TranscodingServiceTest {
 
         List<Transcoding> transcodings = transcodingRepository.findByPlayersContaining(player);
         assertEquals(0, transcodings.size());
+    }
+
+    // Regression coverage for the offsetSeconds substitution path (fixes #181).
+    // The %o slot drives ffmpeg's -ss argument. Prior to the fix, a Double offsetSeconds
+    // was truncated to int before reaching the substitution map, silently dropping
+    // sub-second precision. The path had no test coverage and the bug was latent.
+    @Test
+    public void testSubstitutionMapCarriesFractionalTimeOffset() {
+        Map<String, String> vars = TranscodingService.generateTranscodingSubstitutionMap(
+                "t", "a", "l", null, null,
+                String.valueOf(12.5d),
+                null, null, null, null, null, null, null, null, null, null);
+        assertEquals("12.5", vars.get("%o"));
+    }
+
+    @Test
+    public void testSubstitutionMapPreservesIntegerOffsetAsDecimal() {
+        Map<String, String> vars = TranscodingService.generateTranscodingSubstitutionMap(
+                "t", "a", "l", null, null,
+                String.valueOf(12.0d),
+                null, null, null, null, null, null, null, null, null, null);
+        assertEquals("12.0", vars.get("%o"));
     }
 }
