@@ -405,7 +405,7 @@ public class TranscodingService {
                 Optional.ofNullable(maxBitRate).map(String::valueOf).orElse(null),
                 Optional.ofNullable(mediaFile.getFormat()).orElse(null),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getTimeOffset).map(String::valueOf)
-                        .or(() -> Optional.ofNullable(offsetSeconds).filter(v -> v > 0).map(v -> String.valueOf(v.intValue())))
+                        .or(() -> Optional.ofNullable(offsetSeconds).filter(v -> v > 0).map(String::valueOf))
                         .orElse(String.valueOf(mediaFile.getStartPosition())),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getDuration).map(String::valueOf).orElse(String.valueOf(mediaFile.getDuration())),
                 Optional.ofNullable(videoTranscodingSettings).map(VideoTranscodingSettings::getWidth).map(String::valueOf).orElse(null),
