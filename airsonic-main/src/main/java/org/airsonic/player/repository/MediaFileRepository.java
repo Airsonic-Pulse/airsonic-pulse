@@ -65,9 +65,39 @@ public interface MediaFileRepository extends JpaRepository<MediaFile, Integer> {
 
     public List<MediaFile> findByFolderInAndMediaTypeAndPresentTrue(List<MusicFolder> folders, MediaType mediaType, Pageable page);
 
-    public List<MediaFile> findByFolderInAndMediaTypeAndGenreAndPresentTrue(List<MusicFolder> folders, MediaType mediaType, String genre, Pageable page);
+    // Genre filter: prefer the packed multi-frame `genres` column (PR #213 / #255) so secondary
+    // genres also match; fall back to the scalar `genre` column for un-rescanned legacy rows
+    // where `genres IS NULL`. The four-way LIKE handles the token's position in the packed
+    // value (sole / first / middle / last) with `;` as the delimiter — same join character
+    // `MediaFileService.packGenres` writes. No substring false-positives (Metal does not match
+    // Heavy Metal or Metalcore). Case-sensitive, preserving the prior derived-query semantics.
+    @Query("""
+            SELECT m FROM MediaFile m
+            WHERE m.folder IN :folders
+              AND m.mediaType = :mediaType
+              AND m.present = true
+              AND ((m.genres IS NOT NULL AND (
+                       m.genres = :genre
+                    OR m.genres LIKE CONCAT(:genre, ';%')
+                    OR m.genres LIKE CONCAT('%;', :genre, ';%')
+                    OR m.genres LIKE CONCAT('%;', :genre)))
+                   OR (m.genres IS NULL AND m.genre = :genre))
+            """)
+    public List<MediaFile> findByFolderInAndMediaTypeAndGenreAndPresentTrue(@Param("folders") List<MusicFolder> folders, @Param("mediaType") MediaType mediaType, @Param("genre") String genre, Pageable page);
 
-    public List<MediaFile> findByFolderInAndMediaTypeInAndGenreAndPresentTrue(List<MusicFolder> folders, Iterable<MediaType> mediaType, String genre, Pageable page);
+    @Query("""
+            SELECT m FROM MediaFile m
+            WHERE m.folder IN :folders
+              AND m.mediaType IN :mediaTypes
+              AND m.present = true
+              AND ((m.genres IS NOT NULL AND (
+                       m.genres = :genre
+                    OR m.genres LIKE CONCAT(:genre, ';%')
+                    OR m.genres LIKE CONCAT('%;', :genre, ';%')
+                    OR m.genres LIKE CONCAT('%;', :genre)))
+                   OR (m.genres IS NULL AND m.genre = :genre))
+            """)
+    public List<MediaFile> findByFolderInAndMediaTypeInAndGenreAndPresentTrue(@Param("folders") List<MusicFolder> folders, @Param("mediaTypes") Iterable<MediaType> mediaTypes, @Param("genre") String genre, Pageable page);
 
     public List<MediaFile> findByFolderInAndMediaTypeAndYearBetweenAndPresentTrue(List<MusicFolder> folders, MediaType mediaType, Integer startYear,
             Integer endYear, Pageable page);
