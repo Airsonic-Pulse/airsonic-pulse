@@ -34,6 +34,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
 
@@ -41,8 +43,10 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Unit test of {@link MediaFileDao}.
@@ -138,6 +142,107 @@ public class MediaFileRepositoryTest {
 
         List<MediaFile> wrongPathTracks = mediaFileRepository.findByFolderAndPath(testFolder, "wrong.wav");
         assertEquals(0, wrongPathTracks.size());
+    }
+
+    // ----------------------------------------------------------------------------------------
+    // Genre filter — packed `genres` column with delimiter-aware LIKE + scalar `genre` fallback
+    // for legacy rows where `genres IS NULL`. Covers both repository methods (singular and
+    // plural MediaType). Fixes #256.
+    // ----------------------------------------------------------------------------------------
+
+    private MediaFile saveGenreFixture(String name, MediaType mediaType, String scalarGenre, String packedGenres) {
+        MediaFile file = new MediaFile();
+        file.setFolder(testFolder);
+        file.setPath(name);
+        file.setMediaType(mediaType);
+        file.setGenre(scalarGenre);
+        file.setGenres(packedGenres);
+        file.setPresent(true);
+        file.setStartPosition(MediaFile.NOT_INDEXED);
+        Instant now = Instant.now();
+        file.setCreated(now);
+        file.setChanged(now);
+        file.setLastScanned(now);
+        file.setChildrenLastUpdated(now);
+        return mediaFileRepository.save(file);
+    }
+
+    private List<String> namesOf(List<MediaFile> rows) {
+        return rows.stream().map(MediaFile::getPath).sorted().collect(Collectors.toList());
+    }
+
+    @Test
+    public void testFindByGenreSongsMatchesMultiFramePositions() {
+        // PR #256: the packed `genres` column carries every frame. The four-way LIKE must
+        // match the queried token at any position (sole / first / middle / last) and at no
+        // substring-only position (Heavy Metal, Metalcore must not match Metal).
+        saveGenreFixture("sole.mp3", MediaType.MUSIC, "Metal", "Metal");
+        saveGenreFixture("first.mp3", MediaType.MUSIC, "Metal", "Metal;Rock");
+        saveGenreFixture("middle.mp3", MediaType.MUSIC, "Rock", "Rock;Metal;Indie");
+        saveGenreFixture("last.mp3", MediaType.MUSIC, "Rock", "Rock;Metal");
+        saveGenreFixture("heavy.mp3", MediaType.MUSIC, "Heavy Metal", "Heavy Metal");
+        saveGenreFixture("core.mp3", MediaType.MUSIC, "Metalcore", "Metalcore");
+        saveGenreFixture("unrelated.mp3", MediaType.MUSIC, "Rock", "Rock;Pop");
+
+        Pageable page = PageRequest.of(0, 100);
+        List<MediaFile> hits = mediaFileRepository
+                .findByFolderInAndMediaTypeInAndGenreAndPresentTrue(
+                        List.of(testFolder), List.of(MediaType.MUSIC), "Metal", page);
+
+        assertEquals(List.of("first.mp3", "last.mp3", "middle.mp3", "sole.mp3"), namesOf(hits));
+    }
+
+    @Test
+    public void testFindByGenreSongsFallsBackToScalarWhenPackedNull() {
+        // Legacy / un-rescanned rows have `genres IS NULL`. The fallback arm must keep them
+        // queryable via the scalar `genre` column so the fix doesn't make pre-fix data invisible
+        // until the next rescan populates the packed column.
+        saveGenreFixture("legacy.mp3", MediaType.MUSIC, "Metal", null);
+        saveGenreFixture("modern.mp3", MediaType.MUSIC, "Rock", "Rock;Metal");
+
+        Pageable page = PageRequest.of(0, 100);
+        List<MediaFile> hits = mediaFileRepository
+                .findByFolderInAndMediaTypeInAndGenreAndPresentTrue(
+                        List.of(testFolder), List.of(MediaType.MUSIC), "Metal", page);
+
+        assertEquals(List.of("legacy.mp3", "modern.mp3"), namesOf(hits));
+    }
+
+    @Test
+    public void testFindByGenreSongsExcludesNonMatches() {
+        // Negative: a row whose packed value lacks the queried token and whose scalar (only
+        // consulted when packed IS NULL) also lacks it must not appear in the result.
+        saveGenreFixture("only-rock.mp3", MediaType.MUSIC, "Rock", "Rock;Pop");
+
+        Pageable page = PageRequest.of(0, 100);
+        List<MediaFile> hits = mediaFileRepository
+                .findByFolderInAndMediaTypeInAndGenreAndPresentTrue(
+                        List.of(testFolder), List.of(MediaType.MUSIC), "Metal", page);
+
+        assertTrue(hits.isEmpty());
+    }
+
+    @Test
+    public void testFindByGenreAlbumsUsesSamePredicate() {
+        // The singular-MediaType variant powers getAlbumsByGenre (folder rows). Post-#255 the
+        // packed column is populated on album folders too, so the same multi-frame fan-out must
+        // apply. Mirror the positional cases plus a substring guard.
+        saveGenreFixture("album-sole", MediaType.ALBUM, "Metal", "Metal");
+        saveGenreFixture("album-first", MediaType.ALBUM, "Metal", "Metal;Rock");
+        saveGenreFixture("album-middle", MediaType.ALBUM, "Rock", "Rock;Metal;Indie");
+        saveGenreFixture("album-last", MediaType.ALBUM, "Rock", "Rock;Metal");
+        saveGenreFixture("album-heavy", MediaType.ALBUM, "Heavy Metal", "Heavy Metal");
+        saveGenreFixture("album-legacy", MediaType.ALBUM, "Metal", null);
+        saveGenreFixture("album-other", MediaType.ALBUM, "Pop", "Pop;Indie");
+
+        Pageable page = PageRequest.of(0, 100);
+        List<MediaFile> hits = mediaFileRepository
+                .findByFolderInAndMediaTypeAndGenreAndPresentTrue(
+                        List.of(testFolder), MediaType.ALBUM, "Metal", page);
+
+        assertEquals(
+                List.of("album-first", "album-last", "album-legacy", "album-middle", "album-sole"),
+                namesOf(hits));
     }
 
 }
