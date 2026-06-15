@@ -35,6 +35,7 @@ import org.jaudiotagger.tag.TagField;
 import org.jaudiotagger.tag.datatype.Pair;
 import org.jaudiotagger.tag.id3.AbstractID3v2Frame;
 import org.jaudiotagger.tag.id3.AbstractID3v2Tag;
+import org.jaudiotagger.tag.id3.framebody.FrameBodyIPLS;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTMCL;
 import org.jaudiotagger.tag.id3.framebody.FrameBodyTXXX;
 import org.jaudiotagger.tag.images.Artwork;
@@ -52,12 +53,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.logging.LogManager;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 /**
  * Parses meta data from audio files using the Jaudiotagger library
@@ -103,6 +106,16 @@ public class JaudiotaggerParser extends MetaDataParser {
             Map.entry(FieldKey.ORCHESTRA, "orchestra"),
             Map.entry(FieldKey.CHOIR, "choir"),
             Map.entry(FieldKey.ENSEMBLE, "ensemble"));
+
+    // Function-role keys recognised inside an ID3v2.3 IPLS frame, derived from the canonical
+    // CONTRIBUTOR_ROLES labels so the two stay in lockstep. Keyed by the lowercased label for
+    // case-insensitive lookup; the value is the canonical label emitted as the Contributor role.
+    // IPLS pairs whose key is NOT in this set are treated as instrument credits (performer with
+    // the key as subRole) — see addId3IplsContributors().
+    private static final Map<String, String> IPLS_FUNCTION_KEYS = CONTRIBUTOR_ROLES.stream()
+            .collect(Collectors.toUnmodifiableMap(
+                    e -> e.getValue().toLowerCase(Locale.ROOT),
+                    Map.Entry::getValue));
 
     // Vorbis PERFORMER convention: "Name (Instrument)" — capture the bare name and a single
     // trailing parenthetical as instrument. No parens → whole string is the name.
@@ -229,13 +242,14 @@ public class JaudiotaggerParser extends MetaDataParser {
      * Builds the per-track contributor list — clean-FieldKey credits (composer, lyricist, etc.)
      * plus performer credits that carry an optional instrument as the subRole. Clean roles come
      * from {@link #CONTRIBUTOR_ROLES} via {@link #getAllTagFields}. Performer extraction is
-     * format-dispatched: ID3v2 reads the dedicated TMCL musician-credits frame (v2.4) for
-     * (instrument, performer) pairs; MP4 reads per-instrument iTunes freeform atoms (the
-     * {@code ----:com.apple.iTunes:PERFORMER:<instrument>} Picard convention) alongside the
-     * standard {@code Performer} atom; everything else (Vorbis on FLAC/Ogg/Opus) reads
-     * {@code FieldKey.PERFORMER} and parses the common {@code "Name (Instrument)"} convention.
-     * ID3v2.3 IPLS (combined musicians+people in one frame, no spec-mandated key vocabulary)
-     * is out of scope here.
+     * format-dispatched: ID3v2.4 reads the dedicated TMCL musician-credits frame for
+     * (instrument, performer) pairs; ID3v2.3 reads the combined IPLS frame for both instrument
+     * and function credits (jaudiotagger surfaces none of IPLS through the clean FieldKeys above,
+     * so both categories are recovered there — see {@link #addId3IplsContributors}); MP4 reads
+     * per-instrument iTunes freeform atoms (the {@code ----:com.apple.iTunes:PERFORMER:<instrument>}
+     * Picard convention) alongside the standard {@code Performer} atom; everything else (Vorbis on
+     * FLAC/Ogg/Opus) reads {@code FieldKey.PERFORMER} and parses the common
+     * {@code "Name (Instrument)"} convention.
      */
     static List<Contributor> getContributors(Tag tag) {
         List<Contributor> result = new ArrayList<>();
@@ -264,30 +278,34 @@ public class JaudiotaggerParser extends MetaDataParser {
     private static void addPerformers(List<Contributor> sink, Tag tag) {
         try {
             if (tag instanceof AbstractID3v2Tag id3v2) {
+                // ID3v2.4 musician credits: TMCL pairs (instrument -> performer).
                 List<TagField> frames = id3v2.getFrame("TMCL");
-                if (frames == null) {
-                    return;
-                }
-                for (TagField field : frames) {
-                    if (!(field instanceof AbstractID3v2Frame frame)
-                            || !(frame.getBody() instanceof FrameBodyTMCL tmcl)) {
-                        continue;
-                    }
-                    for (Pair pair : tmcl.getPairing().getMapping()) {
-                        String instrument = StringUtils.trimToNull(pair.getKey());
-                        String rawNames = pair.getValue();
-                        if (rawNames == null) {
+                if (frames != null) {
+                    for (TagField field : frames) {
+                        if (!(field instanceof AbstractID3v2Frame frame)
+                                || !(frame.getBody() instanceof FrameBodyTMCL tmcl)) {
                             continue;
                         }
-                        // ID3v2.4 spec allows a comma-delimited list of performers per instrument.
-                        for (String name : rawNames.split(",")) {
-                            String cleaned = StringUtils.trimToNull(name);
-                            if (cleaned != null) {
-                                sink.add(new Contributor("performer", instrument, cleaned));
+                        for (Pair pair : tmcl.getPairing().getMapping()) {
+                            String instrument = StringUtils.trimToNull(pair.getKey());
+                            String rawNames = pair.getValue();
+                            if (rawNames == null) {
+                                continue;
+                            }
+                            // ID3v2.4 spec allows a comma-delimited list of performers per instrument.
+                            for (String name : rawNames.split(",")) {
+                                String cleaned = StringUtils.trimToNull(name);
+                                if (cleaned != null) {
+                                    sink.add(new Contributor("performer", instrument, cleaned));
+                                }
                             }
                         }
                     }
                 }
+                // ID3v2.3 combined credits: IPLS pairs (instrument-or-function -> name). No-op on
+                // tags without an IPLS frame (e.g. v2.4 files, which use TMCL above + TIPL-backed
+                // FieldKeys read in getContributors).
+                addId3IplsContributors(sink, id3v2);
                 return;
             }
             if (tag instanceof Mp4Tag mp4) {
@@ -340,6 +358,47 @@ public class JaudiotaggerParser extends MetaDataParser {
                 String cleaned = StringUtils.trimToNull(name);
                 if (cleaned != null) {
                     sink.add(new Contributor("performer", instrument, cleaned));
+                }
+            }
+        }
+    }
+
+    /**
+     * Reads ID3v2.3 contributor credits from the IPLS (Involved People List) frame. ID3v2.3 has
+     * no TMCL/TIPL split — IPLS combines musician credits (instrument -> performer) and involved
+     * people (function -> name) in one paired list with no spec-mandated key vocabulary, and
+     * jaudiotagger does NOT surface any of it through the FieldKey accessors that
+     * {@link #getContributors} relies on for the v2.4 TIPL-backed roles. So both categories are
+     * extracted here by classifying each pair's key: a key matching a canonical function label in
+     * {@link #IPLS_FUNCTION_KEYS} (case-insensitively) becomes a Contributor with that role and no
+     * subRole; any other key is treated as an instrument and becomes a {@code performer} credit
+     * carrying the original key (verbatim case) as the subRole. The value may be a comma-delimited
+     * list of names, mirroring the TMCL handling. No-op when the tag has no IPLS frame.
+     */
+    private static void addId3IplsContributors(List<Contributor> sink, AbstractID3v2Tag tag) {
+        List<TagField> frames = tag.getFrame("IPLS");
+        if (frames == null) {
+            return;
+        }
+        for (TagField field : frames) {
+            if (!(field instanceof AbstractID3v2Frame frame)
+                    || !(frame.getBody() instanceof FrameBodyIPLS ipls)) {
+                continue;
+            }
+            for (Pair pair : ipls.getPairing().getMapping()) {
+                String rawKey = StringUtils.trimToNull(pair.getKey());
+                String rawNames = pair.getValue();
+                if (rawKey == null || rawNames == null) {
+                    continue;
+                }
+                String functionRole = IPLS_FUNCTION_KEYS.get(rawKey.toLowerCase(Locale.ROOT));
+                String role = functionRole != null ? functionRole : "performer";
+                String subRole = functionRole != null ? null : rawKey;
+                for (String name : rawNames.split(",")) {
+                    String cleaned = StringUtils.trimToNull(name);
+                    if (cleaned != null) {
+                        sink.add(new Contributor(role, subRole, cleaned));
+                    }
                 }
             }
         }
