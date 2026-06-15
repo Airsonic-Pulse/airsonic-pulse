@@ -50,6 +50,7 @@ import org.springframework.stereotype.Service;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -78,6 +79,13 @@ public class JaudiotaggerParser extends MetaDataParser {
     // replaygain_album_peak). jaudiotagger 3.0.1 exposes them through Mp4Tag.getFields()
     // with the prefix below; no Mp4FieldKey enum value covers them.
     static final String MP4_ITUNES_FREEFORM_PREFIX = "----:com.apple.iTunes:";
+
+    // MP4 per-instrument performer credits (Picard convention) live in per-instrument freeform
+    // atoms whose Mp4TagReverseDnsField descriptor takes this prefix — e.g. atom id
+    // "----:com.apple.iTunes:PERFORMER:Guitar" has descriptor "PERFORMER:Guitar" and the
+    // instrument is the suffix after the colon. The standard ----:com.apple.iTunes:Performer
+    // atom is read separately via FieldKey.PERFORMER in the Vorbis-style branch.
+    static final String MP4_PERFORMER_DESCRIPTOR_PREFIX = "PERFORMER:";
 
     // Clean-FieldKey contributor roles — each FieldKey is read via tag.getAll(...) and every
     // returned value becomes one Contributor with the given role label and no subRole. Performer
@@ -222,10 +230,12 @@ public class JaudiotaggerParser extends MetaDataParser {
      * plus performer credits that carry an optional instrument as the subRole. Clean roles come
      * from {@link #CONTRIBUTOR_ROLES} via {@link #getAllTagFields}. Performer extraction is
      * format-dispatched: ID3v2 reads the dedicated TMCL musician-credits frame (v2.4) for
-     * (instrument, performer) pairs; everything else (Vorbis on FLAC/Ogg/Opus, MP4, etc.) reads
+     * (instrument, performer) pairs; MP4 reads per-instrument iTunes freeform atoms (the
+     * {@code ----:com.apple.iTunes:PERFORMER:<instrument>} Picard convention) alongside the
+     * standard {@code Performer} atom; everything else (Vorbis on FLAC/Ogg/Opus) reads
      * {@code FieldKey.PERFORMER} and parses the common {@code "Name (Instrument)"} convention.
      * ID3v2.3 IPLS (combined musicians+people in one frame, no spec-mandated key vocabulary)
-     * and MP4 freeform performer atoms are out of scope here.
+     * is out of scope here.
      */
     static List<Contributor> getContributors(Tag tag) {
         List<Contributor> result = new ArrayList<>();
@@ -242,9 +252,14 @@ public class JaudiotaggerParser extends MetaDataParser {
      * Appends performer Contributors with the instrument carried as {@code subRole}. ID3v2.4 keeps
      * (instrument, performer) pairs in the dedicated TMCL frame; reading them through the
      * generic {@code FieldKey.PERFORMER} accessor flattens the pairs and loses the instrument,
-     * so frame-level access is required. Non-ID3 formats expose performer values directly under
-     * {@code FieldKey.PERFORMER}, with the {@code "Name (Instrument)"} convention parsed below.
-     * Wraps any jaudiotagger throwable so a malformed frame can't break the scan for one file.
+     * so frame-level access is required. MP4 also stores per-instrument credits out-of-band of
+     * the standard FieldKey, via the {@code ----:com.apple.iTunes:PERFORMER:<instrument>}
+     * freeform-atom convention — {@link #addMp4FreeformPerformers} reads those before falling
+     * through to the generic {@code FieldKey.PERFORMER} loop (which on MP4 also reads the
+     * standard {@code ----:com.apple.iTunes:Performer} atom). Non-ID3 formats expose performer
+     * values directly under {@code FieldKey.PERFORMER}, with the {@code "Name (Instrument)"}
+     * convention parsed below. Wraps any jaudiotagger throwable so a malformed frame can't break
+     * the scan for one file.
      */
     private static void addPerformers(List<Contributor> sink, Tag tag) {
         try {
@@ -275,6 +290,11 @@ public class JaudiotaggerParser extends MetaDataParser {
                 }
                 return;
             }
+            if (tag instanceof Mp4Tag mp4) {
+                addMp4FreeformPerformers(sink, mp4);
+                // Fall through to the generic FieldKey.PERFORMER loop below so the standard
+                // ----:com.apple.iTunes:Performer atom (Vorbis-style values) is still read.
+            }
             for (String raw : getAllTagFields(tag, FieldKey.PERFORMER)) {
                 Matcher m = VORBIS_PERFORMER_PATTERN.matcher(raw);
                 if (m.matches()) {
@@ -289,6 +309,39 @@ public class JaudiotaggerParser extends MetaDataParser {
             }
         } catch (Exception x) {
             // Ignored.
+        }
+    }
+
+    /**
+     * Reads MP4 per-instrument performer credits from iTunes freeform atoms — the Picard
+     * convention where each instrument is its own atom keyed by
+     * {@code ----:com.apple.iTunes:PERFORMER:<instrument>}. The descriptor (the suffix after the
+     * issuer prefix) carries the instrument name; the atom content carries the performer name(s),
+     * comma-delimited for multiple performers on the same instrument (mirrors the ID3v2.4 TMCL
+     * semantics in {@link #addPerformers}).
+     */
+    private static void addMp4FreeformPerformers(List<Contributor> sink, Mp4Tag tag) {
+        Iterator<TagField> it = tag.getFields();
+        while (it.hasNext()) {
+            TagField field = it.next();
+            if (!(field instanceof Mp4TagReverseDnsField rdns)) {
+                continue;
+            }
+            String descriptor = rdns.getDescriptor();
+            if (descriptor == null || !descriptor.startsWith(MP4_PERFORMER_DESCRIPTOR_PREFIX)) {
+                continue;
+            }
+            String instrument = StringUtils.trimToNull(descriptor.substring(MP4_PERFORMER_DESCRIPTOR_PREFIX.length()));
+            String content = rdns.getContent();
+            if (instrument == null || content == null) {
+                continue;
+            }
+            for (String name : content.split(",")) {
+                String cleaned = StringUtils.trimToNull(name);
+                if (cleaned != null) {
+                    sink.add(new Contributor("performer", instrument, cleaned));
+                }
+            }
         }
     }
 

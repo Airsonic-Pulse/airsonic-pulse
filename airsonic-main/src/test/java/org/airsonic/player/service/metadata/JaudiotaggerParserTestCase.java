@@ -321,4 +321,81 @@ public class JaudiotaggerParserTestCase {
                 new Contributor("performer", "Drums", "Ginger Baker")),
                 JaudiotaggerParser.getContributors(tag));
     }
+
+    // ----------------------------------------------------------------------------------------
+    // MP4 per-instrument freeform performer atoms (fixes #232). Picard convention writes one
+    // atom per instrument under ----:com.apple.iTunes:PERFORMER:<instrument>; the standard
+    // ----:com.apple.iTunes:Performer atom (Vorbis-style "Name (Instrument)" values) is read
+    // via the existing FieldKey.PERFORMER fall-through and the two must coexist without
+    // clobbering or double-counting.
+    // ----------------------------------------------------------------------------------------
+
+    private static Mp4Tag tagWithMp4PerformerAtoms(String... pairs) {
+        if (pairs.length % 2 != 0) {
+            throw new IllegalArgumentException("pairs must be (instrument, name)+");
+        }
+        Mp4Tag tag = new Mp4Tag();
+        for (int i = 0; i < pairs.length; i += 2) {
+            String descriptor = "PERFORMER:" + pairs[i];
+            String atomId = "----:com.apple.iTunes:" + descriptor;
+            tag.addField(new Mp4TagReverseDnsField(atomId, "com.apple.iTunes", descriptor, pairs[i + 1]));
+        }
+        return tag;
+    }
+
+    @Test
+    public void testGetContributorsExtractsPerformersFromMp4FreeformAtoms() {
+        Mp4Tag tag = tagWithMp4PerformerAtoms("Guitar", "Jimi Hendrix", "Bass", "Noel Redding");
+        assertEquals(List.of(
+                new Contributor("performer", "Guitar", "Jimi Hendrix"),
+                new Contributor("performer", "Bass", "Noel Redding")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsSplitsCommaDelimitedMp4PerformersForOneInstrument() {
+        // Mirror the ID3v2.4 TMCL semantics: a single atom value may carry a comma-delimited
+        // list of performers, all sharing the same instrument descriptor.
+        Mp4Tag tag = tagWithMp4PerformerAtoms("Vocals", "John Lennon, Paul McCartney");
+        assertEquals(List.of(
+                new Contributor("performer", "Vocals", "John Lennon"),
+                new Contributor("performer", "Vocals", "Paul McCartney")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsMp4FreeformCoexistsWithStandardPerformerAtom() throws Exception {
+        // Per-instrument freeform atoms emit first (in iteration order from the MP4 branch);
+        // the standard ----:com.apple.iTunes:Performer atom (mapped from FieldKey.PERFORMER)
+        // follows via the fall-through and is parsed with the Vorbis "Name (Instrument)"
+        // convention. Both contribute; nothing double-counts.
+        Mp4Tag tag = tagWithMp4PerformerAtoms("Guitar", "Jimi Hendrix");
+        tag.setField(FieldKey.PERFORMER, "Eric Clapton (Guitar)");
+        assertEquals(List.of(
+                new Contributor("performer", "Guitar", "Jimi Hendrix"),
+                new Contributor("performer", "Guitar", "Eric Clapton")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsMp4WithoutFreeformPerformerAtomsEmitsViaFallThrough() throws Exception {
+        // Regression guard: an MP4 tag with only the standard Performer atom (no per-instrument
+        // freeform atoms) still works via the fall-through to the Vorbis-style FieldKey loop.
+        Mp4Tag tag = new Mp4Tag();
+        tag.setField(FieldKey.PERFORMER, "Eric Clapton (Guitar)");
+        assertEquals(List.of(new Contributor("performer", "Guitar", "Eric Clapton")),
+                JaudiotaggerParser.getContributors(tag));
+    }
+
+    @Test
+    public void testGetContributorsMp4FreeformPerformerAlongsideCleanFieldKeys() throws Exception {
+        // Clean-FieldKey roles emit first (CONTRIBUTOR_ROLES order), MP4 per-instrument
+        // freeform performers follow via addPerformers — canonical order preserved.
+        Mp4Tag tag = tagWithMp4PerformerAtoms("Guitar", "Eric Clapton");
+        tag.setField(FieldKey.COMPOSER, "George Harrison");
+        assertEquals(List.of(
+                new Contributor("composer", null, "George Harrison"),
+                new Contributor("performer", "Guitar", "Eric Clapton")),
+                JaudiotaggerParser.getContributors(tag));
+    }
 }
