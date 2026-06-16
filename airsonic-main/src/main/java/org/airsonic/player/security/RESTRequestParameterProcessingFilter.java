@@ -23,7 +23,9 @@ import org.airsonic.player.controller.JAXBWriter;
 import org.airsonic.player.controller.SubsonicRESTController;
 import org.airsonic.player.controller.SubsonicRESTController.APIException;
 import org.airsonic.player.controller.SubsonicRESTController.ErrorCode;
+import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.Version;
+import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.cache.LegacyAuthWarningCache;
 import org.airsonic.player.util.StringUtil;
 import org.apache.commons.lang.StringUtils;
@@ -73,6 +75,7 @@ public class RESTRequestParameterProcessingFilter extends AbstractAuthentication
     static final String LEGACY_METHOD_SALTED_TOKEN = "legacy token+salt";
 
     private LegacyAuthWarningCache legacyAuthWarningCache;
+    private SecurityService securityService;
 
     protected RESTRequestParameterProcessingFilter(RequestMatcher requiresAuthenticationRequestMatcher, JAXBWriter jaxbWriter) {
         super(requiresAuthenticationRequestMatcher);
@@ -91,6 +94,16 @@ public class RESTRequestParameterProcessingFilter extends AbstractAuthentication
      */
     public void setLegacyAuthWarningCache(LegacyAuthWarningCache legacyAuthWarningCache) {
         this.legacyAuthWarningCache = legacyAuthWarningCache;
+    }
+
+    /**
+     * Wire the per-user legacy-auth gate (#233). Optional — when unset, the gate is skipped and
+     * legacy auth behaves as before (used by tests that exercise only the raw auth path). When
+     * set, a successful legacy {@code u/p} or {@code t/s} authentication is rejected if the
+     * resolved user has opted out of password auth ({@code password_auth_enabled = false}).
+     */
+    public void setSecurityService(SecurityService securityService) {
+        this.securityService = securityService;
     }
 
     @Override
@@ -129,7 +142,37 @@ public class RESTRequestParameterProcessingFilter extends AbstractAuthentication
 
         authRequest.setDetails(authenticationDetailsSource.buildDetails(request));
 
-        return this.getAuthenticationManager().authenticate(authRequest);
+        Authentication result = this.getAuthenticationManager().authenticate(authRequest);
+        rejectIfPasswordAuthDisabled(result);
+        return result;
+    }
+
+    /**
+     * Per-user legacy-auth gate (#233). Reached only for genuine legacy {@code u/p} or {@code t/s}
+     * attempts: an apiKey- or Basic-pre-authenticated request returns early via the
+     * {@code previousAuth} short-circuit in {@link #attemptAuthentication} and never builds an
+     * {@code authRequest}, so it never reaches here. Form-login / session auth uses a different
+     * filter entirely. The check runs <em>after</em> the credentials have been validated, so it
+     * never reveals the flag to a caller without valid credentials (no enumeration oracle). When
+     * the resolved user has disabled password auth, the attempt is rejected with the same generic
+     * {@code PASSWORD_AUTH_NOT_SUPPORTED} envelope the apiKey work (#145) already defines.
+     */
+    private void rejectIfPasswordAuthDisabled(Authentication result) {
+        if (this.securityService == null || result == null) {
+            return;
+        }
+        String username = StringUtils.trimToNull(result.getName());
+        if (username == null) {
+            return;
+        }
+        // Fail open on an unresolved user: the principal already passed credential validation, so
+        // a null lookup here (effectively impossible) must not gate auth. Do NOT tighten this into
+        // a reject — that would turn a transient lookup miss into an account lockout.
+        User user = this.securityService.getUserByName(username);
+        if (user != null && !user.isPasswordAuthEnabled()) {
+            LOG.debug("Rejected legacy password/token auth for user {}: password auth disabled for this account", username);
+            throw new AuthenticationServiceException("", new APIException(ErrorCode.PASSWORD_AUTH_NOT_SUPPORTED));
+        }
     }
 
     private void checkAPIVersion(String version) {

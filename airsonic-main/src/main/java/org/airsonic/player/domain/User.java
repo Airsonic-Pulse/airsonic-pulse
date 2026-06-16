@@ -53,6 +53,14 @@ public class User {
     @Column(name = "ldap_authenticated")
     private boolean ldapAuthenticated;
 
+    // Per-user legacy-auth switch (#233). When false, the user has opted out of Subsonic
+    // username/password and token+salt authentication for their own account (having migrated to
+    // apiKey) — the REST legacy filter rejects those attempts with PASSWORD_AUTH_NOT_SUPPORTED.
+    // Defaults true so existing and new accounts keep legacy auth until they explicitly opt out;
+    // this bridges toward the global removal in #56.
+    @Column(name = "password_auth_enabled", nullable = false)
+    private boolean passwordAuthEnabled = true;
+
     @Column(name = "bytes_streamed")
     private long bytesStreamed;
 
@@ -113,6 +121,14 @@ public class User {
 
     public void setLdapAuthenticated(boolean ldapAuthenticated) {
         this.ldapAuthenticated = ldapAuthenticated;
+    }
+
+    public boolean isPasswordAuthEnabled() {
+        return passwordAuthEnabled;
+    }
+
+    public void setPasswordAuthEnabled(boolean passwordAuthEnabled) {
+        this.passwordAuthEnabled = passwordAuthEnabled;
     }
 
     public long getBytesStreamed() {

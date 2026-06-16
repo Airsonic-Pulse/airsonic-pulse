@@ -148,6 +148,7 @@ public class GlobalSecurityConfig {
         RESTRequestParameterProcessingFilter restAuthenticationFilter = new RESTRequestParameterProcessingFilter(jaxbWriter);
         restAuthenticationFilter.setAuthenticationManager(authenticationManager);
         restAuthenticationFilter.setLegacyAuthWarningCache(legacyAuthWarningCache);
+        restAuthenticationFilter.setSecurityService(securityService);
 
         // The apiKey filter runs BEFORE the legacy REST filter so that:
         //   1. An apiKey request short-circuits the legacy u/p/t/s reads (the legacy filter
