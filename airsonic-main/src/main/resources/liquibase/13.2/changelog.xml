@@ -19,4 +19,5 @@
     <include file="add-media-file-contributors.xml" relativeToChangelogFile="true"/>
     <include file="add-api-key-table.xml" relativeToChangelogFile="true"/>
     <include file="add-album-replaygain.xml" relativeToChangelogFile="true"/>
+    <include file="add-user-password-auth-enabled.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>
