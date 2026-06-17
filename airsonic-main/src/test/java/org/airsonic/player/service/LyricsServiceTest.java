@@ -2,6 +2,7 @@ package org.airsonic.player.service;
 
 import org.airsonic.player.domain.Lyrics;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.parser.lyrics.EmbeddedLyricsParser;
 import org.airsonic.player.repository.LyricsRepository;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,8 @@ class LyricsServiceTest {
     private LyricsRepository lyricsRepository;
     @Mock
     private MediaFileService mediaFileService;
+    @Mock
+    private EmbeddedLyricsParser embeddedLyricsParser;
     @InjectMocks
     private LyricsService lyricsService;
 
@@ -182,5 +185,85 @@ class LyricsServiceTest {
         assertEquals(11, lyrics.getMediaFileId());
         assertEquals("user", lyrics.getSource());
         verify(lyricsRepository).save(lyrics);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Embedded lyrics tier (#158): DB cache -> LRC sidecar -> embedded tag -> null.
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    void getLyricsFromMediaFile_shouldReturnEmbeddedLyricsWhenNoCacheAndNoSidecar() {
+        // A path with no .lrc/.LRC sibling forces the embedded fallback. The embedded result is
+        // cached with source "tag" (distinct from the "file" sidecar source).
+        Path path = Path.of("no-sidecar-embedded.mp3");
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.isIndexedTrack()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(20);
+        when(mediaFile.getFullPath()).thenReturn(path);
+        when(lyricsRepository.findByMediaFileId(eq(20))).thenReturn(Optional.empty());
+        when(embeddedLyricsParser.getLyrics(path)).thenReturn("embedded lyrics");
+        when(lyricsRepository.save(any(Lyrics.class))).thenAnswer(invocation -> {
+            Lyrics saved = invocation.getArgument(0);
+            saved.setId(7);
+            return saved;
+        });
+
+        Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertNotNull(result);
+        assertEquals("embedded lyrics", result.getLyrics());
+        assertEquals(20, result.getMediaFileId());
+        assertEquals("tag", result.getSource());
+        verify(lyricsRepository).save(any(Lyrics.class));
+    }
+
+    @Test
+    void getLyricsFromMediaFile_shouldPreferSidecarOverEmbedded() {
+        // A real .lrc sidecar exists beside this fixture: the sidecar wins and the embedded reader
+        // is never consulted (a sidecar is a deliberate user override of the embedded tag).
+        Path path = MusicFolderTestData.resolveLyricsFolderPath().resolve("simple.mp3");
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.isIndexedTrack()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(21);
+        when(mediaFile.getFullPath()).thenReturn(path);
+        when(lyricsRepository.findByMediaFileId(eq(21))).thenReturn(Optional.empty());
+        when(lyricsRepository.save(any(Lyrics.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertNotNull(result);
+        assertEquals("file", result.getSource());
+        verifyNoInteractions(embeddedLyricsParser);
+    }
+
+    @Test
+    void getLyricsFromMediaFile_shouldPreferCacheOverEmbedded() {
+        // A DB cache hit short-circuits everything — neither sidecar nor embedded is consulted.
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(22);
+        Lyrics cached = new Lyrics("cached lyrics", 22, "tag");
+        when(lyricsRepository.findByMediaFileId(eq(22))).thenReturn(Optional.of(cached));
+
+        Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertEquals(cached, result);
+        verifyNoInteractions(embeddedLyricsParser);
+        verify(lyricsRepository, never()).save(any(Lyrics.class));
+    }
+
+    @Test
+    void getLyricsFromMediaFile_shouldReturnNullWhenNoCacheNoSidecarNoEmbedded() {
+        Path path = Path.of("no-lyrics-anywhere.mp3");
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.isIndexedTrack()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(23);
+        when(mediaFile.getFullPath()).thenReturn(path);
+        when(lyricsRepository.findByMediaFileId(eq(23))).thenReturn(Optional.empty());
+        when(embeddedLyricsParser.getLyrics(path)).thenReturn(null);
+
+        Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertNull(result);
+        verify(lyricsRepository, never()).save(any(Lyrics.class));
     }
 }
