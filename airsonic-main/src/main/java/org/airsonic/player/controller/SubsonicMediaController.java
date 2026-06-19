@@ -178,25 +178,52 @@ public class SubsonicMediaController extends AbstractSubsonicController {
         LyricsList result = new LyricsList();
 
         org.airsonic.player.domain.Lyrics lyrics = lyricsService.getLyricsFromMediaFile(mediaFile);
-        if (lyrics != null && lyrics.getLyrics() != null && !lyrics.getLyrics().isBlank()) {
-            StructuredLyrics structured = new StructuredLyrics();
-            structured.setDisplayArtist(mediaFile.getArtist());
-            structured.setDisplayTitle(mediaFile.getTitle());
-            structured.setLang("xxx");
-            structured.setSynced(false);
-
-            for (String lineText : lyrics.getLyrics().split("\\R")) {
-                Line line = new Line();
-                line.setValue(lineText);
-                structured.getLine().add(line);
-            }
-
+        StructuredLyrics structured = buildStructuredLyrics(mediaFile.getArtist(), mediaFile.getTitle(), lyrics);
+        if (structured != null) {
             result.getStructuredLyrics().add(structured);
         }
 
         Response res = createResponse();
         res.setLyricsList(result);
         jaxbWriter.writeResponse(request, response, res);
+    }
+
+    /**
+     * Builds the OpenSubsonic {@link StructuredLyrics} element for a resolved {@code lyrics} row,
+     * or {@code null} when there are no lyrics to emit. Synced (LRC) lyrics (#140) emit one
+     * {@link Line} per stored structured line with its {@code start} (ms) and {@code synced=true};
+     * otherwise the flat text blob is split into unsynced lines ({@code synced=false}), preserving
+     * the original #131 behavior for the embedded-tag and legacy-cache tiers.
+     */
+    static StructuredLyrics buildStructuredLyrics(String displayArtist, String displayTitle,
+            org.airsonic.player.domain.Lyrics lyrics) {
+        if (lyrics == null || lyrics.getLyrics() == null || lyrics.getLyrics().isBlank()) {
+            return null;
+        }
+        StructuredLyrics structured = new StructuredLyrics();
+        structured.setDisplayArtist(displayArtist);
+        structured.setDisplayTitle(displayTitle);
+        structured.setLang("xxx");
+
+        if (lyrics.isSynced() && !lyrics.getLines().isEmpty()) {
+            // Synced LRC lyrics (#140): emit structured lines with per-line start (ms).
+            structured.setSynced(true);
+            for (org.airsonic.player.domain.StructuredLyricsLine sourceLine : lyrics.getLines()) {
+                Line line = new Line();
+                line.setValue(sourceLine.getText());
+                line.setStart(sourceLine.getStartMs());
+                structured.getLine().add(line);
+            }
+        } else {
+            // Unsynced fallback (pre-#140 cached sidecar, or embedded tag): split the flat blob.
+            structured.setSynced(false);
+            for (String lineText : lyrics.getLyrics().split("\\R")) {
+                Line line = new Line();
+                line.setValue(lineText);
+                structured.getLine().add(line);
+            }
+        }
+        return structured;
     }
 
     @RequestMapping({"/getCaptions", "/getCaptions.view"})

@@ -1,0 +1,49 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="add-lyrics-synced-column" author="litebito">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="lyrics" columnName="synced" />
+            </not>
+        </preConditions>
+        <addColumn tableName="lyrics">
+            <column name="synced" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="add-structured-lyrics-line-table" author="litebito">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <tableExists tableName="structured_lyrics_line" />
+            </not>
+        </preConditions>
+        <createTable tableName="structured_lyrics_line">
+            <column name="id" type="integer" autoIncrement="true">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="lyrics_id" type="integer">
+                <constraints nullable="false" foreignKeyName="fk_structured_lyrics_line_lyrics"
+                             referencedTableName="lyrics" referencedColumnNames="id"
+                             deleteCascade="true" />
+            </column>
+            <column name="position" type="integer">
+                <constraints nullable="false" />
+            </column>
+            <column name="start_ms" type="bigint">
+                <constraints nullable="false" />
+            </column>
+            <column name="text" type="${varchar_type}">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <rollback>
+            <dropTable tableName="structured_lyrics_line" />
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

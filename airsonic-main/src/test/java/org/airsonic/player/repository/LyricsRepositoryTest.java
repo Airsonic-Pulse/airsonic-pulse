@@ -24,6 +24,7 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MediaFile.MediaType;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
+import org.airsonic.player.domain.StructuredLyricsLine;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -33,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import jakarta.transaction.Transactional;
 
@@ -43,6 +45,7 @@ import java.time.temporal.ChronoUnit;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 
 @EnableConfigurationProperties({ AirsonicHomeConfig.class })
@@ -58,6 +61,9 @@ public class LyricsRepositoryTest {
 
     @Autowired
     private MusicFolderRepository musicFolderRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @TempDir
     private static Path tempAirsonicDir;
@@ -158,6 +164,51 @@ public class LyricsRepositoryTest {
         mediaFileRepository.delete(testMediaFile);
         mediaFileRepository.flush();
         assertEquals(0, lyricsRepository.count(), "Lyrics should be deleted when MediaFile is deleted");
+    }
+
+    @Test
+    public void testSyncedLyricsLinesRoundTrip() {
+        // Synced LRC lyrics (#140): structured lines persist as a child collection and reload
+        // ordered by position with their start_ms intact, across the real DDL.
+        Lyrics lyrics = new Lyrics("Line A\nLine B\nLine C", testMediaFile.getId(), "file");
+        lyrics.setSynced(true);
+        lyrics.getLines().add(new StructuredLyricsLine(lyrics, 0, 1000L, "Line A"));
+        lyrics.getLines().add(new StructuredLyricsLine(lyrics, 1, 2500L, "Line B"));
+        lyrics.getLines().add(new StructuredLyricsLine(lyrics, 2, 4200L, "Line C"));
+        lyricsRepository.save(lyrics);
+
+        Lyrics reloaded = lyricsRepository.findByMediaFileId(testMediaFile.getId()).orElseThrow();
+        assertTrue(reloaded.isSynced());
+        assertEquals(3, reloaded.getLines().size());
+        // @OrderBy("position ASC") guarantees deterministic order across HSQLDB/Postgres/MariaDB.
+        assertEquals(0, reloaded.getLines().get(0).getPosition());
+        assertEquals(1000L, reloaded.getLines().get(0).getStartMs());
+        assertEquals("Line A", reloaded.getLines().get(0).getText());
+        assertEquals(2500L, reloaded.getLines().get(1).getStartMs());
+        assertEquals(4200L, reloaded.getLines().get(2).getStartMs());
+        assertEquals("Line C", reloaded.getLines().get(2).getText());
+    }
+
+    @Test
+    public void testSyncedLinesCascadeDeleteWithLyrics() {
+        Lyrics lyrics = new Lyrics("Line A\nLine B", testMediaFile.getId(), "file");
+        lyrics.setSynced(true);
+        lyrics.getLines().add(new StructuredLyricsLine(lyrics, 0, 0L, "Line A"));
+        lyrics.getLines().add(new StructuredLyricsLine(lyrics, 1, 1500L, "Line B"));
+        lyricsRepository.save(lyrics);
+        lyricsRepository.flush();
+
+        assertEquals(2, countStructuredLyricsLines());
+
+        // Deleting the parent lyrics row removes its child lines (orphanRemoval / cascade).
+        lyricsRepository.deleteById(lyrics.getId());
+        lyricsRepository.flush();
+        assertEquals(0, countStructuredLyricsLines(),
+                "structured_lyrics_line rows must be removed with their parent lyrics");
+    }
+
+    private int countStructuredLyricsLines() {
+        return jdbcTemplate.queryForObject("SELECT COUNT(*) FROM structured_lyrics_line", Integer.class);
     }
 
 }

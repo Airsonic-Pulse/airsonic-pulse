@@ -3,6 +3,7 @@ package org.airsonic.player.service;
 import org.airsonic.player.domain.Lyrics;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.StructuredLyricsLine;
 import org.airsonic.player.parser.lyrics.EmbeddedLyricsParser;
 import org.airsonic.player.parser.lyrics.LrcFile;
 import org.airsonic.player.parser.lyrics.LrcParser;
@@ -19,6 +20,7 @@ import jakarta.transaction.Transactional;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -98,11 +100,21 @@ public class LyricsService {
                 LOG.debug("No lyrics found in LRC file: {}", targetLrcPath);
                 return null;
             }
+            // Preserve the per-line LRC timestamps (#140): populate the flat text blob (still used
+            // by the legacy /getLyrics endpoint and the unsynced split) AND the structured timed
+            // lines, marking the row synced. LrcParser only emits timed lines, so a non-empty parse
+            // is synced by construction.
+            Lyrics newLyrics = new Lyrics("", mediaFile.getId(), "file");
+            newLyrics.setSynced(true);
             StringBuilder lyricsText = new StringBuilder();
+            List<StructuredLyricsLine> lines = new ArrayList<>();
+            int position = 0;
             for (LyricsLine line : lrcFile.getLyricsLines()) {
                 lyricsText.append(line.getText()).append("\n");
+                lines.add(new StructuredLyricsLine(newLyrics, position++, line.getTime(), line.getText()));
             }
-            Lyrics newLyrics = new Lyrics(lyricsText.toString(), mediaFile.getId(), "file");
+            newLyrics.setLyrics(lyricsText.toString());
+            newLyrics.setLines(lines);
             return lyricsRepository.save(newLyrics);
         });
 
