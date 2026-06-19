@@ -1,14 +1,20 @@
 package org.airsonic.player.domain;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "lyrics")
@@ -26,6 +32,21 @@ public class Lyrics {
 
     @Column(name = "source", nullable = false)
     private String source;
+
+    // True when the lyrics carry per-line LRC timestamps (a parsed LRC sidecar). The unsynced
+    // tiers (legacy cache, embedded tag) leave this false. Drives the getLyricsBySongId synced
+    // flag; see #140.
+    @Column(name = "synced", nullable = false)
+    private boolean synced;
+
+    // Per-line timestamped lyrics, present only when synced. EAGER because lyrics are always read
+    // one song at a time (findByMediaFileId — no batch/list path exists) and the endpoint reads
+    // the lines outside the service's @Transactional boundary, so a LAZY collection would throw.
+    // The bounded small collection mirrors the codebase's EAGER User.musicFolders. @OrderBy makes
+    // the line ordering deterministic across HSQLDB/Postgres/MariaDB (not insertion-dependent).
+    @OneToMany(mappedBy = "lyrics", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderBy("position ASC")
+    private List<StructuredLyricsLine> lines = new ArrayList<>();
 
     @Column(name = "created", nullable = false)
     private Instant created;
@@ -98,6 +119,22 @@ public class Lyrics {
 
     public void setSource(String source) {
         this.source = source;
+    }
+
+    public boolean isSynced() {
+        return synced;
+    }
+
+    public void setSynced(boolean synced) {
+        this.synced = synced;
+    }
+
+    public List<StructuredLyricsLine> getLines() {
+        return lines;
+    }
+
+    public void setLines(List<StructuredLyricsLine> lines) {
+        this.lines = lines != null ? lines : new ArrayList<>();
     }
 
     @Override
