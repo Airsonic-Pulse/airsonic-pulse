@@ -18,14 +18,20 @@
  */
 package org.airsonic.player.security;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import org.airsonic.player.domain.ApiKey;
 import org.airsonic.player.service.ApiKeyService;
 import org.airsonic.player.service.SecurityService;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -54,6 +60,34 @@ class APIKeyAuthenticationProviderTest {
 
     @InjectMocks
     private APIKeyAuthenticationProvider provider;
+
+    private ch.qos.logback.classic.Logger logger;
+    private ListAppender<ILoggingEvent> appender;
+    private Level previousLevel;
+
+    @BeforeEach
+    void attachAppender() {
+        logger = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(APIKeyAuthenticationProvider.class);
+        previousLevel = logger.getLevel();
+        // Ensure INFO audit events reach the appender regardless of the ambient log config.
+        logger.setLevel(Level.INFO);
+        appender = new ListAppender<>();
+        appender.start();
+        logger.addAppender(appender);
+    }
+
+    @AfterEach
+    void detachAppender() {
+        logger.detachAppender(appender);
+        logger.setLevel(previousLevel);
+    }
+
+    private List<String> infoMessages() {
+        return appender.list.stream()
+                .filter(e -> e.getLevel() == Level.INFO)
+                .map(ILoggingEvent::getFormattedMessage)
+                .toList();
+    }
 
     private UserDetails activeUser() {
         return new User("alice", "n/a", true, true, true, true,
@@ -136,5 +170,103 @@ class APIKeyAuthenticationProviderTest {
                 () -> provider.authenticate(new APIKeyAuthenticationToken(null, "")));
         assertThrows(BadCredentialsException.class,
                 () -> provider.authenticate(new APIKeyAuthenticationToken(null, "   ")));
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Operator audit log (#237): each failure path logs the reason (+ apiKeyId where a key
+    // resolved) at INFO, while the thrown response stays opaque across every mode.
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    void auditLog_blankCredentials_logsReasonNoId() {
+        assertThrows(BadCredentialsException.class,
+                () -> provider.authenticate(new APIKeyAuthenticationToken(null, "   ")));
+
+        assertThat(infoMessages()).hasSize(1);
+        assertThat(infoMessages().get(0)).contains("blank or absent credentials");
+        // No id exists on this path, and no key material may appear.
+        assertThat(infoMessages().get(0)).doesNotContain("apiKeyId=");
+    }
+
+    @Test
+    void auditLog_unknownKey_logsReasonNoIdAndNoRawKey() {
+        when(apiKeyService.resolve("ap_unknown_secret")).thenReturn(Optional.empty());
+
+        assertThrows(BadCredentialsException.class,
+                () -> provider.authenticate(new APIKeyAuthenticationToken(null, "ap_unknown_secret")));
+
+        assertThat(infoMessages()).hasSize(1);
+        assertThat(infoMessages().get(0)).contains("unknown or unresolvable API key");
+        assertThat(infoMessages().get(0)).doesNotContain("apiKeyId=");
+        // The presented raw key must never reach any log sink.
+        assertThat(infoMessages().get(0)).doesNotContain("ap_unknown_secret");
+    }
+
+    @Test
+    void auditLog_userGone_logsReasonWithApiKeyId() {
+        when(apiKeyService.resolve("ap_orphaned")).thenReturn(Optional.of(aliceKey()));
+        when(securityService.loadUserByUsername("alice"))
+                .thenThrow(new UsernameNotFoundException("alice"));
+
+        assertThrows(BadCredentialsException.class,
+                () -> provider.authenticate(new APIKeyAuthenticationToken(null, "ap_orphaned")));
+
+        assertThat(infoMessages()).hasSize(1);
+        assertThat(infoMessages().get(0)).contains("user that no longer exists");
+        assertThat(infoMessages().get(0)).contains("apiKeyId=7");
+    }
+
+    @Test
+    void auditLog_disabledUser_logsReasonWithApiKeyId() {
+        when(apiKeyService.resolve("ap_alpha")).thenReturn(Optional.of(aliceKey()));
+        UserDetails locked = new User("alice", "n/a", false, true, true, true,
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        when(securityService.loadUserByUsername("alice")).thenReturn(locked);
+
+        assertThrows(BadCredentialsException.class,
+                () -> provider.authenticate(new APIKeyAuthenticationToken(null, "ap_alpha")));
+
+        assertThat(infoMessages()).hasSize(1);
+        assertThat(infoMessages().get(0)).contains("disabled, locked, or expired");
+        assertThat(infoMessages().get(0)).contains("apiKeyId=7");
+    }
+
+    @Test
+    void responseStaysOpaque_acrossAllFailureModes() {
+        // The enumeration-oracle defence: every failure mode must throw the identical opaque
+        // exception — same type, same message, no distinguishing cause — regardless of the
+        // (distinguishing) audit log. This is the test that proves the defence wasn't weakened.
+        when(apiKeyService.resolve("ap_unknown")).thenReturn(Optional.empty());
+        when(apiKeyService.resolve("ap_orphaned")).thenReturn(Optional.of(aliceKey()));
+        when(apiKeyService.resolve("ap_disabled_user")).thenReturn(Optional.of(aliceKey()));
+        UserDetails lockedUser = new User("bob", "n/a", false, true, true, true,
+                List.of(new SimpleGrantedAuthority("ROLE_USER")));
+        when(securityService.loadUserByUsername("alice"))
+                .thenThrow(new UsernameNotFoundException("alice"))
+                .thenReturn(lockedUser);
+
+        List<APIKeyAuthenticationToken> failingTokens = List.of(
+                new APIKeyAuthenticationToken(null, "   "),
+                new APIKeyAuthenticationToken(null, "ap_unknown"),
+                new APIKeyAuthenticationToken(null, "ap_orphaned"),
+                new APIKeyAuthenticationToken(null, "ap_disabled_user"));
+
+        for (APIKeyAuthenticationToken token : failingTokens) {
+            BadCredentialsException ex = assertThrows(BadCredentialsException.class,
+                    () -> provider.authenticate(token));
+            assertThat(ex.getMessage()).isEqualTo("Invalid API key");
+            assertThat(ex.getCause()).isNull();
+        }
+    }
+
+    @Test
+    void auditLog_successPath_emitsNoFailureAudit() {
+        when(apiKeyService.resolve("ap_alpha")).thenReturn(Optional.of(aliceKey()));
+        when(securityService.loadUserByUsername("alice")).thenReturn(activeUser());
+
+        Authentication result = provider.authenticate(new APIKeyAuthenticationToken(null, "ap_alpha"));
+
+        assertTrue(result.isAuthenticated());
+        assertThat(infoMessages()).isEmpty();
     }
 }
