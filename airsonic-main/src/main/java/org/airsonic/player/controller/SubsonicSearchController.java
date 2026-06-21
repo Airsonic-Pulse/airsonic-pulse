@@ -52,6 +52,19 @@ import static org.springframework.web.bind.ServletRequestUtils.getIntParameter;
 @RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
 public class SubsonicSearchController extends AbstractSubsonicController {
 
+    /**
+     * Upper bound for any per-request count or offset on the search endpoints (#262). Both flow to
+     * {@code SearchServiceImpl} as {@code searcher.search(query, offset + count)}, which makes
+     * Lucene pre-allocate a {@code TopDocs} collector sized to {@code offset + count} before
+     * collecting any document — an authenticated client passing {@code songCount=2147483647} could
+     * OOM the JVM (and an abusive {@code offset} could overflow {@code offset + count} to a
+     * negative). Clamping both to this ceiling bounds the allocation to {@code 2 * MAX_COUNT} and
+     * removes the overflow. The value matches the existing getAlbumList / getAlbumList2 size
+     * ceiling, keeping the Subsonic surface consistent; it is comfortably above any legitimate
+     * client search request (clients page 20–100 at a time) and below memory pressure.
+     */
+    static final int MAX_COUNT = 500;
+
     @Autowired
     private SearchService searchService;
     @Autowired
@@ -92,8 +105,8 @@ public class SubsonicSearchController extends AbstractSubsonicController {
 
         SearchCriteria criteria = new SearchCriteria();
         criteria.setQuery(query.toString().trim());
-        criteria.setCount(getIntParameter(request, "count", 20));
-        criteria.setOffset(getIntParameter(request, "offset", 0));
+        criteria.setCount(clamp(getIntParameter(request, "count", 20)));
+        criteria.setOffset(clamp(getIntParameter(request, "offset", 0)));
         List<org.airsonic.player.domain.MusicFolder> musicFolders = mediaFolderService.getMusicFoldersForUser(username);
 
         org.airsonic.player.domain.SearchResult result = searchService.search(criteria, musicFolders, IndexType.SONG);
@@ -122,22 +135,22 @@ public class SubsonicSearchController extends AbstractSubsonicController {
         String query = request.getParameter("query");
         SearchCriteria criteria = new SearchCriteria();
         criteria.setQuery(StringUtils.trimToEmpty(query));
-        criteria.setCount(getIntParameter(request, "artistCount", 20));
-        criteria.setOffset(getIntParameter(request, "artistOffset", 0));
+        criteria.setCount(clamp(getIntParameter(request, "artistCount", 20)));
+        criteria.setOffset(clamp(getIntParameter(request, "artistOffset", 0)));
         org.airsonic.player.domain.SearchResult artists = searchService.search(criteria, musicFolders, IndexType.ARTIST);
         for (MediaFile mediaFile : artists.getMediaFiles()) {
             searchResult.getArtist().add(jaxbContentService.createJaxbArtist(mediaFile, username));
         }
 
-        criteria.setCount(getIntParameter(request, "albumCount", 20));
-        criteria.setOffset(getIntParameter(request, "albumOffset", 0));
+        criteria.setCount(clamp(getIntParameter(request, "albumCount", 20)));
+        criteria.setOffset(clamp(getIntParameter(request, "albumOffset", 0)));
         org.airsonic.player.domain.SearchResult albums = searchService.search(criteria, musicFolders, IndexType.ALBUM);
         for (MediaFile mediaFile : albums.getMediaFiles()) {
             searchResult.getAlbum().add(jaxbContentService.createJaxbChild(player, mediaFile, username));
         }
 
-        criteria.setCount(getIntParameter(request, "songCount", 20));
-        criteria.setOffset(getIntParameter(request, "songOffset", 0));
+        criteria.setCount(clamp(getIntParameter(request, "songCount", 20)));
+        criteria.setOffset(clamp(getIntParameter(request, "songOffset", 0)));
         org.airsonic.player.domain.SearchResult songs = searchService.search(criteria, musicFolders, IndexType.SONG);
         for (MediaFile mediaFile : songs.getMediaFiles()) {
             searchResult.getSong().add(jaxbContentService.createJaxbChild(player, mediaFile, username));
@@ -161,12 +174,12 @@ public class SubsonicSearchController extends AbstractSubsonicController {
         String query = request.getParameter("query");
         // replace empty string with null
         query = "\"\"".equals(query) ? null : query;
-        int songCount = getIntParameter(request, "songCount", 20);
-        int songOffset = getIntParameter(request, "songOffset", 0);
-        int albumCount = getIntParameter(request, "albumCount", 20);
-        int albumOffset = getIntParameter(request, "albumOffset", 0);
-        int artistCount = getIntParameter(request, "artistCount", 20);
-        int artistOffset = getIntParameter(request, "artistOffset", 0);
+        int songCount = clamp(getIntParameter(request, "songCount", 20));
+        int songOffset = clamp(getIntParameter(request, "songOffset", 0));
+        int albumCount = clamp(getIntParameter(request, "albumCount", 20));
+        int albumOffset = clamp(getIntParameter(request, "albumOffset", 0));
+        int artistCount = clamp(getIntParameter(request, "artistCount", 20));
+        int artistOffset = clamp(getIntParameter(request, "artistOffset", 0));
         if (StringUtils.isEmpty(query)) {
             if (artistCount > 0) {
                 artistService.getArtists(musicFolders, artistCount, artistOffset).forEach(artist -> searchResult.getArtist().add(jaxbContentService.createJaxbArtist(new ArtistID3(), artist, username)));
@@ -205,6 +218,15 @@ public class SubsonicSearchController extends AbstractSubsonicController {
         Response res = createResponse();
         res.setSearchResult3(searchResult);
         jaxbWriter.writeResponse(request, response, res);
+    }
+
+    /**
+     * Bounds a per-request count or offset to {@code [0, MAX_COUNT]} (#262). Silent — a client
+     * requesting more simply receives {@code MAX_COUNT} back rather than an error. The lower floor
+     * also normalises a negative value (which {@code getIntParameter} passes through unchanged).
+     */
+    static int clamp(int value) {
+        return Math.max(0, Math.min(MAX_COUNT, value));
     }
 
 }
