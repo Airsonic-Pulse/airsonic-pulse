@@ -6,7 +6,12 @@ import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.RandomSearchCriteria;
 import org.airsonic.player.domain.SearchCriteria;
 import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.WildcardQuery;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +27,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test case for QueryFactory.
@@ -273,6 +279,64 @@ public class QueryFactoryTestCase {
                 "(folderId:" + FID1 + " folderId:"
                         + FID2 + ")",
                 query.toString(), MULTI_FOLDERS.stream().map(f -> f.toString()).collect(Collectors.joining(",")));
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // #178 structural-defense contract lock (rider on #262). QueryFactory builds queries
+    // structurally (BooleanQuery / BoostQuery / TermQuery / WildcardQuery) — there is no
+    // QueryParser, so Lucene query-syntax operators in user input are NOT interpreted. These
+    // tests feed the exact adversarial inputs #178 was about (+folder:1, *, field:value) and
+    // assert the produced query is composed ONLY of those structural types. A contributor
+    // re-introducing QueryParser (reopening #178) would produce a different node type and fail.
+    // ---------------------------------------------------------------------------------------
+
+    private static final List<Class<? extends Query>> ALLOWED_QUERY_TYPES = List.of(
+            BooleanQuery.class, BoostQuery.class, TermQuery.class, WildcardQuery.class);
+
+    private void assertOnlyStructuralTypes(Query query) {
+        assertTrue(ALLOWED_QUERY_TYPES.contains(query.getClass()),
+                "unexpected (non-structural) query node — possible QueryParser reintroduction: "
+                        + query.getClass().getName() + " => " + query);
+        if (query instanceof BooleanQuery bq) {
+            for (BooleanClause clause : bq.clauses()) {
+                assertOnlyStructuralTypes(clause.query());
+            }
+        } else if (query instanceof BoostQuery boost) {
+            assertOnlyStructuralTypes(boost.getQuery());
+        }
+    }
+
+    private SearchCriteria criteria(String query) {
+        SearchCriteria c = new SearchCriteria();
+        c.setOffset(0);
+        c.setCount(20);
+        c.setQuery(query);
+        return c;
+    }
+
+    @Test
+    public void testSearchStructuralForAdversarialInput() throws IOException {
+        for (String adversarial : List.of("+folder:1", "*", "field:value")) {
+            for (IndexType type : List.of(IndexType.ARTIST, IndexType.ALBUM, IndexType.SONG)) {
+                Query query = queryFactory.search(criteria(adversarial), SINGLE_FOLDERS, type);
+                assertOnlyStructuralTypes(query);
+            }
+        }
+    }
+
+    @Test
+    public void testSearchByNameStructuralForAdversarialInput() throws IOException {
+        for (String adversarial : List.of("+folder:1", "*", "field:value")) {
+            assertOnlyStructuralTypes(queryFactory.searchByName(FieldNames.ARTIST, adversarial));
+        }
+    }
+
+    @Test
+    public void testGetRandomSongsStructuralForAdversarialGenre() throws IOException {
+        for (String adversarial : List.of("+folder:1", "*", "field:value")) {
+            RandomSearchCriteria rc = new RandomSearchCriteria(20, adversarial, null, null, SINGLE_FOLDERS);
+            assertOnlyStructuralTypes(queryFactory.getRandomSongs(rc));
+        }
     }
 
 }
