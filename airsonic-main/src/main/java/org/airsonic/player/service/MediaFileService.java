@@ -51,6 +51,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.digitalmediaserver.cuelib.CueParser;
 import org.digitalmediaserver.cuelib.CueSheet;
+import org.digitalmediaserver.cuelib.FileData;
 import org.digitalmediaserver.cuelib.Position;
 import org.digitalmediaserver.cuelib.TrackData;
 import org.digitalmediaserver.cuelib.io.FLACReader;
@@ -821,28 +822,37 @@ public class MediaFileService {
 
         // cue tracks
         if (isEnableCueIndexing) {
-            List<MediaFile> indexedTracks = cueSheets.entrySet().parallelStream().flatMap(e -> {
+            // Sequential outer stream: each FILE block mutates shared scan state (bareFiles.remove,
+            // storedChildrenMap) without synchronization, so iterating cue sheets in parallel was a
+            // latent data race. A directory holds few cue sheets, so sequential costs nothing.
+            List<MediaFile> indexedTracks = cueSheets.entrySet().stream().flatMap(e -> {
                 String indexPath = e.getKey();
                 CueSheet cueSheet = e.getValue();
 
-                String filePath = cueSheet.getFileData().get(0).getFile();
-                MediaFile base = bareFiles.remove(FilenameUtils.getName(filePath));
+                // One FILE block per audio file: resolve each block to its own base media file and
+                // materialise that block's tracks against it (multifile CUE support).
+                return cueSheet.getFileData().stream().flatMap(fileData -> {
+                    String filePath = fileData.getFile();
+                    MediaFile base = bareFiles.remove(FilenameUtils.getName(filePath));
 
-                if (Objects.nonNull(base)) {
-                    base.setIndexPath(indexPath); // update indexPath in mediaFile
-                    Instant mediaChanged = FileUtil.lastModified(base.getFullPath());
-                    Instant cueChanged = FileUtil.lastModified(base.getFullIndexPath());
-                    base.setChanged(mediaChanged.compareTo(cueChanged) >= 0 ? mediaChanged : cueChanged);
-                    updateMediaFile(base);
-                    List<MediaFile> tracks = createIndexedTracks(base, cueSheet);
-                    // remove stored children that are now indexed
-                    tracks.forEach(t -> storedChildrenMap.remove(Pair.of(t.getPath(), t.getStartPosition())));
-                    tracks.add(base);
-                    return tracks.stream();
-                } else {
-                    LOG.warn("Could not find base file '{}' for cue sheet {}", filePath, indexPath);
-                    return Stream.empty();
-                }
+                    if (Objects.nonNull(base)) {
+                        base.setIndexPath(indexPath); // update indexPath in mediaFile
+                        Instant mediaChanged = FileUtil.lastModified(base.getFullPath());
+                        Instant cueChanged = FileUtil.lastModified(base.getFullIndexPath());
+                        base.setChanged(mediaChanged.compareTo(cueChanged) >= 0 ? mediaChanged : cueChanged);
+                        updateMediaFile(base);
+                        List<MediaFile> tracks = createIndexedTracks(base, cueSheet, fileData);
+                        // remove stored children that are now indexed
+                        tracks.forEach(t -> storedChildrenMap.remove(Pair.of(t.getPath(), t.getStartPosition())));
+                        tracks.add(base);
+                        return tracks.stream();
+                    } else {
+                        // A missing/unresolvable FILE block is skipped without aborting the scan; the
+                        // remaining blocks and cue sheets still materialise.
+                        LOG.warn("Could not find base file '{}' for cue sheet {}", filePath, indexPath);
+                        return Stream.<MediaFile>empty();
+                    }
+                });
             }).toList();
             result.addAll(indexedTracks);
         }
@@ -1194,6 +1204,10 @@ public class MediaFileService {
 
     @Nonnull
     private List<MediaFile> createIndexedTracks(@Nonnull MediaFile base, @Nullable CueSheet cueSheet) {
+        return createIndexedTracks(base, cueSheet, getFileDataForBase(base, cueSheet));
+    }
+
+    private List<MediaFile> createIndexedTracks(@Nonnull MediaFile base, @Nullable CueSheet cueSheet, @Nullable FileData fileData) {
 
         Map<Pair<String, Double>, MediaFile> storedChildrenMap = mediaFileRepository.findByFolderAndPath(base.getFolder(), base.getPath()).parallelStream()
             .filter(MediaFile::isIndexedTrack).collect(Collectors.toConcurrentMap(i -> Pair.of(i.getPath(), i.getStartPosition()), i -> i));
@@ -1201,7 +1215,7 @@ public class MediaFileService {
         List<MediaFile> children = new ArrayList<>();
 
         try {
-            if (Objects.isNull(cueSheet)) {
+            if (Objects.isNull(cueSheet) || Objects.isNull(fileData)) {
                 base.setIndexPath(null);
                 updateMediaFile(base);
                 return children;
@@ -1220,12 +1234,13 @@ public class MediaFileService {
             Instant childrenLastUpdated = Instant.now().plusSeconds(100 * 365 * 24 * 60 * 60); // now + 100 years, tracks do not have children
             MusicFolder baseFolder = base.getFolder();
 
-            boolean update = needsUpdate(base, settingsService.isFastCacheEnabled());
-            int trackSize = cueSheet.getAllTrackData().size();
+            // Only this FILE block's tracks materialise against this base media file.
+            List<TrackData> cueTracks = fileData.getTrackData();
+            int trackSize = cueTracks.size();
 
             if (trackSize > 0) {
-                TrackData lastTrackData = cueSheet.getAllTrackData().get(trackSize - 1);
-                double lastTrackStart = lastTrackData.getIndices().get(0).getPosition().getMinutes() * 60 + lastTrackData.getIndices().get(0).getPosition().getSeconds() + (lastTrackData.getIndices().get(0).getPosition().getFrames() / 75);
+                TrackData lastTrackData = cueTracks.get(trackSize - 1);
+                double lastTrackStart = getStartPosition(lastTrackData);
                 if (lastTrackStart >= wholeFileLength) {
                     base.setIndexPath(null);
                     updateMediaFile(base);
@@ -1234,67 +1249,55 @@ public class MediaFileService {
             }
 
             for (int i = 0; i < trackSize; i++) {
-                TrackData trackData = cueSheet.getAllTrackData().get(i);
-                Position currentPosition = trackData.getIndices().get(0).getPosition();
-                // convert CUE timestamp (minutes:seconds:frames, 75 frames/second) to fractional seconds
-                double currentStart = currentPosition.getMinutes() * 60 + currentPosition.getSeconds() + (currentPosition.getFrames() / 75);
-                double nextStart = 0.0;
-                if (cueSheet.getAllTrackData().size() - 1 != i) {
-                    Position nextPosition = cueSheet.getAllTrackData().get(i + 1).getIndices().get(0).getPosition();
-                    nextStart = nextPosition.getMinutes() * 60 + nextPosition.getSeconds() + (nextPosition.getFrames() / 75);
-                } else {
-                    nextStart = wholeFileLength;
-                }
+                TrackData trackData = cueTracks.get(i);
+                double currentStart = getStartPosition(trackData);
+                // duration runs to the next track in THIS block; the last track runs to the file end
+                double nextStart = (trackSize - 1 != i) ? getStartPosition(cueTracks.get(i + 1)) : wholeFileLength;
 
                 double duration = nextStart - currentStart;
 
+                // Refresh the existing indexed track in place (title/artist/track number/duration may
+                // have changed) while preserving playCount/lastPlayed/comment; create a fresh row when
+                // none exists for this start position.
                 MediaFile existingFile = storedChildrenMap.remove(Pair.of(basePath, currentStart));
-                // check whether track has same duration, cue file may have been edited to split tracks
-                if ((existingFile != null) && (existingFile.getDuration() != duration)) {
-                    storedChildrenMap.put(Pair.of(basePath, currentStart), existingFile);
-                    existingFile = null;
+                MediaFile track = (existingFile != null) ? existingFile : new MediaFile();
+                track.setPath(basePath);
+                track.setAlbumArtist(performer);
+                track.setAlbumName(albumName);
+                track.setTitle(trackData.getTitle());
+                track.setArtist(trackData.getPerformer());
+                track.setParentPath(parentPath);
+                track.setFolder(baseFolder);
+                track.setChanged(lastModified);
+                track.setLastScanned(Instant.now());
+                track.setChildrenLastUpdated(childrenLastUpdated);
+                track.setCreated(lastModified);
+                track.setPresent(true);
+                track.setTrackNumber(trackData.getNumber());
+                track.setDiscNumber(base.getDiscNumber());
+                track.setGenre(base.getGenre());
+                track.setYear(base.getYear());
+                track.setBitRate(base.getBitRate());
+                track.setVariableBitRate(base.isVariableBitRate());
+                track.setHeight(base.getHeight());
+                track.setWidth(base.getWidth());
+                track.setFormat(base.getFormat());
+                track.setStartPosition(currentStart);
+                track.setDuration(duration);
+                // estimate file size based on duration and whole file size
+                long estimatedSize = (long) (duration / wholeFileLength * wholeFileSize);
+                // if estimated size is within of whole file size, use it. Otherwise use whole file size divided by number of tracks
+                if (estimatedSize > 0 && estimatedSize <= wholeFileSize) {
+                    track.setFileSize(estimatedSize);
+                } else {
+                    track.setFileSize((long)(wholeFileSize / trackSize));
                 }
-                MediaFile track = existingFile;
-                if (update || (existingFile == null)) {
-                    track = (existingFile != null) ? existingFile : new MediaFile();
-                    track.setPath(basePath);
-                    track.setAlbumArtist(performer);
-                    track.setAlbumName(albumName);
-                    track.setTitle(trackData.getTitle());
-                    track.setArtist(trackData.getPerformer());
-                    track.setParentPath(parentPath);
-                    track.setFolder(baseFolder);
-                    track.setChanged(lastModified);
-                    track.setLastScanned(Instant.now());
-                    track.setChildrenLastUpdated(childrenLastUpdated);
-                    track.setCreated(lastModified);
-                    track.setPresent(true);
-                    track.setTrackNumber(trackData.getNumber());
-                    track.setDiscNumber(base.getDiscNumber());
-                    track.setGenre(base.getGenre());
-                    track.setYear(base.getYear());
-                    track.setBitRate(base.getBitRate());
-                    track.setVariableBitRate(base.isVariableBitRate());
-                    track.setHeight(base.getHeight());
-                    track.setWidth(base.getWidth());
-                    track.setFormat(base.getFormat());
-                    track.setStartPosition(currentStart);
-                    track.setDuration(duration);
-                    // estimate file size based on duration and whole file size
-                    long estimatedSize = (long) (duration / wholeFileLength * wholeFileSize);
-                    // if estimated size is within of whole file size, use it. Otherwise use whole file size divided by number of tracks
-                    if (estimatedSize > 0 && estimatedSize <= wholeFileSize) {
-                        track.setFileSize(estimatedSize);
-                    } else {
-                        track.setFileSize((long)(wholeFileSize / trackSize));
-                    }
-                    track.setPlayCount((existingFile == null) ? 0 : existingFile.getPlayCount());
-                    track.setLastPlayed((existingFile == null) ? null : existingFile.getLastPlayed());
-                    track.setComment((existingFile == null) ? null : existingFile.getComment());
-                    track.setMediaType(mediaType);
+                track.setPlayCount((existingFile == null) ? 0 : existingFile.getPlayCount());
+                track.setLastPlayed((existingFile == null) ? null : existingFile.getLastPlayed());
+                track.setComment((existingFile == null) ? null : existingFile.getComment());
+                track.setMediaType(mediaType);
 
-                    updateMediaFile(track);
-                }
+                updateMediaFile(track);
 
                 children.add(track);
             }
@@ -1313,6 +1316,33 @@ public class MediaFileService {
     private List<MediaFile> createIndexedTracks(MediaFile base) {
         CueSheet cueSheet = getCueSheet(base);
         return createIndexedTracks(base, cueSheet);
+    }
+
+    /**
+     * Selects the FILE block that owns the given base media file (single-file path / 2-arg overload):
+     * the block whose FILE name matches the base file name, falling back to the first block. Returns
+     * null only when the cue sheet is null or has no FILE blocks.
+     */
+    @Nullable
+    private FileData getFileDataForBase(@Nonnull MediaFile base, @Nullable CueSheet cueSheet) {
+        if (Objects.isNull(cueSheet) || cueSheet.getFileData().isEmpty()) {
+            return null;
+        }
+        String baseFileName = FilenameUtils.getName(base.getPath());
+        return cueSheet.getFileData().stream()
+            .filter(fileData -> FilenameUtils.getName(fileData.getFile()).equals(baseFileName))
+            .findFirst()
+            .orElseGet(() -> cueSheet.getFileData().get(0));
+    }
+
+    /**
+     * Converts a track's first INDEX position to fractional seconds. CUE timestamps are
+     * minutes:seconds:frames at 75 frames/second; dividing frames by 75.0 (not int 75) preserves the
+     * sub-second component that would otherwise truncate to zero.
+     */
+    private double getStartPosition(TrackData trackData) {
+        Position position = trackData.getIndices().get(0).getPosition();
+        return position.getMinutes() * 60 + position.getSeconds() + (position.getFrames() / 75.0);
     }
 
     private MediaFile.MediaType getMediaType(MediaFile mediaFile) {
