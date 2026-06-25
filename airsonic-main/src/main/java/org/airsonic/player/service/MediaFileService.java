@@ -1052,6 +1052,7 @@ public class MediaFileService {
                 mediaFile.setReplayGainAlbumGain(metaData.getReplayGainAlbumGain());
                 mediaFile.setReplayGainTrackPeak(metaData.getReplayGainTrackPeak());
                 mediaFile.setReplayGainAlbumPeak(metaData.getReplayGainAlbumPeak());
+                mediaFile.setReplayGainBaseGain(metaData.getBaseGain());
             }
             String format = StringUtils.trimToNull(StringUtils.lowerCase(FilenameUtils.getExtension(mediaFile.getPath())));
             mediaFile.setFormat(format);

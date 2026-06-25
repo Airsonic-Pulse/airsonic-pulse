@@ -575,6 +575,30 @@ class JaxbContentServiceTest {
             assertNull(result.getReplayGain().getTrackPeak());
         }
 
+        @Test
+        void createJaxbAlbum_replayGain_neverEmitsBaseGain() {
+            // baseGain is the per-file Opus header gain and has no album-level meaning, so the
+            // album path never sets it regardless of the member tracks' codecs.
+            AlbumID3 jaxbAlbum = new AlbumID3();
+            when(album.getId()).thenReturn(54);
+            when(album.getName()).thenReturn("AlbumNoBaseGain");
+            when(album.getArtist()).thenReturn(null);
+            when(album.getSongCount()).thenReturn(0);
+            when(album.getDuration()).thenReturn(0.0);
+            when(album.getCreated()).thenReturn(null);
+            when(coverArtService.getAlbumArt(54)).thenReturn(CoverArt.NULL_ART);
+            when(albumService.getAlbumStarredDate(54, "user")).thenReturn(null);
+            when(album.getReplayGainAlbumGain()).thenReturn(-6.5);
+            when(album.getReplayGainAlbumPeak()).thenReturn(0.95);
+            when(settingsService.getReplayGainFallback()).thenReturn(null);
+
+            AlbumID3 result = service.createJaxbAlbum(jaxbAlbum, album, "user");
+
+            assertNotNull(result.getReplayGain());
+            assertNull(result.getReplayGain().getBaseGain(),
+                    "baseGain must never be emitted on the album-level ReplayGain");
+        }
+
         private MediaFile track(int discNumber, String discSubtitle) {
             MediaFile mf = new MediaFile();
             mf.setDiscNumber(discNumber);
@@ -810,6 +834,84 @@ class JaxbContentServiceTest {
             assertEquals(0.988, child.getReplayGain().getTrackPeak());
             assertEquals(-8.0, child.getReplayGain().getFallbackGain());
             assertNull(child.getReplayGain().getAlbumGain());
+        }
+
+        // baseGain (#250) is the Opus OpusHead output_gain — emitted for Opus tracks only.
+
+        @Test
+        void createJaxbChild_replayGain_emitsBaseGainForOpus() {
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(340);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(340)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFile.getReplayGainTrackGain()).thenReturn(null);
+            when(mediaFile.getReplayGainAlbumGain()).thenReturn(null);
+            when(mediaFile.getReplayGainTrackPeak()).thenReturn(null);
+            when(mediaFile.getReplayGainAlbumPeak()).thenReturn(null);
+            when(mediaFile.getFormat()).thenReturn("opus");
+            when(mediaFile.getReplayGainBaseGain()).thenReturn(-1.5);
+            when(settingsService.getReplayGainFallback()).thenReturn(null);
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertNotNull(child.getReplayGain(),
+                    "replayGain element must be emitted for an Opus track carrying baseGain alone");
+            assertEquals(-1.5, child.getReplayGain().getBaseGain());
+            assertNull(child.getReplayGain().getTrackGain());
+        }
+
+        @Test
+        void createJaxbChild_replayGain_emitsZeroBaseGainForOpus() {
+            // The common case: most Opus files carry output_gain 0. A real 0.0 dB value is emitted,
+            // not omitted — 0.0 ("no header adjustment") is distinct from absent.
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(350);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(350)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFile.getReplayGainTrackGain()).thenReturn(null);
+            when(mediaFile.getReplayGainAlbumGain()).thenReturn(null);
+            when(mediaFile.getReplayGainTrackPeak()).thenReturn(null);
+            when(mediaFile.getReplayGainAlbumPeak()).thenReturn(null);
+            when(mediaFile.getFormat()).thenReturn("opus");
+            when(mediaFile.getReplayGainBaseGain()).thenReturn(0.0);
+            when(settingsService.getReplayGainFallback()).thenReturn(null);
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertNotNull(child.getReplayGain());
+            assertEquals(0.0, child.getReplayGain().getBaseGain());
+        }
+
+        @Test
+        void createJaxbChild_replayGain_omitsBaseGainForNonOpus() {
+            // baseGain is Opus-only: for a non-Opus track the column is never read and the
+            // attribute is never emitted, even though other ReplayGain values are present.
+            Player player = mock(Player.class);
+            MediaFile mediaFile = mock(MediaFile.class);
+            when(mediaFileService.getParentOf(mediaFile)).thenReturn(null);
+            when(mediaFile.getId()).thenReturn(360);
+            when(mediaFile.isDirectory()).thenReturn(true);
+            when(mediaFile.isFile()).thenReturn(false);
+            when(coverArtService.getMediaFileArt(360)).thenReturn(CoverArt.NULL_ART);
+            when(mediaFile.getReplayGainTrackGain()).thenReturn(-6.5);
+            when(mediaFile.getReplayGainAlbumGain()).thenReturn(null);
+            when(mediaFile.getReplayGainTrackPeak()).thenReturn(null);
+            when(mediaFile.getReplayGainAlbumPeak()).thenReturn(null);
+            when(mediaFile.getFormat()).thenReturn("mp3");
+            when(settingsService.getReplayGainFallback()).thenReturn(null);
+
+            Child child = service.createJaxbChild(player, mediaFile, "user");
+
+            assertNotNull(child.getReplayGain());
+            assertEquals(-6.5, child.getReplayGain().getTrackGain());
+            assertNull(child.getReplayGain().getBaseGain(),
+                    "baseGain must never be emitted for a non-Opus track");
         }
 
         @Test
