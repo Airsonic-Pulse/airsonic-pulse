@@ -420,12 +420,16 @@ public class JaxbContentService {
         Double albumGain = mediaFile.getReplayGainAlbumGain();
         Double trackPeak = mediaFile.getReplayGainTrackPeak();
         Double albumPeak = mediaFile.getReplayGainAlbumPeak();
+        // baseGain is the Opus OpusHead output_gain (codec-level header gain); per the OpenSubsonic
+        // spec it is meaningful only for codecs that define a header gain, so it is emitted for Opus
+        // only — never for MP3/FLAC/MP4 — even when those carry other ReplayGain values.
+        Double baseGain = "opus".equalsIgnoreCase(mediaFile.getFormat()) ? mediaFile.getReplayGainBaseGain() : null;
         // Operator-supplied fallback emitted on every replayGain element when configured —
         // clients are expected to apply it only when the per-track values are absent. When
         // unset (the default), the attribute is omitted and there is no behavior change.
         Double fallbackGain = settingsService.getReplayGainFallback();
         if (trackGain == null && albumGain == null && trackPeak == null && albumPeak == null
-                && fallbackGain == null) {
+                && baseGain == null && fallbackGain == null) {
             return null;
         }
         ReplayGain replayGain = new ReplayGain();
@@ -433,6 +437,7 @@ public class JaxbContentService {
         replayGain.setAlbumGain(albumGain);
         replayGain.setTrackPeak(trackPeak);
         replayGain.setAlbumPeak(albumPeak);
+        replayGain.setBaseGain(baseGain);
         replayGain.setFallbackGain(fallbackGain);
         return replayGain;
     }
@@ -441,7 +446,8 @@ public class JaxbContentService {
         // Album-level ReplayGain carries only albumGain / albumPeak (aggregated last-non-null
         // from member tracks during scan) plus the operator-configured fallbackGain. trackGain
         // and trackPeak are per-track and have no album-level meaning, so they're left null —
-        // JAXB omits the unset attributes on the reused ReplayGain complexType.
+        // JAXB omits the unset attributes on the reused ReplayGain complexType. baseGain is the
+        // per-file Opus header gain and likewise has no album-level meaning, so it is never set.
         Double albumGain = album.getReplayGainAlbumGain();
         Double albumPeak = album.getReplayGainAlbumPeak();
         Double fallbackGain = settingsService.getReplayGainFallback();

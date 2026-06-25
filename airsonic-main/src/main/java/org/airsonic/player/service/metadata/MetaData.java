@@ -64,6 +64,7 @@ public class MetaData {
     private Double replayGainAlbumGain;
     private Double replayGainTrackPeak;
     private Double replayGainAlbumPeak;
+    private Double baseGain;
     private final List<Track> tracks = new ArrayList<>();
     private final List<Chapter> chapters = new ArrayList<>();
 
@@ -321,6 +322,14 @@ public class MetaData {
 
     public void setReplayGainAlbumPeak(Double replayGainAlbumPeak) {
         this.replayGainAlbumPeak = replayGainAlbumPeak;
+    }
+
+    public Double getBaseGain() {
+        return baseGain;
+    }
+
+    public void setBaseGain(Double baseGain) {
+        this.baseGain = baseGain;
     }
 
     public void addTrack(Track track) {

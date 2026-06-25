@@ -21,4 +21,5 @@
     <include file="add-album-replaygain.xml" relativeToChangelogFile="true"/>
     <include file="add-user-password-auth-enabled.xml" relativeToChangelogFile="true"/>
     <include file="add-structured-lyrics.xml" relativeToChangelogFile="true"/>
+    <include file="add-media-file-base-gain.xml" relativeToChangelogFile="true"/>
 </databaseChangeLog>

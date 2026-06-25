@@ -202,6 +202,9 @@ public class MediaFile {
     @Column(name = "rg_album_peak", nullable = true)
     private Double replayGainAlbumPeak;
 
+    @Column(name = "rg_base_gain", nullable = true)
+    private Double replayGainBaseGain;
+
     @Transient
     private Double averageRating = 0.0;
 
@@ -661,6 +664,14 @@ public class MediaFile {
 
     public void setReplayGainAlbumPeak(Double replayGainAlbumPeak) {
         this.replayGainAlbumPeak = replayGainAlbumPeak;
+    }
+
+    public Double getReplayGainBaseGain() {
+        return replayGainBaseGain;
+    }
+
+    public void setReplayGainBaseGain(Double replayGainBaseGain) {
+        this.replayGainBaseGain = replayGainBaseGain;
     }
 
     /**

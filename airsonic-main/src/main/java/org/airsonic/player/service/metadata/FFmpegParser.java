@@ -27,6 +27,7 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.util.Util;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
@@ -96,6 +97,13 @@ public class FFmpegParser extends MetaDataParser {
             }
 
             populateFromJson(result, metaData);
+
+            // Opus base gain lives in the OpusHead header (output_gain), which ffprobe does not
+            // expose — read it directly from the container. Opus-only; other formats have no
+            // codec-level base gain.
+            if ("opus".equalsIgnoreCase(FilenameUtils.getExtension(file.toString()))) {
+                metaData.setBaseGain(OpusHeaderReader.readBaseGainDb(file));
+            }
         } catch (Throwable x) {
             LOG.warn("Error when parsing metadata in {}", file, x);
         }
