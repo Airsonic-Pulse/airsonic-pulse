@@ -147,6 +147,13 @@
         </tr>
     </table>
 
+    <table>
+        <tr>
+            <td><input type="checkbox" id="passwordAuthEnabled" class="checkbox" th:field="*{passwordAuthEnabled}"/></td>
+            <td><label for="passwordAuthEnabled" th:text="#{usersettings.passwordauthenabled}"></label></td>
+        </tr>
+    </table>
+
     <th:block th:if="*{newUser}">
         <div style="display:none"><input name="newUser" th:value="${command.newUser}" /></div>
         <table class="indent">

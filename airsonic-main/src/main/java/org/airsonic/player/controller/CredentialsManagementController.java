@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import jakarta.validation.groups.Default;
@@ -95,6 +96,7 @@ public class CredentialsManagementController {
         map.addAttribute("preferredEncoderDecodableOnly", securityService.getPreferredPasswordEncoder(false));
 
         map.addAttribute("ldapAuthEnabledForUser", userInDb.isLdapAuthenticated());
+        map.addAttribute("passwordAuthEnabledForUser", userInDb.isPasswordAuthEnabled());
         map.addAttribute("adminRole", userInDb.isAdminRole());
 
         // admin restricted, installation-wide settings
@@ -142,6 +144,23 @@ public class CredentialsManagementController {
 
         redirectAttributes.addFlashAttribute("settings_toast", result);
 
+        return "redirect:/credentialsSettings.view";
+    }
+
+    /**
+     * Self-service toggle for the per-user {@code password_auth_enabled} flag (#278). The username is
+     * taken from the authenticated principal, never from a request parameter, so a user can only
+     * change their own flag (no IDOR). An unchecked checkbox submits no parameter, which the
+     * {@code defaultValue} reads as {@code false}, so disabling persists correctly. The
+     * {@link SecurityService} mutator evicts the user cache so the legacy-auth gate takes effect
+     * immediately.
+     */
+    @PostMapping("/passwordAuth")
+    protected String updatePasswordAuth(Principal user,
+            @RequestParam(name = "passwordAuthEnabled", defaultValue = "false") boolean enabled,
+            RedirectAttributes redirectAttributes) {
+        securityService.updatePasswordAuthEnabled(user.getName(), enabled);
+        redirectAttributes.addFlashAttribute("settings_toast", true);
         return "redirect:/credentialsSettings.view";
     }
 
