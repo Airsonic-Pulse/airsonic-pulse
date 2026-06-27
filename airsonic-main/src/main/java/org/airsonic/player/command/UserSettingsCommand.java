@@ -54,6 +54,7 @@ public class UserSettingsCommand {
     private String confirmPassword;
     private String email;
     private boolean isLdapAuthenticated;
+    private boolean passwordAuthEnabled = true;
     private boolean isLdapEnabled;
     private List<MusicFolder> allMusicFolders;
     private int[] allowedMusicFolderIds;
@@ -231,6 +232,14 @@ public class UserSettingsCommand {
         isLdapAuthenticated = ldapAuthenticated;
     }
 
+    public boolean isPasswordAuthEnabled() {
+        return passwordAuthEnabled;
+    }
+
+    public void setPasswordAuthEnabled(boolean passwordAuthEnabled) {
+        this.passwordAuthEnabled = passwordAuthEnabled;
+    }
+
     public boolean isLdapEnabled() {
         return isLdapEnabled;
     }
@@ -304,6 +313,7 @@ public class UserSettingsCommand {
         isSettingsRole = user != null && user.isSettingsRole();
         isShareRole = user != null && user.isShareRole();
         isLdapAuthenticated = user != null && user.isLdapAuthenticated();
+        passwordAuthEnabled = user == null || user.isPasswordAuthEnabled();
         isNewUser = false;
     }
 

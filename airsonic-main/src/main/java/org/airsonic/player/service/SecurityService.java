@@ -604,6 +604,7 @@ public class SecurityService implements UserDetailsService {
         if (Objects.nonNull(user)) {
             user.setEmail(StringUtils.trimToNull(command.getEmail()));
             user.setLdapAuthenticated(command.isLdapAuthenticated());
+            user.setPasswordAuthEnabled(command.isPasswordAuthEnabled());
             Set<Role> roles = new HashSet<>();
             if (command.isAdminRole())
                 roles.add(Role.ADMIN);
@@ -632,6 +633,24 @@ public class SecurityService implements UserDetailsService {
         }
         userCache.removeUser(command.getUsername());
         return user;
+    }
+
+    /**
+     * Self-service write path for the per-user {@code password_auth_enabled} flag (#278). Updates the
+     * column and evicts the {@link UserCache} so the legacy-auth gate — which resolves the user via
+     * the cache-backed {@link #getUserByName} — sees the new value immediately rather than after the
+     * cache TTL. The caller is responsible for supplying the authenticated principal's own username
+     * (the credentials page derives it from the security context, never from a form field).
+     *
+     * @param username the user whose flag is updated
+     * @param enabled  whether legacy password/token authentication is allowed for that user
+     */
+    public void updatePasswordAuthEnabled(String username, boolean enabled) {
+        userRepository.findByUsername(username).ifPresent(user -> {
+            user.setPasswordAuthEnabled(enabled);
+            userRepository.save(user);
+        });
+        userCache.removeUser(username);
     }
 
     public boolean isReadAllowed(MediaFile file, boolean checkExistence) {

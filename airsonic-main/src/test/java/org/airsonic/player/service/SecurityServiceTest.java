@@ -2,6 +2,7 @@ package org.airsonic.player.service;
 
 import org.airsonic.player.command.CredentialsManagementCommand;
 import org.airsonic.player.command.CredentialsManagementCommand.CredentialsCommand;
+import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.config.AirsonicHomeConfig;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.User.Role;
@@ -256,5 +257,47 @@ public class SecurityServiceTest {
         verify(userCredentialRepository).delete(any(UserCredential.class));
         assertEquals(1, userCredentialRepository.countByUserAndApp(testUser, App.AIRSONIC));
 
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Per-user password_auth_enabled write paths (#278). getUserByName is UserCache-backed; the
+    // observable proof of correct eviction is that a cache-primed read returns the new value
+    // immediately after a write.
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    public void updatePasswordAuthEnabledEvictsCacheSoGateSeesNewValueImmediately() {
+        // prime the cache via the cache-backed read (default flag is true)
+        assertTrue(securityService.getUserByName(TEST_USER_NAME).isPasswordAuthEnabled());
+
+        securityService.updatePasswordAuthEnabled(TEST_USER_NAME, false);
+
+        // Without eviction this cache-backed read would still return the stale true.
+        assertFalse(securityService.getUserByName(TEST_USER_NAME).isPasswordAuthEnabled(),
+                "getUserByName is UserCache-backed; the write path must evict so the gate sees the new value");
+    }
+
+    @Test
+    public void updatePasswordAuthEnabledPersistsRoundTrip() {
+        securityService.updatePasswordAuthEnabled(TEST_USER_NAME, false);
+        assertFalse(userRepository.findByUsername(TEST_USER_NAME).orElseThrow().isPasswordAuthEnabled());
+
+        securityService.updatePasswordAuthEnabled(TEST_USER_NAME, true);
+        assertTrue(userRepository.findByUsername(TEST_USER_NAME).orElseThrow().isPasswordAuthEnabled());
+    }
+
+    @Test
+    public void updateUserByUserSettingsCommandSetsPasswordAuthEnabledAndEvicts() {
+        // prime the cache
+        assertTrue(securityService.getUserByName(TEST_USER_NAME).isPasswordAuthEnabled());
+
+        UserSettingsCommand command = new UserSettingsCommand();
+        command.setUser(testUser);                  // populates username, roles, current flag
+        command.setPasswordAuthEnabled(false);
+        securityService.updateUserByUserSettingsCommand(command);
+
+        // The admin path saves the flag and ends with userCache.removeUser, so the read is fresh.
+        assertFalse(securityService.getUserByName(TEST_USER_NAME).isPasswordAuthEnabled(),
+                "admin write path must persist the flag and evict the cache");
     }
 }
