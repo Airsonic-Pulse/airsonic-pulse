@@ -24,6 +24,7 @@ import org.springframework.http.MediaType;
 
 import jakarta.transaction.Transactional;
 
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -65,6 +66,42 @@ public class OpenSubsonicExtensionsApiTest extends AbstractRESTTest {
             .andExpect(jsonPath("$.subsonic-response.status").value("ok"))
             .andExpect(jsonPath("$.subsonic-response.openSubsonicExtensions.openSubsonicExtension[*].name").value(hasItem("indexBasedQueue")))
             .andExpect(jsonPath("$.subsonic-response.openSubsonicExtensions.openSubsonicExtension[?(@.name=='indexBasedQueue')].versions[0]").value(hasItem(1)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/rest/getOpenSubsonicExtensions", "/rest/getOpenSubsonicExtensions.view"})
+    void getOpenSubsonicExtensions_returnsGetPodcastEpisodeExtension(String endpoint) throws Exception {
+        mvc.perform(get(endpoint)
+            .param("v", AIRSONIC_API_VERSION)
+            .param("c", CLIENT_NAME)
+            .param("u", AIRSONIC_USER)
+            .param("p", AIRSONIC_PASSWORD)
+            .param("f", EXPECTED_FORMAT)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.subsonic-response.status").value("ok"))
+            .andExpect(jsonPath("$.subsonic-response.openSubsonicExtensions.openSubsonicExtension[*].name").value(hasItem("getPodcastEpisode")))
+            .andExpect(jsonPath("$.subsonic-response.openSubsonicExtensions.openSubsonicExtension[?(@.name=='getPodcastEpisode')].versions[0]").value(hasItem(1)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/rest/getOpenSubsonicExtensions", "/rest/getOpenSubsonicExtensions.view"})
+    void getOpenSubsonicExtensions_advertisesExactlyTheExpectedSet(String endpoint) throws Exception {
+        // Asserts the COMPLETE advertised set, not a per-extension subset. The pre-existing
+        // hasItem(...) tests pass whenever a named extension is present and so never catch a
+        // *missing* one — which is why getPodcastEpisode shipped (#133) unadvertised until #294.
+        // This assertion fails if any extension is added or dropped without updating the test.
+        mvc.perform(get(endpoint)
+            .param("v", AIRSONIC_API_VERSION)
+            .param("c", CLIENT_NAME)
+            .param("u", AIRSONIC_USER)
+            .param("p", AIRSONIC_PASSWORD)
+            .param("f", EXPECTED_FORMAT)
+            .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.subsonic-response.openSubsonicExtensions.openSubsonicExtension[*].name")
+                .value(containsInAnyOrder("formPost", "transcodeOffset", "songLyrics",
+                    "indexBasedQueue", "apiKeyAuthentication", "getPodcastEpisode")));
     }
 
     @ParameterizedTest
