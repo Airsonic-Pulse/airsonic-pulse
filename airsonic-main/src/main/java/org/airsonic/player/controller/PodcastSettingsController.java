@@ -39,6 +39,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static java.util.stream.Collectors.toMap;
 
@@ -79,15 +80,23 @@ public class PodcastSettingsController {
 
         List<PodcastChannel> channels = podcastPersistenceService.getAllChannels();
         List<PodcastChannelRule> rules = podcastPersistenceService.getAllChannelRules();
-        command.setRules(rules.stream()
-                .map(cr -> new PodcastRule(
-                        cr,
-                        channels.stream()
-                            .filter(c -> c.getId().equals(cr.getId()))
-                            .findFirst()
-                            .map(c -> c.getTitle()).orElse(null)))
+        // A synthetic "DEFAULT" rule (channel id -1) carrying the global podcast settings is
+        // appended after the per-channel rules. Built in a single immutable pass via Stream.concat
+        // rather than a build-then-add, since Stream.toList() is unmodifiable.
+        PodcastRule defaultRule = new PodcastRule(new PodcastChannelRule(-1,
+                settingsService.getPodcastUpdateInterval(),
+                settingsService.getPodcastEpisodeRetentionCount(),
+                settingsService.getPodcastEpisodeDownloadCount()), "DEFAULT");
+        command.setRules(Stream.concat(
+                rules.stream()
+                    .map(cr -> new PodcastRule(
+                            cr,
+                            channels.stream()
+                                .filter(c -> c.getId().equals(cr.getId()))
+                                .findFirst()
+                                .map(PodcastChannel::getTitle).orElse(null))),
+                Stream.of(defaultRule))
                 .toList());
-        command.getRules().add(new PodcastRule(new PodcastChannelRule(-1, settingsService.getPodcastUpdateInterval(), settingsService.getPodcastEpisodeRetentionCount(), settingsService.getPodcastEpisodeDownloadCount()), "DEFAULT"));
 
         command.setNewRule(new PodcastRule());
         command.setNoRuleChannels(channels.parallelStream()
