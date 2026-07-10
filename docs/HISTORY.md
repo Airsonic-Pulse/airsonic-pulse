@@ -119,14 +119,14 @@ Airsonic-Advanced snapshots are generally pretty stable and recommended for use 
 
 ### Stand-alone binaries
 Airsonic-Advanced can be downloaded from
-[GitHub]([(https://github.com/kagemomiji/airsonic-advanced)]).
+[GitHub](https://github.com/kagemomiji/airsonic-advanced).
 
 You need a _minimum_ Java Runtime Environment (JRE) of 1.8 for 10.6.x series, and 11 for 11.x onwards (including snapshots).
 - For 11.x releases and onwards -> Java 17
 
 Airsonic-Advanced is run similarly to (and in lieu of) vanilla Airsonic.
 
-Read the [compatibility notes](#compatibility-notes).
+Read the compatibility notes.
 
 ### Docker
 [GHCR](https://ghcr.io/kagemomiji/airsonic-advanced). Docker releases are recently multiplatform, which means ARMv7 and ARM64 are also released to Dockerhub. However, automated testing for those archs is not currently done in the CI/CD pipeline (only Linux platform is tested).
@@ -148,7 +148,7 @@ Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for in
 
 ### Docker Compose
 
-To evaluate Airsonic in Docker Compose try our compose files in [install/compose](./install/compose) directory. There are two variants: one uses embedded database (HSQLDB), another - external (PostgreSQL). You can run from within directory by command:
+To evaluate Airsonic in Docker Compose try our compose files in [install/compose](../install/compose) directory. There are two variants: one uses embedded database (HSQLDB), another - external (PostgreSQL). You can run from within directory by command:
 ```shell
 docker compose -p airsonic-hsqldb -f docker-compose.hsqldb.yaml up
 ```

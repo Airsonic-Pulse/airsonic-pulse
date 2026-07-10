@@ -2,14 +2,14 @@
 
 ## Contents
 
-- [Installation](./installation.md)
-- [First start](./first_start/README.md)
+- [Installation](./installation/README.md)
+- [First start](./installation/README.md#first-start)
 - [WebUI](./webui/README.md)
   - [Media](./webui/media.md)
   - [Podcast](./webui/podcast.md)
   - [Lyrics](./webui/lyrics.md)
-- [Configures](./configures/README.md)
-  - [Detail Configuration](./configures/detail.md)
+- [Configuration](./configuration/README.md)
+  - [Detail Configuration](./configuration/detail.md)
 - Proxy
   - [Prerequisites](./proxy/README.md)
   - [Apache](./proxy/apache.md)

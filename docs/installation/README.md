@@ -1,307 +1,38 @@
-# Installing Airsonic-Pulse
+# Installation
 
-## Contents
+## Requirements
+ 
+- Java 21 for the WAR methods. A JRE is enough; a JDK also works. The Docker image bundles its own runtime.
+- A data directory for Airsonic-Pulse (config, database, logs, cover art). Defaults: `/var/airsonic` on Linux, `C:\Airsonic` on Windows. Docker uses `/var/airsonic` inside the container.
 
-- [Prerequisites](#prerequisites)
-- [Automated Installation](#automated-installation)
-- [Manual Installation](#manual-installation)
-- [Configuration](#configuration)
-- [Transcoding](#transcoding)
-- [Default Media Folders](#default-media-folders)
-- [Database](#database)
-- [Reverse Proxy](#reverse-proxy)
-- [Troubleshooting](#troubleshooting)
+## Choose an installation method
 
----
+Airsonic-Pulse runs as a single self-contained WAR (Java 21) or as a Docker image. Pick the method that fits your setup:
 
-## Prerequisites
+- **Linux, standalone WAR** — [install_linux.md](install_linux.md). Runs as a systemd service; embedded HSQLDB database by default.
+- **Windows, standalone WAR** — [install_windows.md](install_windows.md). Getting-started setup that runs as the logged-on user.
+- **Docker** — [../docker/README.md](../docker/README.md). Compose files for HSQLDB, PostgreSQL, and MariaDB.
 
-- **Java 21** — OpenJDK 21 headless recommended (`java-21-openjdk-headless` on RHEL/CentOS, `openjdk-21-jre-headless` on Debian/Ubuntu)
-- **ffmpeg** and **ffprobe** — optional, required for audio transcoding and video metadata parsing
-- **systemd** — the provided unit file targets systemd-based Linux distributions
-- **Minimum 1 GB RAM** — 2 GB or more recommended for libraries over 50,000 tracks (adjust `-Xmx` accordingly)
-
----
-
-## Automated Installation
-
-Installer scripts are provided for the two major Linux families:
-
-| Distribution | Script |
-|---|---|
-| RHEL, CentOS, AlmaLinux, Rocky Linux, Fedora | `install/centos/install-airsonic.sh` |
-| Debian, Ubuntu, and derivatives | `install/debian/install-airsonic.sh` |
-
-The scripts handle Java installation, system user creation, WAR download, systemd unit setup, and optional ffmpeg and firewall configuration.
-
-**Usage:**
-
-```bash
-# Install latest release
-sudo ./install-airsonic.sh
-
-# Install a specific version
-sudo ./install-airsonic.sh v13.0.0
-```
-
-The version argument must match a GitHub release tag (e.g. `v13.0.0`, `v13.0.0-beta.1`). If omitted the script queries the GitHub API for the latest release.
-
----
-
-## Manual Installation
-
-### 1. Install Java 21
-
-**RHEL / CentOS / AlmaLinux / Rocky Linux / Fedora:**
-
-```bash
-sudo dnf install java-21-openjdk-headless
-```
-
-**Debian / Ubuntu:**
-
-```bash
-sudo apt-get update
-sudo apt-get install openjdk-21-jre-headless
-```
-
-Verify the installed version:
-
-```bash
-java -version
-```
-
-If multiple Java versions are installed, set Java 21 as the default:
-
-```bash
-# RHEL/CentOS
-sudo alternatives --config java
-
-# Debian/Ubuntu
-sudo update-alternatives --config java
-```
-
-### 2. Create the system user
-
-```bash
-sudo useradd --system --no-create-home --shell /usr/sbin/nologin airsonic
-```
-
-### 3. Create the data directory
-
-```bash
-sudo mkdir -p /var/airsonic
-sudo chown airsonic:airsonic /var/airsonic
-```
-
-### 4. Download the WAR
-
-Replace `VERSION` with the desired release tag (e.g. `v13.0.0`):
-
-```bash
-VERSION=v13.0.0
-sudo curl -L \
-  "https://github.com/Airsonic-Pulse/airsonic-pulse/releases/download/${VERSION}/airsonic.war" \
-  -o /var/airsonic/airsonic.war
-sudo chown airsonic:airsonic /var/airsonic/airsonic.war
-```
-
-### 5. Install the systemd unit
-
-**Option A — from a cloned repository:**
-
-```bash
-sudo cp install/systemd/airsonic.service /etc/systemd/system/airsonic.service
-sudo systemctl daemon-reload
-```
-
-**Option B — download directly from GitHub:**
-
-Replace `VERSION` with the release tag you installed (e.g. `v13.0.0`):
-
-```bash
-VERSION=v13.0.0
-sudo curl -fsSL \
-  "https://raw.githubusercontent.com/Airsonic-Pulse/airsonic-pulse/${VERSION}/install/systemd/airsonic.service" \
-  -o /etc/systemd/system/airsonic.service
-sudo systemctl daemon-reload
-```
-
-### 6. Enable and start
-
-```bash
-sudo systemctl enable --now airsonic
-```
-
-### 7. Verify
-
-```bash
-sudo systemctl status airsonic
-```
-
-Then open a browser and navigate to `http://hostname:4040`. The default admin credentials are set during the first-run setup wizard.
-
----
-
-## Configuration
-
-### Data directory
-
-All runtime files are stored under `/var/airsonic/` by default:
-
-| Path | Contents |
-|---|---|
-| `/var/airsonic/airsonic.war` | Application WAR |
-| `/var/airsonic/airsonic.properties` | User configuration (auto-created on first run) |
-| `/var/airsonic/airsonic.log` | Application log |
-| `/var/airsonic/db/` | Embedded HSQLDB database files |
-| `/var/airsonic/transcode/` | Optional: place custom ffmpeg/ffprobe binaries here |
-| `/var/airsonic/index20/` | Lucene search index |
-
-### User configuration file
-
-`/var/airsonic/airsonic.properties` is created automatically on first run. Edit it to change application settings — changes take effect after a restart. Do not edit this file while Airsonic is running.
-
-### Environment overrides
-
-Override the port, heap size, and other JVM options **without** editing the systemd unit file. Create the appropriate override file for your distribution:
-
-**RHEL / CentOS / AlmaLinux / Rocky Linux / Fedora:** `/etc/sysconfig/airsonic`
-
-**Debian / Ubuntu:** `/etc/default/airsonic`
-
-Example override file:
-
-```bash
-# Uncomment and adjust as needed
-
-# AIRSONIC_HOME=/var/airsonic
-# PORT=4040
-# CONTEXT_PATH=/
-# JAVA_OPTS="-Xmx1024m -Xms512m"
-```
-
-| Variable | Default | Description |
-|---|---|---|
-| `AIRSONIC_HOME` | `/var/airsonic` | Data directory |
-| `PORT` | `4040` | HTTP listen port |
-| `CONTEXT_PATH` | `/` | Servlet context path (e.g. `/airsonic` for sub-path deploys) |
-| `JAVA_OPTS` | `-Xmx1024m -Xms512m` | JVM options including heap size |
-
-The default heap (`-Xmx1024m`) is adequate for most deployments. For libraries over 50,000 tracks, consider raising it to `-Xmx2048m` or higher.
-
-After editing the override file, restart the service:
-
-```bash
-sudo systemctl restart airsonic
-```
-
----
-
-## Transcoding
-
-Transcoding requires `ffmpeg` and `ffprobe`.
-
-**RHEL / CentOS (requires EPEL):**
-
-```bash
-sudo dnf install epel-release
-sudo dnf install ffmpeg-free
-```
-
-**Debian / Ubuntu:**
-
-```bash
-sudo apt-get install ffmpeg
-```
-
-Airsonic searches for transcoding binaries in the following order:
-
-1. `${airsonic.home}/transcode/` (e.g. `/var/airsonic/transcode/`)
-2. `/usr/bin/`
-3. `/usr/local/bin/`
-
-To use a custom ffmpeg build, copy or symlink the binaries into `/var/airsonic/transcode/`.
-
----
-
-## Default Media Folders
-
-On first run, Airsonic seeds three default media folders:
-
-| Folder | Default path |
-|---|---|
-| Music | `/var/music` |
-| Podcasts | `/var/podcasts` |
-| Playlists | `/var/playlists` |
-
-These can be changed in the web UI under **Settings → Media Folders** after the initial setup. To override them at install time, pass JVM properties to the WAR:
-
-```bash
-# In /etc/sysconfig/airsonic or /etc/default/airsonic:
-JAVA_OPTS="-Xmx1024m -Xms512m \
-  -Dairsonic.defaultMusicFolder=/srv/music \
-  -Dairsonic.defaultPodcastFolder=/srv/podcasts \
-  -Dairsonic.defaultPlaylistFolder=/srv/playlists"
-```
-
----
 
 ## Database
+ 
+By default Airsonic-Pulse uses an embedded HSQLDB database, so you can start without setting up a database at all. For PostgreSQL or MariaDB/MySQL, which are the better choice for larger libraries, see [install_database.md](install_database.md). The WAR bundles the drivers for all three engines, so you never add a JDBC jar yourself.
 
-Airsonic uses an embedded HSQLDB database by default, stored in `/var/airsonic/db/`. This is suitable for personal use and small deployments.
+Every method runs on the default embedded HSQLDB database with no extra setup. To use PostgreSQL or MariaDB instead, see [install_database.md](install_database.md); the datasource configuration is identical across all install methods.
 
-For production deployments with multiple users or large libraries, a dedicated database is recommended:
+## First start
 
-- **PostgreSQL** (recommended)
-- **MariaDB 10.5+**
-- **MySQL 8.0+**
+The first time you open Airsonic-Pulse (default `http://localhost:4040`, or your server's address on port 4040), a setup wizard walks you through two things:
 
-Configure an external database by adding `spring.datasource.*` properties to `/var/airsonic/airsonic.properties`:
+1. **Create the administrator account.** Set a strong password. This is the account you use to manage the server, add users, and change settings.
+2. **Point Airsonic-Pulse at your music folders.** Add one or more folders containing your library.
 
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/airsonic
-spring.datasource.username=airsonic
-spring.datasource.password=secret
-spring.datasource.driver-class-name=org.postgresql.Driver
-```
+Airsonic-Pulse organizes your library by how the files are laid out on disk, not by their embedded tags (tags are still read for presentation and search). For best results, organize each music folder in an **"artist/album/song"** structure.
 
-> **Note:** Detailed database configuration and migration instructions will be covered in a dedicated database configuration guide.
+You can add or change media folders at any time under Settings (you need an administrator account to see this option). For the media-folder defaults and other per-property settings, see [../configuration/detail.md](../configuration/detail.md).
 
----
-
-## Reverse Proxy
-
-Airsonic is commonly deployed behind a reverse proxy (nginx, Apache, Caddy). See [Proxy Prerequisites](./proxy/README.md) for setup instructions.
-
-The systemd unit already includes `-Dserver.forward-headers-strategy=framework`, which tells Spring Boot to trust `X-Forwarded-*` headers from the proxy. Ensure your proxy sets these headers correctly.
-
----
-
-## Troubleshooting
-
-### View logs
-
-```bash
-# Follow the systemd journal (live)
-journalctl -u airsonic -f
-
-# Or read the log file directly
-tail -f /var/airsonic/airsonic.log
-```
-
-### Common issues
-
-**`UnsupportedClassVersionError` on startup**
-The WAR was built for Java 21 but an older JVM is running it. Verify with `java -version` and update your Java installation or fix the `alternatives` / `update-alternatives` configuration.
-
-**`Permission denied` on `/var/airsonic`**
-The `airsonic` user does not own the data directory. Fix with:
-```bash
-sudo chown -R airsonic:airsonic /var/airsonic
-```
-
-**Port 4040 already in use**
-Another process is listening on port 4040. Either stop that process or change the port by setting `PORT=XXXX` in the override file (see [Configuration](#configuration)).
-
-For additional troubleshooting steps, see [TroubleShooting](./troubleshooting.md).
+## Next steps
+ 
+- Configuration reference: [../configuration/README.md](../configuration/README.md)
+- Reverse proxy and HTTPS: [../proxy/README.md](../proxy/README.md)
+- Troubleshooting: [../troubleshooting.md](../troubleshooting.md)

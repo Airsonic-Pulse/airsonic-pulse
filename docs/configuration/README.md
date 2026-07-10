@@ -1,34 +1,13 @@
-# Configures
+# Configuration
 
-Airsonic-Advanced has a number of configuration options.
-You can configure the default options using `Java options` and `environment variables` on the first launch. 
-Additionally, you can modify options by editing the configuration file `airsonic.properties` or through the `web interface`.
+Airsonic-Pulse has a number of configuration options. You can set defaults using `Java options` and `environment variables` on the first launch, and change most options afterwards by editing the `airsonic.properties` configuration file or through the web interface.
 
-Some settings can only be changed by Java options. These settings are not modifiable through the web interface and the airsonic.properties file.
-Please see the [Configure Airsonic using standalone](#configure-airsonic-using-standalone) and [Configure Airsonic using tomcat](#configure-airsonic-using-tomcat) sections for more details.
+Some settings can only be changed with Java options. These are not modifiable through the web interface or the `airsonic.properties` file.
 
 ## airsonic.properties file
 
-Airsonic has some system-wide configuration. These configurations are stored in the airsonic.properties file.
-
-For more details please see this [guide](https://airsonic.github.io/docs/configure/airsonic-properties/).
-
-## Configure Airsonic using standalone
-
-To configure any parameters when running standalone you need to add Java parameters.
-
-These parameters are not modifiable through the web interface.
-
-For more details please see this [guide](https://airsonic.github.io/docs/configure/standalone/).
-
-## Configure Airsonic using tomcat
-
-When using tomcat to run Airsonic some parameters can be set with Java and others need to change the tomcat configuration.
-
-These parameters are not modifiable through the web interface. See below for steps for setting Java Parameters.
-
-For more details please see this [guide](https://airsonic.github.io/docs/configure/tomcat/).
+System-wide configuration is stored in the `airsonic.properties` file in the Airsonic-Pulse home directory. See the [installation guide](../installation/README.md) for where the home directory lives on each platform and how to pass Java options.
 
 ## Detail configuration
 
-see detail configuration [here](./detail.md)
+For the full list of configurable properties — types, defaults, and how each one is set — see [Detail Configuration](./detail.md).
