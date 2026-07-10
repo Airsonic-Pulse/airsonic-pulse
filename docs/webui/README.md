@@ -1,6 +1,6 @@
 # Web UI Features
 
-This document describes the features of the Airsonic Advanced web UI.
+This document describes the features of the Airsonic-Pulse web UI.
 
 ## Contents
 

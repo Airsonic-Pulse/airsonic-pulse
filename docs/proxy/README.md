@@ -1,5 +1,8 @@
 # Setting up a reverse proxy
 
+Note: This page was inherited from the upstream Airsonic-Advanced project and has not yet been validated with Airsonic-Pulse. The content may still be correct, but some details (versions, ports, paths, screenshots) may be outdated. If you want to suggest a specific correction, feel free to [raise it as an issue](https://github.com/Airsonic-Pulse/airsonic-pulse/issues)
+
+
 A reverse proxy is a public-facing web server sitting in front of an internal server such as Airsonic Advanced. The Airsonic Advanced server never communicates with the outside ; instead, the reverse proxy handles all HTTP(S) requests and forwards them to Airsonic Advanced.
 
 This is useful in many ways, such as gathering all web configuration in the same place. It also handles some options (HTTPS) much better than the bundled Airsonic Advanced server or a servlet container such as Tomcat.

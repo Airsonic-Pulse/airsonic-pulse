@@ -1,13 +1,17 @@
 # Setting up jukebox player
 
+Note: This page was inherited from the upstream Airsonic-Advanced project and has not yet been validated with Airsonic-Pulse. The content may still be correct, but some details (versions, ports, paths, screenshots) may be outdated. If you want to suggest a specific correction, feel free to [raise it as an issue](https://github.com/Airsonic-Pulse/airsonic-pulse/issues)
+
 ## Table of content
 
-- [Finding device name](#finding-device-name)
-- [Using sound.properties](#using-soundproperties)
-- [Using Java parameters](#using-java-parameters)
-- [Using Systemd](#using-systemd)
-- [Using Docker](#using-docker)
-- [Use Jukebox with Pulseaudio](#use-jukebox-with-pulseaudio)
+- [Setting up jukebox player](#setting-up-jukebox-player)
+  - [Table of content](#table-of-content)
+  - [Finding device name](#finding-device-name)
+  - [Using sound.properties](#using-soundproperties)
+  - [Using Java parameters](#using-java-parameters)
+  - [Using Systemd](#using-systemd)
+  - [Using Docker](#using-docker)
+  - [Use Jukebox with Pulseaudio](#use-jukebox-with-pulseaudio)
 
 Jukebox might not always work out-of-the-box and may require some additional tweaking. If you get no sound output while trying to play via the Jukebox, you might need to tweak the audio device being picked up by Java sound.
 

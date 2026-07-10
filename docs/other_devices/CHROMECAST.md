@@ -1,3 +1,7 @@
+# Chromecast
+
+Note: This page was inherited from the upstream Airsonic-Advanced project and has not yet been validated with Airsonic-Pulse. The content may still be correct, but some details (versions, ports, paths, screenshots) may be outdated. If you want to suggest a specific correction, feel free to [raise it as an issue](https://github.com/Airsonic-Pulse/airsonic-pulse/issues)
+
 Several issues may dog Chromecast usage.
 
 This is intended as an informational reference.

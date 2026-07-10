@@ -18,7 +18,7 @@ You do not need to download or add any JDBC driver. The WAR ships with the HSQLD
 
 ## How the configuration works
 
-Set these four properties. `driver-class-name` is optional; the server infers the driver from the URL scheme, so in practice you set the URL, username, and password.
+Set these four properties. `driver-class-name` is optional; the server infers the driver from the URL scheme, so you set only the URL, username, and password.
 
 ```
 spring.datasource.url=...
@@ -108,7 +108,7 @@ You should not set these. They are managed internally or were dropped:
 - **User-table quoting** is applied per engine automatically. `DatabaseUsertableQuote` and `spring.liquibase.parameters.userTableQuote` are obsolete and ignored.
 - **`DatabaseConfigType`** from the old Airsonic property scheme is dropped. There is no config-type switch; the engine is determined by your datasource URL.
 
-If you are upgrading from an old Airsonic or Airsonic-Advanced install, the legacy embedded-database keys are migrated automatically on startup: `DatabaseConfigEmbedDriver`, `DatabaseConfigEmbedUrl`, `DatabaseConfigEmbedUsername`, and `DatabaseConfigEmbedPassword` are mapped to their `spring.datasource.*` equivalents. You can leave them in place, but the modern names are preferred for new installs.
+If you are upgrading from an old Airsonic or Airsonic-Advanced install, the legacy embedded-database keys are migrated automatically on startup: `DatabaseConfigEmbedDriver`, `DatabaseConfigEmbedUrl`, `DatabaseConfigEmbedUsername`, and `DatabaseConfigEmbedPassword` are mapped to their `spring.datasource.*` equivalents. You can leave them in place, but prefer the modern names for new installs.
 
 ---
 

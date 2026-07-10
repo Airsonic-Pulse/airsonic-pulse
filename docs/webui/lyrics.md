@@ -1,6 +1,6 @@
 # Lyrics
 
-Airsonic Advanced supports lyrics from the following sources.
+Airsonic-Pulse supports lyrics from the following sources.
 
 1. Search from `chartlyrics.com` (Legacy Support)
 2. LRC files
@@ -27,17 +27,17 @@ I -- No --> J[Show lyrics not found]
 ```
 ## Searching Lyrics via `chartlyrics.com`
 
-Airsonic Advanced allows you to search for lyrics on `chartlyrics.com` using the song's title and artist name. This feature is mainly intended for legacy support, as the site may not always provide the most up-to-date lyrics.
+Airsonic-Pulse allows you to search for lyrics on `chartlyrics.com` using the song's title and artist name. This feature is mainly intended for legacy support, as the site may not always provide the most up-to-date lyrics.
 
 When you open the lyrics window, you will see a page where you can enter the artist name and song title into the provided text fields.   
-After clicking the search button, Airsonic Advanced will attempt to find the lyrics from `chartlyrics.com`. If lyrics are found, they will be displayed and automatically saved to the database.
+After clicking the search button, Airsonic-Pulse will attempt to find the lyrics from `chartlyrics.com`. If lyrics are found, they will be displayed and automatically saved to the database.
 
 ![lyrics-search](../figures/webui-lyrics-search.png)
 
 
 ## Searching Lyrics via LRC Files
 
-Airsonic Advanced can display lyrics from LRC files.  
+Airsonic-Pulse can display lyrics from LRC files.  
 To use this feature, place an LRC file in the same directory as your music file, ensuring the filename matches exactly except for the extension. For example, `song.mp3` should have a corresponding `song.lrc` or `song.LRC`.
 
 ### Examples of Supported LRC Files
