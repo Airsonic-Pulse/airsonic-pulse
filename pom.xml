@@ -28,7 +28,7 @@
         <cxf.version>4.1.3</cxf.version>
         <snakeyaml.version>2.4</snakeyaml.version>
         <lucene.version>10.4.0</lucene.version>
-        <logback.version>1.5.25</logback.version>
+        <logback.version>1.5.35</logback.version>
         <docker.container.repo>ghcr.io/airsonic-pulse/airsonic-pulse</docker.container.repo>
         <airsonic.project.url>https://github.com/Airsonic-Pulse/airsonic-pulse</airsonic.project.url>
     </properties>
