@@ -736,10 +736,10 @@ public class MediaFile {
         } else if (!path.equals(other.path)) {
             return false;
         }
-        if (!folder.equals(other.folder)) {
+        if (!Objects.equals(this.folder, other.folder)) {
             return false;
         }
-        if (!startPosition.equals(other.startPosition)) {
+        if (!Objects.equals(this.startPosition, other.startPosition)) {
             return false;
         }
         return true;
