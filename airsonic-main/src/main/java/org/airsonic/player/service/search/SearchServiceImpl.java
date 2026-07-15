@@ -31,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.function.BiConsumer;
 
@@ -49,8 +50,7 @@ public class SearchServiceImpl implements SearchService {
     @Autowired
     private SearchServiceUtilities util;
 
-    // TODO Should be changed to SecureRandom?
-    private final Random random = new Random(System.currentTimeMillis());
+    private final SecureRandom random = new SecureRandom();
 
     /**
      * Extracts the integer value from a TotalHits string.
