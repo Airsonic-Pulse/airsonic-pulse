@@ -1179,7 +1179,9 @@ public class MediaFileService {
                     track.setFormat(base.getFormat());
                     track.setMusicBrainzRecordingId(base.getMusicBrainzRecordingId());
                     track.setMusicBrainzReleaseId(base.getMusicBrainzReleaseId());
-                    long estimatedSize = (long) (duration / base.getDuration() * Files.size(audioFile));
+                    Double baseDuration = base.getDuration();
+                    double wholeFileLength = baseDuration != null ? baseDuration : 0.0;
+                    long estimatedSize = (long) (duration / wholeFileLength * Files.size(audioFile));
                     if (estimatedSize > 0 && estimatedSize < Files.size(audioFile)) {
                         track.setFileSize(estimatedSize);
                     } else {
@@ -1224,7 +1226,8 @@ public class MediaFileService {
 
             Path audioFile = base.getFullPath();
             long wholeFileSize = Files.size(audioFile);
-            double wholeFileLength = base.getDuration();
+            Double baseDuration = base.getDuration();
+            double wholeFileLength = baseDuration != null ? baseDuration : 0.0;
 
             String basePath = base.getPath();
             String parentPath = base.getParentPath();
