@@ -74,15 +74,15 @@ public class JaudiotaggerParserTestCase {
         assertEquals("-7.50 dB", JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_TRACK_GAIN));
     }
 
-    private static Mp4Tag mp4TagWithItunesFreeform(String descriptorLower, String value) {
+    private static Mp4Tag mp4TagWithItunesFreeform(String descriptor, String value) {
         Mp4Tag tag = new Mp4Tag();
         // jaudiotagger's 4-string Mp4TagReverseDnsField(id, issuer, descriptor, content) sets
         // the field's id directly to the first argument (the iTunes reverse-DNS atom name);
-        // that's what Mp4Tag.getFields(String) matches against and what
-        // JaudiotaggerParser.getReplayGainField composes its lookup key for.
-        String id = JaudiotaggerParser.MP4_ITUNES_FREEFORM_PREFIX + descriptorLower;
+        // that's the id JaudiotaggerParser.getReplayGainField compares its composed atom name
+        // against when it walks the tag's fields.
+        String id = JaudiotaggerParser.MP4_ITUNES_FREEFORM_PREFIX + descriptor;
         Mp4TagReverseDnsField field = new Mp4TagReverseDnsField(id, "com.apple.iTunes",
-                descriptorLower, value);
+                descriptor, value);
         tag.addField(field);
         return tag;
     }
@@ -95,9 +95,34 @@ public class JaudiotaggerParserTestCase {
     }
 
     @Test
+    public void testGetReplayGainFieldMp4AtomMatchIsCaseInsensitive() {
+        // fixes #251: the MP4 branch used to demand an exact lowercase atom name, so a tagger
+        // that capitalized the descriptor was silently missed. The ID3v2 TXXX branch has always
+        // matched case-insensitively; this asserts the MP4 branch now does too.
+        Mp4Tag tag = mp4TagWithItunesFreeform("replaygain_Track_gain", "-6.50 dB");
+        assertEquals("-6.50 dB",
+                JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_TRACK_GAIN));
+    }
+
+    @Test
+    public void testGetReplayGainFieldMp4AtomInUpperCaseResolves() {
+        Mp4Tag tag = mp4TagWithItunesFreeform("REPLAYGAIN_ALBUM_GAIN", "-4.25 dB");
+        assertEquals("-4.25 dB",
+                JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_ALBUM_GAIN));
+    }
+
+    @Test
     public void testGetReplayGainFieldMp4MissingAtomReturnsNull() {
         Mp4Tag tag = mp4TagWithItunesFreeform("replaygain_track_gain", "-7.50 dB");
         assertNull(JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_ALBUM_PEAK));
+    }
+
+    @Test
+    public void testGetReplayGainFieldMp4UnrelatedAtomIsNotMatched() {
+        // Widening to case-insensitive must not widen to substring/prefix matching: an atom whose
+        // descriptor merely resembles the target must still miss.
+        Mp4Tag tag = mp4TagWithItunesFreeform("replaygain_track_gain_ratio", "-7.50 dB");
+        assertNull(JaudiotaggerParser.getReplayGainField(tag, MetaDataParser.RG_TRACK_GAIN));
     }
 
     // parseR128GainQ78 itself was lifted to MetaDataParser (so FFmpegParser can reuse the
