@@ -409,7 +409,8 @@ public class JaudiotaggerParser extends MetaDataParser {
      * {@link FieldKey}, so it is read directly: from ID3v2 it lives in a TXXX frame keyed by a
      * (case-insensitive) description; Vorbis comments (FLAC/Ogg/Opus) expose it as a plain
      * keyed field; MP4 stores it as an iTunes-style reverse-DNS freeform atom keyed by the
-     * lowercase descriptor under {@link #MP4_ITUNES_FREEFORM_PREFIX}.
+     * (conventionally lowercase) descriptor under {@link #MP4_ITUNES_FREEFORM_PREFIX}, matched
+     * case-insensitively here so a tagger that capitalizes the descriptor still resolves.
      */
     static String getReplayGainField(Tag tag, String name) {
         try {
@@ -427,12 +428,13 @@ public class JaudiotaggerParser extends MetaDataParser {
                 return null;
             }
             if (tag instanceof Mp4Tag mp4) {
-                List<TagField> fields = mp4.getFields(MP4_ITUNES_FREEFORM_PREFIX + name.toLowerCase());
-                if (fields != null) {
-                    for (TagField field : fields) {
-                        if (field instanceof Mp4TagReverseDnsField rdns) {
-                            return StringUtils.trimToNull(rdns.getContent());
-                        }
+                String atomId = MP4_ITUNES_FREEFORM_PREFIX + name;
+                Iterator<TagField> it = mp4.getFields();
+                while (it.hasNext()) {
+                    TagField field = it.next();
+                    if (field instanceof Mp4TagReverseDnsField rdns
+                            && atomId.equalsIgnoreCase(rdns.getId())) {
+                        return StringUtils.trimToNull(rdns.getContent());
                     }
                 }
                 return null;
