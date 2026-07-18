@@ -44,7 +44,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -295,6 +297,61 @@ public class MediaFileServiceTest {
         List<MediaFile> actual = ReflectionTestUtils.invokeMethod(mediaFileService, "createIndexedTracks", base, cueSheet);
 
         assertTrue(actual.isEmpty());
+    }
+
+    @Test
+    public void createIndexedTracksNullBaseDurationSkipsBlockWithoutNpe() {
+        // #289: the eager unbox of base.getDuration() aborted the whole FILE block with an NPE when the
+        // base file's duration was null (unparsed). The 0.0-sentinel guard removes the NPE; the
+        // pre-existing line-1245 guard (lastTrackStart >= wholeFileLength) then fires against the 0.0
+        // length and the block is skipped gracefully — empty result, index path cleared — rather than
+        // crashing the scan. The tracks reappear on a later scan once the base duration parses.
+        CueSheet cueSheet = new CueSheet();
+        cueSheet.setTitle("Album");
+        cueSheet.setPerformer("Album Artist");
+
+        FileData fileData = new FileData(cueSheet, "piano.mp3", "MP3");
+        fileData.getTrackData().add(createTrack(fileData, 1, "Sole Track", 0, 5, 0));
+        cueSheet.getFileData().add(fileData);
+
+        MediaFile base = cueBase();
+        base.setDuration(null);
+        when(mediaFileRepository.findByFolderAndPath(any(), eq("piano.mp3"))).thenReturn(List.of());
+        when(mediaFileRepository.findByPathAndFolderAndStartPosition(any(), any(), any())).thenReturn(Optional.empty());
+        when(musicFileInfoRepository.findByPath(any())).thenReturn(Optional.empty());
+
+        List<MediaFile> actual = assertDoesNotThrow(
+                () -> ReflectionTestUtils.<List<MediaFile>>invokeMethod(mediaFileService, "createIndexedTracks", base, cueSheet));
+
+        // block skipped gracefully: no tracks, and the base's index path is cleared (1245 side effect)
+        assertTrue(actual.isEmpty());
+        assertNull(base.getIndexPath());
+    }
+
+    @Test
+    public void createIndexedTracksNonNullBaseDurationStillMaterialises() {
+        // Sanity counterpart to the null-base case: with a known base duration the line-1245 guard does
+        // NOT fire, so the block materialises normally with a non-null computed duration. Proves the
+        // 0.0-sentinel guard only degrades the degenerate null case and leaves the happy path intact.
+        CueSheet cueSheet = new CueSheet();
+        cueSheet.setTitle("Album");
+        cueSheet.setPerformer("Album Artist");
+
+        FileData fileData = new FileData(cueSheet, "piano.mp3", "MP3");
+        fileData.getTrackData().add(createTrack(fileData, 1, "Sole Track", 0, 5, 0));
+        cueSheet.getFileData().add(fileData);
+
+        MediaFile base = cueBase();
+        when(mediaFileRepository.findByFolderAndPath(any(), eq("piano.mp3"))).thenReturn(List.of());
+        when(mediaFileRepository.findByPathAndFolderAndStartPosition(any(), any(), any())).thenReturn(Optional.empty());
+        when(musicFileInfoRepository.findByPath(any())).thenReturn(Optional.empty());
+
+        List<MediaFile> actual = ReflectionTestUtils.invokeMethod(mediaFileService, "createIndexedTracks", base, cueSheet);
+
+        assertEquals(1, actual.size());
+        assertNotNull(actual.get(0).getDuration());
+        // file length (30.0) - start (5.0) = 25.0
+        assertEquals(25.0d, actual.get(0).getDuration(), 0.001d);
     }
 
     private MediaFile cueBase() {
