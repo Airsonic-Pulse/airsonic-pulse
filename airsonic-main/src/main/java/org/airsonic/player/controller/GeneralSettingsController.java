@@ -70,6 +70,7 @@ public class GeneralSettingsController {
         command.setVideoFileTypes(settingsService.getVideoFileTypes());
         command.setSortAlbumsByYear(settingsService.isSortAlbumsByYear());
         command.setGettingStartedEnabled(settingsService.isGettingStartedEnabled());
+        command.setShowVersionOnLogin(settingsService.isShowVersionOnLogin());
         command.setWelcomeTitle(settingsService.getWelcomeTitle());
         command.setWelcomeSubtitle(settingsService.getWelcomeSubtitle());
         command.setWelcomeMessage(settingsService.getWelcomeMessage());
@@ -133,6 +134,7 @@ public class GeneralSettingsController {
         settingsService.setCoverArtQuality(command.getCoverArtQuality());
         settingsService.setSortAlbumsByYear(command.isSortAlbumsByYear());
         settingsService.setGettingStartedEnabled(command.isGettingStartedEnabled());
+        settingsService.setShowVersionOnLogin(command.isShowVersionOnLogin());
         settingsService.setWelcomeTitle(command.getWelcomeTitle());
         settingsService.setWelcomeSubtitle(command.getWelcomeSubtitle());
         settingsService.setWelcomeMessage(command.getWelcomeMessage());

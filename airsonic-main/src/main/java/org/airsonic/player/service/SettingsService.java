@@ -115,6 +115,7 @@ public class SettingsService {
     private static final String KEY_SETTINGS_CHANGED = "SettingsChanged";
     private static final String KEY_ORGANIZE_BY_FOLDER_STRUCTURE = "OrganizeByFolderStructure";
     private static final String KEY_SORT_ALBUMS_BY_YEAR = "SortAlbumsByYear";
+    private static final String KEY_SHOW_VERSION_ON_LOGIN = "ShowVersionOnLogin";
     private static final String KEY_DLNA_ENABLED = "DlnaEnabled";
     private static final String KEY_DLNA_SERVER_NAME = "DlnaServerName";
     private static final String KEY_DLNA_SERVER_ID = "DlnaServerId";
@@ -222,6 +223,7 @@ public class SettingsService {
     private static final long DEFAULT_SETTINGS_CHANGED = 0L;
     private static final boolean DEFAULT_ORGANIZE_BY_FOLDER_STRUCTURE = true;
     private static final boolean DEFAULT_SORT_ALBUMS_BY_YEAR = true;
+    private static final boolean DEFAULT_SHOW_VERSION_ON_LOGIN = true;
     private static final boolean DEFAULT_DLNA_ENABLED = false;
     private static final String DEFAULT_DLNA_SERVER_NAME = "Airsonic";
     private static final String DEFAULT_DLNA_SERVER_ID = null;
@@ -1145,6 +1147,19 @@ public class SettingsService {
 
     public void setSortAlbumsByYear(boolean b) {
         setBoolean(KEY_SORT_ALBUMS_BY_YEAR, b);
+    }
+
+    /**
+     * Whether the login screen displays the running version and build timestamp. Defaults to
+     * on for support and troubleshooting value; operators who prefer not to advertise the
+     * version pre-authentication can turn it off in general settings.
+     */
+    public boolean isShowVersionOnLogin() {
+        return getBoolean(KEY_SHOW_VERSION_ON_LOGIN, DEFAULT_SHOW_VERSION_ON_LOGIN);
+    }
+
+    public void setShowVersionOnLogin(boolean b) {
+        setBoolean(KEY_SHOW_VERSION_ON_LOGIN, b);
     }
 
     public boolean getIgnoreSymLinks() {

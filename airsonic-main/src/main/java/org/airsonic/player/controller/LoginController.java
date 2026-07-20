@@ -2,6 +2,7 @@ package org.airsonic.player.controller;
 
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
+import org.airsonic.player.service.VersionService;
 import org.airsonic.player.util.StringUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -28,6 +29,8 @@ public class LoginController {
     private SecurityService securityService;
     @Autowired
     private SettingsService settingsService;
+    @Autowired
+    private VersionService versionService;
 
     @GetMapping
     public ModelAndView login(HttpServletRequest request, HttpServletResponse response) {
@@ -49,6 +52,15 @@ public class LoginController {
         map.put("error", request.getParameter("error") != null);
         map.put("brand", settingsService.getBrand());
         map.put("loginMessage", settingsService.getLoginMessage());
+
+        // Version under the logo, gated by the admin-only toggle. The display version already
+        // embeds the build timestamp, so no separate build date is exposed. Read here rather
+        // than in the template so the pre-authentication view stays free of service lookups.
+        boolean showVersion = settingsService.isShowVersionOnLogin();
+        map.put("showVersion", showVersion);
+        if (showVersion) {
+            map.put("displayVersion", versionService.getDisplayVersion());
+        }
 
         if (securityService.checkDefaultAdminCredsPresent()) {
             map.put("insecure", true);

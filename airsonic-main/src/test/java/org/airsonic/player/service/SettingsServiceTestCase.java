@@ -119,6 +119,7 @@ public class SettingsServiceTestCase {
         assertEquals("30m", settingsService.getSessionDuration());
         assertEquals(true, settingsService.getEnableCueIndexing());
         assertEquals(true, settingsService.getHideVirtualTracks());
+        assertTrue(settingsService.isShowVersionOnLogin());
     }
 
     @Test
@@ -147,6 +148,7 @@ public class SettingsServiceTestCase {
         settingsService.setLdapAutoShadowing(true);
         settingsService.setEnableCueIndexing(false);
         settingsService.setHideVirtualTracks(false);
+        settingsService.setShowVersionOnLogin(false);
 
         verifySettings(settingsService);
 
@@ -185,6 +187,7 @@ public class SettingsServiceTestCase {
         assertTrue(settingsService.isLdapAutoShadowing());
         assertFalse(settingsService.getEnableCueIndexing());
         assertFalse(settingsService.getHideVirtualTracks());
+        assertFalse(ss.isShowVersionOnLogin());
     }
 
     @Test

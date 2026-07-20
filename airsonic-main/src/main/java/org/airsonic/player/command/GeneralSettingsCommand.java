@@ -43,6 +43,7 @@ public class GeneralSettingsCommand {
     private String shortcuts;
     private boolean sortAlbumsByYear;
     private boolean gettingStartedEnabled;
+    private boolean showVersionOnLogin;
     private String welcomeTitle;
     private String welcomeSubtitle;
     private String welcomeMessage;
@@ -230,6 +231,14 @@ public class GeneralSettingsCommand {
 
     public void setGettingStartedEnabled(boolean gettingStartedEnabled) {
         this.gettingStartedEnabled = gettingStartedEnabled;
+    }
+
+    public boolean isShowVersionOnLogin() {
+        return showVersionOnLogin;
+    }
+
+    public void setShowVersionOnLogin(boolean showVersionOnLogin) {
+        this.showVersionOnLogin = showVersionOnLogin;
     }
 
 }
