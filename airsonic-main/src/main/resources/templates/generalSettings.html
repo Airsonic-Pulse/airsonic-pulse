@@ -152,6 +152,14 @@
                 <label th:for="${#ids.prev('gettingStartedEnabled')}" th:text="#{generalsettings.showgettingstarted}"></label>
             </td>
         </tr>
+        <tr>
+            <td>
+            </td>
+            <td>
+                <input type="checkbox" th:field="*{showVersionOnLogin}"/>
+                <label th:for="${#ids.prev('showVersionOnLogin')}" th:text="#{generalsettings.showversiononlogin}"></label>
+            </td>
+        </tr>
 
         <tr><td colspan="2">&nbsp;</td></tr>
 

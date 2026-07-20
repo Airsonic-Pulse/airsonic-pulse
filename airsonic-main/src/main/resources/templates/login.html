@@ -15,6 +15,9 @@
 
             <img th:src="${themes?.get('logoImage') ?: 'icons/default_light/logo.png'}" alt="">
 
+            <div class="detail" th:if="${model.showVersion}" th:with="unknownLabel=#{common.unknown}"
+                 th:text="${#strings.isEmpty(model.displayVersion) ? unknownLabel : model.displayVersion}"></div>
+
             <div class="loginmessagetop" th:text="${model.loginMessage}"></div>
 
             <input required type="text" autofocus id="j_username" name="j_username" tabindex="1"
