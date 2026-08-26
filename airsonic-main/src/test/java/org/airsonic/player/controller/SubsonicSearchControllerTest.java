@@ -21,7 +21,10 @@ package org.airsonic.player.controller;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.SearchCriteria;
 import org.airsonic.player.domain.SearchResult;
+import org.airsonic.player.service.AlbumService;
+import org.airsonic.player.service.ArtistService;
 import org.airsonic.player.service.JaxbContentService;
+import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.SearchService;
@@ -44,6 +47,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
@@ -69,11 +73,22 @@ class SubsonicSearchControllerTest {
     private PlayerService playerService;
     @Mock
     private org.airsonic.player.controller.JAXBWriter jaxbWriter;
+    @Mock
+    private ArtistService artistService;
+    @Mock
+    private AlbumService albumService;
+    @Mock
+    private MediaFileService mediaFileService;
 
     private SubsonicSearchController controller;
 
     // (count, offset) snapshotted at each searchService.search invocation.
     private final List<int[]> searchArgs = new ArrayList<>();
+
+    // (count, offset) received by the search3 empty-query database enumeration (#333).
+    private final List<int[]> artistArgs = new ArrayList<>();
+    private final List<int[]> albumArgs = new ArrayList<>();
+    private final List<int[]> songArgs = new ArrayList<>();
 
     @BeforeEach
     void setUp() throws Exception {
@@ -84,6 +99,9 @@ class SubsonicSearchControllerTest {
         ReflectionTestUtils.setField(controller, "jaxbContentService", jaxbContentService);
         ReflectionTestUtils.setField(controller, "playerService", playerService);
         ReflectionTestUtils.setField(controller, "jaxbWriter", jaxbWriter);
+        ReflectionTestUtils.setField(controller, "artistService", artistService);
+        ReflectionTestUtils.setField(controller, "albumService", albumService);
+        ReflectionTestUtils.setField(controller, "mediaFileService", mediaFileService);
 
         when(securityService.getCurrentUsername(any())).thenReturn("alice");
         when(playerService.getPlayersForUserAndClientId(any(), any())).thenReturn(List.of(new Player()));
@@ -95,6 +113,18 @@ class SubsonicSearchControllerTest {
             SearchCriteria c = invocation.getArgument(0);
             searchArgs.add(new int[] {c.getCount(), c.getOffset()});
             return new SearchResult();
+        });
+        when(artistService.getArtists(any(), anyInt(), anyInt())).thenAnswer(invocation -> {
+            artistArgs.add(new int[] {invocation.getArgument(1), invocation.getArgument(2)});
+            return List.of();
+        });
+        when(albumService.getAlbums(any(), anyInt(), anyInt())).thenAnswer(invocation -> {
+            albumArgs.add(new int[] {invocation.getArgument(1), invocation.getArgument(2)});
+            return List.of();
+        });
+        when(mediaFileService.getSongs(any(), anyInt(), anyInt())).thenAnswer(invocation -> {
+            songArgs.add(new int[] {invocation.getArgument(1), invocation.getArgument(2)});
+            return List.of();
         });
     }
 
@@ -187,6 +217,86 @@ class SubsonicSearchControllerTest {
 
         assertThat(searchArgs.get(0)[0]).isEqualTo(100);
         assertThat(searchArgs.get(0)[1]).isEqualTo(40);
+    }
+
+    @Test
+    void search3_emptyQuery_passesDeepOffsetsToDatabaseEnumeration() throws Exception {
+        // #333: the empty-query branch enumerates the database (SQL OFFSET), where a deep offset
+        // is legitimate pagination, not a Lucene allocation. Clamping it to 500 made every page
+        // beyond 500 return the same slice, stalling full-library scans (Symfonium pages in
+        // 500-entry slices).
+        MockHttpServletRequest request = req();
+        request.setParameter("query", "\"\"");
+        request.setParameter("artistCount", "500");
+        request.setParameter("artistOffset", "2000");
+        request.setParameter("albumCount", "500");
+        request.setParameter("albumOffset", "2000");
+        request.setParameter("songCount", "500");
+        request.setParameter("songOffset", "2000");
+
+        controller.search3(request, new MockHttpServletResponse());
+
+        assertThat(searchArgs).isEmpty();   // never reaches Lucene
+        assertThat(artistArgs).containsExactly(new int[] {500, 2000});
+        assertThat(albumArgs).containsExactly(new int[] {500, 2000});
+        assertThat(songArgs).containsExactly(new int[] {500, 2000});
+    }
+
+    @Test
+    void search3_emptyQuery_abusiveOffsetDoesNotThrow() throws Exception {
+        // OffsetBasedPageRequest stores the offset as a long and performs no int arithmetic on
+        // it, so Integer.MAX_VALUE passes through safely — the enumeration bound is
+        // non-negative only.
+        MockHttpServletRequest request = req();
+        request.setParameter("query", "\"\"");
+        request.setParameter("artistCount", "500");
+        request.setParameter("artistOffset", String.valueOf(Integer.MAX_VALUE));
+        request.setParameter("albumCount", "500");
+        request.setParameter("albumOffset", String.valueOf(Integer.MAX_VALUE));
+        request.setParameter("songCount", "500");
+        request.setParameter("songOffset", String.valueOf(Integer.MAX_VALUE));
+
+        controller.search3(request, new MockHttpServletResponse());
+
+        assertThat(artistArgs).containsExactly(new int[] {500, Integer.MAX_VALUE});
+        assertThat(albumArgs).containsExactly(new int[] {500, Integer.MAX_VALUE});
+        assertThat(songArgs).containsExactly(new int[] {500, Integer.MAX_VALUE});
+    }
+
+    @Test
+    void search3_emptyQuery_negativeOffsetFloorsToZero() throws Exception {
+        MockHttpServletRequest request = req();
+        request.setParameter("query", "\"\"");
+        request.setParameter("artistCount", "500");
+        request.setParameter("artistOffset", "-100");
+        request.setParameter("albumCount", "500");
+        request.setParameter("albumOffset", "-100");
+        request.setParameter("songCount", "500");
+        request.setParameter("songOffset", "-100");
+
+        controller.search3(request, new MockHttpServletResponse());
+
+        assertThat(artistArgs).containsExactly(new int[] {500, 0});
+        assertThat(albumArgs).containsExactly(new int[] {500, 0});
+        assertThat(songArgs).containsExactly(new int[] {500, 0});
+    }
+
+    @Test
+    void search3_withQuery_offsetStillClampedTo500() throws Exception {
+        // The Lucene branch keeps the #262/#285 policy untouched: offset and count both bounded
+        // to 500, capping the offset+count TopDocs allocation.
+        MockHttpServletRequest request = req();
+        request.setParameter("query", "anything");
+        request.setParameter("artistCount", "500");
+        request.setParameter("artistOffset", "2000");
+
+        controller.search3(request, new MockHttpServletResponse());
+
+        assertThat(searchArgs).hasSize(3);
+        assertThat(searchArgs.get(0)[1]).isEqualTo(500);   // artist criteria is first in search3
+        assertThat(artistArgs).isEmpty();
+        assertThat(albumArgs).isEmpty();
+        assertThat(songArgs).isEmpty();
     }
 
     @Test
