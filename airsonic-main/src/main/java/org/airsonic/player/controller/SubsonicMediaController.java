@@ -50,7 +50,13 @@ import java.util.List;
 import java.util.Optional;
 
 @Controller
-@RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
+// Maps /rest only, unlike the other Subsonic controllers' {"/rest", "/ext"}: the wrapped
+// binary controllers self-register their /ext/* routes (StreamController maps /ext/stream,
+// HLSController /ext/hls/**), and a second /ext/stream registration here made Spring throw
+// "Ambiguous handler methods mapped" on every JWT stream request — external players, UPnP,
+// Sonos, shares (#325). No server-issued JWT URL targets /ext/<subsonic-name>, so nothing
+// legitimate resolves through an /ext prefix on this controller.
+@RequestMapping(value = "/rest", method = {RequestMethod.GET, RequestMethod.POST})
 public class SubsonicMediaController extends AbstractSubsonicController {
 
     @Autowired
