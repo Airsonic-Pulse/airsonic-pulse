@@ -2,7 +2,7 @@ name: "CI - Pull Request"
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, 'release/**']
     paths-ignore:
       - "contrib/**"
 env:
