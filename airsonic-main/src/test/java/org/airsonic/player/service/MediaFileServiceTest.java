@@ -25,6 +25,7 @@ import org.airsonic.player.repository.MediaFileRepository;
 import org.airsonic.player.repository.MusicFileInfoRepository;
 import org.airsonic.player.service.cache.MediaFileCache;
 import org.airsonic.player.service.metadata.MetaDataParserFactory;
+import org.airsonic.player.util.FileUtil;
 import org.digitalmediaserver.cuelib.CueSheet;
 import org.digitalmediaserver.cuelib.FileData;
 import org.digitalmediaserver.cuelib.Index;
@@ -33,6 +34,7 @@ import org.digitalmediaserver.cuelib.TrackData;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -43,6 +45,7 @@ import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -419,5 +422,61 @@ public class MediaFileServiceTest {
         // Cross-frame multi-value: two frames, one numeric, one text → both mapped, deduped,
         // joined with the primary separator.
         assertEquals("Rock;Metal", mediaFileService.packGenres(List.of("(17)", "Metal")));
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // media_file.version write-back (#341): a VERSION bump flags every older row for one
+    // re-parse, and the re-parse must stamp the new version onto the row it saves — otherwise
+    // the row stays below VERSION forever and every scan is a full re-parse.
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    public void updateMediaFileByFile_stampsCurrentVersionOnReparsedRow() {
+        MediaFile mediaFile = new MediaFile();
+        mediaFile.setId(7);
+        mediaFile.setPath("piano.mp3");
+        mediaFile.setFolder(mockedFolder);
+        // a row written by an older release: stored version below current
+        ReflectionTestUtils.setField(mediaFile, "version", MediaFile.VERSION - 1);
+
+        when(mockedFolder.getId()).thenReturn(1);
+        when(mockedFolder.getType()).thenReturn(MusicFolder.Type.MEDIA);
+        when(mediaFolderService.getMusicFolderForFile(any(), eq(true), eq(true))).thenReturn(Optional.empty());
+        when(metaDataParserFactory.getParser(any())).thenReturn(null);
+        when(settingsService.getVideoFileTypesSet()).thenReturn(Set.of());
+        when(mediaFileRepository.existsById(any())).thenReturn(true);
+
+        mediaFileService.refreshMediaFile(mediaFile);
+
+        ArgumentCaptor<MediaFile> saved = ArgumentCaptor.forClass(MediaFile.class);
+        verify(mediaFileRepository).save(saved.capture());
+        assertEquals(MediaFile.VERSION, saved.getValue().getVersion());
+    }
+
+    @Test
+    public void needsUpdate_skipsRowAtCurrentVersionWithUnchangedFile() {
+        MediaFile mediaFile = new MediaFile();   // entity default: version == MediaFile.VERSION
+        mediaFile.setPath("piano.mp3");
+        mediaFile.setFolder(mockedFolder);
+        mediaFile.setChanged(FileUtil.lastModified(mediaFile.getFullPath()));
+
+        when(settingsService.getFullScan()).thenReturn(false);
+
+        Boolean result = ReflectionTestUtils.invokeMethod(mediaFileService, "needsUpdate", mediaFile, false);
+        assertEquals(Boolean.FALSE, result);
+    }
+
+    @Test
+    public void needsUpdate_reparsesRowBelowCurrentVersion() {
+        MediaFile mediaFile = new MediaFile();
+        mediaFile.setPath("piano.mp3");
+        mediaFile.setFolder(mockedFolder);
+        mediaFile.setChanged(FileUtil.lastModified(mediaFile.getFullPath()));
+        ReflectionTestUtils.setField(mediaFile, "version", MediaFile.VERSION - 1);
+
+        // no getFullScan stub: version < VERSION short-circuits the OR before the setting is read
+
+        Boolean result = ReflectionTestUtils.invokeMethod(mediaFileService, "needsUpdate", mediaFile, false);
+        assertEquals(Boolean.TRUE, result);
     }
 }

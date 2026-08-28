@@ -697,6 +697,16 @@ public class MediaFile {
         return version;
     }
 
+    /**
+     * Stamps the row with the current schema {@link #VERSION}. Must be called by every
+     * re-parse path before the row is saved — a bumped VERSION flags older rows for one
+     * re-read, and without the stamp the row stays below VERSION forever, turning every
+     * scan into a full re-parse (#341).
+     */
+    public void markCurrentVersion() {
+        this.version = VERSION;
+    }
+
     public Double getAverageRating() {
         return averageRating;
     }
@@ -765,6 +775,11 @@ public class MediaFile {
 
     public static final double NOT_INDEXED = -1.0;
 
+    /**
+     * Media-file schema version. Bumping it makes {@code needsUpdate} re-parse every row once;
+     * the re-parse stamps the new value via {@link #markCurrentVersion()} — without that stamp
+     * the bump never settles and every scan re-parses the whole library.
+     */
     public static final int VERSION = 5;
 
     public static enum MediaType {
