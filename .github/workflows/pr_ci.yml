@@ -43,6 +43,7 @@ jobs:
           --health-retries 5
 
       mariadb:
+        # 11.8 is the current LTS, needs to be a controlled update when the LTS changes
         image: ${{ matrix.db == 'mariadb' && 'mariadb:11.8' || '' }}
         ports:
           - 3306:3306
@@ -55,9 +56,7 @@ jobs:
           --health-cmd "healthcheck.sh --connect --innodb_initialized"
           --health-interval 10s
           --health-timeout 5s
-          --health-retries 5
-        # 11.8 is the current LTS; 
-        image: ${{ matrix.db == 'mariadb' && 'mariadb:11.8' || '' }}
+          --health-retries 5 
     env:
       spring_datasource_url: >-
         ${{ matrix.db == 'postgres'
