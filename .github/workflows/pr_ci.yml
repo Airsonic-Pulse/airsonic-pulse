@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [main, 'release/**']
     paths-ignore:
+      - "**.md"
+      - "*.txt"
+      - "docs/**"
       - "contrib/**"
 env:
   DEFAULT_MUSIC_FOLDER: /tmp/music
@@ -40,7 +43,7 @@ jobs:
           --health-retries 5
 
       mariadb:
-        image: ${{ matrix.db == 'mariadb' && 'mariadb:11-jammy' || '' }}
+        image: ${{ matrix.db == 'mariadb' && 'mariadb:11.8' || '' }}
         ports:
           - 3306:3306
         env:
@@ -53,7 +56,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-
+        # 11.8 is the current LTS; 
+        image: ${{ matrix.db == 'mariadb' && 'mariadb:11.8' || '' }}
     env:
       spring_datasource_url: >-
         ${{ matrix.db == 'postgres'
