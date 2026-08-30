@@ -565,7 +565,10 @@ public class PodcastPersistenceService {
     public boolean deleteChannel(int channelId) {
         // Delete all associated episodes (in case they have files that need to be deleted).
         return podcastChannelRepository.findById(channelId).map(channel -> {
-            podcastEpisodeRepository.findByChannel(channel).parallelStream()
+            // Sequential on purpose: transactions are thread-bound, so parallel workers would run
+            // mediaFileService.delete in their own transactions and commit mid-delete, colliding
+            // with this transaction's flush (#330 — MariaDB snapshot isolation rejects the write).
+            podcastEpisodeRepository.findByChannel(channel).stream()
                 .filter(filterAllowed)
                 .forEach(episode -> {
                     MediaFile mediaFile = episode.getMediaFile();
