@@ -39,8 +39,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,6 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -151,6 +154,50 @@ public class PodcastPersistenceServiceTestCase {
         verify(mediaFileService).delete(mockedMediaFile);
         assertFalse(Files.exists(tempFolder.resolve("test.mp3")));
         assertTrue(actual);
+    }
+
+    @Test
+    void deleteChannelRunsEpisodeDeletesOnCallingThread() throws Exception {
+        // #345: the episode loop used parallelStream(), so mediaFileService.delete ran on
+        // ForkJoin common-pool workers. Transaction context is thread-bound, so those calls
+        // opened their own transactions and committed mid-delete, colliding with the outer
+        // @Transactional's flush (MariaDB snapshot isolation rejects the write with "Record
+        // has changed since last read", #330). This class has no transaction manager, so
+        // thread identity is the proxy for transaction membership: entity work on the calling
+        // thread joins the outer transaction; work on any other thread cannot.
+        int episodeCount = 64;
+        MusicFolder folder = new MusicFolder(1, tempFolder, "podcast", MusicFolder.Type.PODCAST, true, Instant.now());
+        List<PodcastEpisode> episodes = new ArrayList<>();
+        for (int i = 0; i < episodeCount; i++) {
+            MediaFile mediaFile = new MediaFile();
+            mediaFile.setPath("episode-" + i + ".mp3");
+            mediaFile.setFolder(folder);
+            PodcastEpisode episode = new PodcastEpisode();
+            episode.setMediaFile(mediaFile);
+            episodes.add(episode);
+        }
+
+        when(podcastChannelRepository.findById(1)).thenReturn(Optional.of(mockedChannel));
+        when(podcastEpisodeRepository.findByChannel(mockedChannel)).thenReturn(episodes);
+        when(securityService.isReadAllowed(any(MediaFile.class), eq(false))).thenReturn(true);
+        when(mockedChannel.getMediaFile()).thenReturn(null);
+
+        List<String> deleteThreads = Collections.synchronizedList(new ArrayList<>());
+        when(mediaFileService.delete(any(MediaFile.class))).thenAnswer(invocation -> {
+            deleteThreads.add(Thread.currentThread().getName());
+            // brief pause so a parallel stream provably distributes work across pool workers
+            Thread.sleep(1);
+            return invocation.getArgument(0);
+        });
+
+        boolean actual = podcastService.deleteChannel(1);
+
+        assertTrue(actual);
+        assertEquals(episodeCount, deleteThreads.size());
+        String callingThread = Thread.currentThread().getName();
+        List<String> foreignThreads = deleteThreads.stream().filter(name -> !name.equals(callingThread)).distinct().toList();
+        assertTrue(foreignThreads.isEmpty(),
+                "episode entity deletes must run on the calling thread (outer transaction); ran on: " + foreignThreads);
     }
 
     @Test
