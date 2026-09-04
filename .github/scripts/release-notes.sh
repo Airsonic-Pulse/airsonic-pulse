@@ -4,12 +4,21 @@ set -euo pipefail
 # release-notes.sh — Generate formatted release notes and write to file
 #
 # Usage:
-#   ./scripts/release-notes.sh <release-tag> [since-tag]
+#   ./scripts/release-notes.sh <release-tag> [since-tag] [--dry-run]
 #
 # Behavior:
-#   - Generates the auto-categorized "What's Changed" section from merged PRs
+#   - Generates the auto-categorized "What's Changed" section from the PRs whose
+#     squash commits are reachable from the release ref: the <release-tag> if it
+#     already exists, otherwise HEAD (run it from the release branch before
+#     tagging). PR numbers come from the trailing "(#N)" in each commit subject;
+#     for cherry-picked squashes carrying two references, the last one is the PR
+#     that landed on this ref. Commits without a "(#N)" are skipped with a
+#     warning. This makes the listing correct on release branches, where
+#     selecting merged PRs by date listed main-only PRs (#340).
 #   - Writes to docs/release-notes/<tag>.md
 #   - Also emits the auto section to stdout for piping/preview
+#   - --dry-run: print the generated section to stdout only; no file is
+#     created or modified
 #   - On first run for a tag, creates the file with a title header and marker:
 #       # Airsonic-Pulse <tag>
 #
@@ -41,14 +50,28 @@ set -euo pipefail
 #
 # Requires: gh CLI (authenticated), jq
 
-RELEASE_TAG="${1:-}"
-SINCE_TAG="${2:-}"
+RELEASE_TAG=""
+SINCE_TAG=""
+DRY_RUN=0
+for arg in "$@"; do
+    if [[ "${arg}" == "--dry-run" ]]; then
+        DRY_RUN=1
+    elif [[ -z "${RELEASE_TAG}" ]]; then
+        RELEASE_TAG="${arg}"
+    elif [[ -z "${SINCE_TAG}" ]]; then
+        SINCE_TAG="${arg}"
+    else
+        echo "Error: unexpected argument '${arg}'" >&2
+        exit 1
+    fi
+done
+
 MARKER="<!-- AUTO-GENERATED-BELOW -->"
 NOTES_DIR="docs/release-notes"
 NOTES_FILE="${NOTES_DIR}/${RELEASE_TAG}.md"
 
 if [[ -z "${RELEASE_TAG}" ]]; then
-    echo "Usage: $0 <release-tag> [since-tag]" >&2
+    echo "Usage: $0 <release-tag> [since-tag] [--dry-run]" >&2
     echo "  e.g. $0 v13.1.0 v13.0.0" >&2
     exit 1
 fi
@@ -65,43 +88,44 @@ fi
 
 echo "Generating release notes: ${SINCE_TAG} → ${RELEASE_TAG}" >&2
 
-# Get tag dates for filtering
-MERGE_DATE_SINCE="$(git log -1 --format=%aI "${SINCE_TAG}" 2>/dev/null || echo "")"
-MERGE_DATE_UNTIL="$(git log -1 --format=%aI "${RELEASE_TAG}" 2>/dev/null || echo "")"
-
-if [[ -z "${MERGE_DATE_SINCE}" ]]; then
+if ! git rev-parse --verify --quiet "${SINCE_TAG}^{commit}" > /dev/null; then
     echo "Error: Tag '${SINCE_TAG}' not found." >&2
     exit 1
 fi
 
-# Collect merged PRs via gh CLI
-PRS_JSON="$(gh pr list \
-    --state merged \
-    --base main \
-    --limit 200 \
-    --json number,title,author,mergedAt,body \
-    --jq "sort_by(.number)")"
-
-# Filter PRs merged between the two tags
-if [[ -n "${MERGE_DATE_UNTIL}" ]]; then
-    PRS_FILTERED="$(echo "${PRS_JSON}" | jq -r \
-        --arg since "${MERGE_DATE_SINCE}" \
-        --arg until "${MERGE_DATE_UNTIL}" \
-        '[.[] | select(.mergedAt > $since and .mergedAt <= $until)]')"
+# The release tag usually doesn't exist yet when notes are being prepared; in
+# that case use HEAD (run the script from the release branch). Once the tag
+# exists the script is runnable from anywhere.
+if git rev-parse --verify --quiet "${RELEASE_TAG}^{commit}" > /dev/null; then
+    TARGET_REF="${RELEASE_TAG}"
 else
-    # Tag might not exist yet (preparing notes before tagging)
-    PRS_FILTERED="$(echo "${PRS_JSON}" | jq -r \
-        --arg since "${MERGE_DATE_SINCE}" \
-        '[.[] | select(.mergedAt > $since)]')"
+    TARGET_REF="HEAD"
+    echo "Tag '${RELEASE_TAG}' does not exist yet — using HEAD as the release ref." >&2
 fi
 
-PR_COUNT="$(echo "${PRS_FILTERED}" | jq 'length')"
-echo "Found ${PR_COUNT} merged PRs" >&2
+# Collect the PR number for every commit reachable from the release ref but not
+# from the since tag. The subject's LAST "(#N)" is the PR that landed on this
+# ref (cherry-picked squashes carry the original main PR number earlier in the
+# subject and the branch pick PR last).
+PR_NUMBERS=()
+while IFS=$'\t' read -r commit_hash commit_subject; do
+    LAST_REF="$(grep -oE '\(#[0-9]+\)' <<< "${commit_subject}" | tail -1 || true)"
+    if [[ -z "${LAST_REF}" ]]; then
+        echo "  skipping ${commit_hash} (no PR reference in subject): ${commit_subject}" >&2
+        continue
+    fi
+    LAST_REF="${LAST_REF#(#}"
+    PR_NUMBERS+=("${LAST_REF%)}")
+done < <(git log --format='%h%x09%s' "${SINCE_TAG}..${TARGET_REF}")
 
-if [[ "${PR_COUNT}" -eq 0 ]]; then
-    echo "No merged PRs found between ${SINCE_TAG} and ${RELEASE_TAG}." >&2
+if [[ ${#PR_NUMBERS[@]} -eq 0 ]]; then
+    echo "No PR-referencing commits found between ${SINCE_TAG} and ${TARGET_REF}." >&2
     exit 0
 fi
+
+# Deduplicate and sort ascending (the existing output ordering convention)
+mapfile -t PR_NUMBERS < <(printf '%s\n' "${PR_NUMBERS[@]}" | sort -n -u)
+echo "Found ${#PR_NUMBERS[@]} PRs on ${TARGET_REF} since ${SINCE_TAG}" >&2
 
 # ---------------------------------------------------------------------------
 # Categorization
@@ -177,11 +201,16 @@ declare -a CAT_HARDENING=()
 declare -a CAT_INFRASTRUCTURE=()
 declare -a CAT_MAINTENANCE=()
 
-while IFS= read -r pr_line; do
-    PR_NUM="$(echo "${pr_line}" | jq -r '.number')"
-    PR_TITLE="$(echo "${pr_line}" | jq -r '.title')"
-    PR_AUTHOR="$(echo "${pr_line}" | jq -r '.author.login')"
-    PR_BODY="$(echo "${pr_line}" | jq -r '.body // ""')"
+for PR_NUM in "${PR_NUMBERS[@]}"; do
+    # gh pr view resolves the PR regardless of its base branch, so PRs targeting
+    # release/* directly are handled the same as PRs merged to main.
+    if ! pr_json="$(gh pr view "${PR_NUM}" --json number,title,author,body 2>/dev/null)"; then
+        echo "  skipping #${PR_NUM}: gh pr view failed (not a PR?)" >&2
+        continue
+    fi
+    PR_TITLE="$(echo "${pr_json}" | jq -r '.title')"
+    PR_AUTHOR="$(echo "${pr_json}" | jq -r '.author.login')"
+    PR_BODY="$(echo "${pr_json}" | jq -r '.body // ""')"
 
     ISSUE_NUM=""
     if [[ "${PR_TITLE}" =~ [Ff]ixes[[:space:]]+#([0-9]+) ]]; then
@@ -229,7 +258,7 @@ while IFS= read -r pr_line; do
     esac
 
     echo "  PR #${PR_NUM} → ${CATEGORY}${ISSUE_NUM:+ (issue #${ISSUE_NUM})}" >&2
-done < <(echo "${PRS_FILTERED}" | jq -c '.[]')
+done
 
 # ---------------------------------------------------------------------------
 # Build the auto section
@@ -284,6 +313,12 @@ trap 'rm -f "${AUTO_CONTENT}"' EXIT
 # ---------------------------------------------------------------------------
 # Write to file (creating, updating, or appending as appropriate)
 # ---------------------------------------------------------------------------
+
+if [[ "${DRY_RUN}" -eq 1 ]]; then
+    echo "Dry run — no file written." >&2
+    cat "${AUTO_CONTENT}"
+    exit 0
+fi
 
 mkdir -p "${NOTES_DIR}"
 
