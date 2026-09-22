@@ -590,7 +590,10 @@ public class SonosHelper {
         trackMetadata.setAlbumArtist(song.getAlbumArtist());
         trackMetadata.setAlbum(song.getAlbumName());
         trackMetadata.setAlbumArtURI(albumArtURI);
-        trackMetadata.setDuration((int) Math.round(song.getDuration()));
+        Double duration = song.getDuration();
+        if (duration != null) { // duration is minOccurs="0" in the Sonos WSDL; omit rather than NPE (#322)
+            trackMetadata.setDuration((int) Math.round(duration));
+        }
         trackMetadata.setTrackNumber(song.getTrackNumber());
         trackMetadata.setGenre(song.getGenre());
 

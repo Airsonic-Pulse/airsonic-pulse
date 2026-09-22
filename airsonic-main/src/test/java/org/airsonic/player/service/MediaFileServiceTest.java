@@ -21,11 +21,14 @@ package org.airsonic.player.service;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MediaFile.MediaType;
 import org.airsonic.player.domain.MusicFolder;
+import org.airsonic.player.domain.Player;
+import org.airsonic.player.repository.AlbumRepository;
 import org.airsonic.player.repository.MediaFileRepository;
 import org.airsonic.player.repository.MusicFileInfoRepository;
 import org.airsonic.player.service.cache.MediaFileCache;
 import org.airsonic.player.service.metadata.MetaDataParserFactory;
 import org.airsonic.player.util.FileUtil;
+import org.apache.commons.lang3.tuple.Pair;
 import org.digitalmediaserver.cuelib.CueSheet;
 import org.digitalmediaserver.cuelib.FileData;
 import org.digitalmediaserver.cuelib.Index;
@@ -44,6 +47,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -75,6 +79,8 @@ public class MediaFileServiceTest {
     private SettingsService settingsService;
     @Mock
     private MusicFileInfoRepository musicFileInfoRepository;
+    @Mock
+    private AlbumRepository albumRepository;
 
     @InjectMocks
     private MediaFileService mediaFileService;
@@ -478,5 +484,37 @@ public class MediaFileServiceTest {
 
         Boolean result = ReflectionTestUtils.invokeMethod(mediaFileService, "needsUpdate", mediaFile, false);
         assertEquals(Boolean.TRUE, result);
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // incrementPlayCount null-duration guard (#322): the replay-debounce threshold is
+    // max(1.0, duration / 2); an unknown-length file must fall back to the 1-second floor
+    // instead of NPE-ing the whole increment.
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    public void incrementPlayCount_nullDurationFallsBackToMinimumReplayWindow() {
+        MediaFile file = new MediaFile();
+        file.setId(30);
+        // duration stays null: unknown-length file
+
+        Player player = new Player();
+        player.setId(1);
+
+        // simulate an earlier counted play of the same file, outside any debounce window
+        @SuppressWarnings("unchecked")
+        Map<Integer, Pair<Integer, Instant>> lastPlayed =
+                (Map<Integer, Pair<Integer, Instant>>) ReflectionTestUtils.getField(mediaFileService, "lastPlayed");
+        lastPlayed.put(player.getId(), Pair.of(file.getId(), Instant.now().minusSeconds(10)));
+
+        when(mediaFileRepository.existsById(30)).thenReturn(true);
+
+        assertDoesNotThrow(() -> mediaFileService.incrementPlayCount(player, file));
+        assertEquals(1, file.getPlayCount());
+        assertNotNull(file.getLastPlayed());
+
+        // a repeat play inside the 1-second floor is still debounced
+        mediaFileService.incrementPlayCount(player, file);
+        assertEquals(1, file.getPlayCount());
     }
 }

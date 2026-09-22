@@ -1582,7 +1582,10 @@ public class MediaFileService {
 
         Pair<Integer, Instant> lastPlayedInfo = lastPlayed.computeIfAbsent(player.getId(), k -> Pair.of(file.getId(), now));
         if (lastPlayedInfo.getLeft() == file.getId()) {
-            Double threshold = Math.max(1.0, file.getDuration() / 2);
+            // duration is nullable (#322); an unknown-length file gets the 1.0s minimum
+            // replay-debounce window instead of NPE-ing the whole play-count increment
+            Double duration = file.getDuration();
+            double threshold = Math.max(1.0, (duration == null ? 0 : duration) / 2);
             if (Duration.between(lastPlayedInfo.getRight(), now).getSeconds() < threshold) {
                 return;
             }
