@@ -48,7 +48,7 @@ import static org.springframework.web.bind.ServletRequestUtils.getRequiredString
 import static org.springframework.web.bind.ServletRequestUtils.getStringParameter;
 
 @Controller
-@RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
+@RequestMapping(value = "/rest", method = {RequestMethod.GET, RequestMethod.POST})
 public class SubsonicUserController extends AbstractSubsonicController {
 
     @Autowired

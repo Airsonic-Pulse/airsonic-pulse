@@ -54,7 +54,7 @@ import static org.springframework.web.bind.ServletRequestUtils.getRequiredIntPar
 import static org.springframework.web.bind.ServletRequestUtils.getRequiredStringParameter;
 
 @Controller
-@RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
+@RequestMapping(value = "/rest", method = {RequestMethod.GET, RequestMethod.POST})
 public class SubsonicArtistInfoController extends AbstractSubsonicController {
 
     @Autowired

@@ -41,6 +41,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -120,6 +121,14 @@ public class HandlerMappingUniquenessTest {
 
         assertEquals(SubsonicMediaController.class, resolveHandler("/rest/stream").getBeanType());
         assertEquals("stream", resolveHandler("/rest/stream").getMethod().getName());
+    }
+
+    @Test
+    public void subsonicEndpointsDoNotResolveThroughExtPrefix() throws Exception {
+        // #335: the split Subsonic controllers map /rest only; no server-issued JWT URL targets
+        // /ext/<subsonic-endpoint>, so no handler may resolve there
+        HandlerExecutionChain chain = handlerMapping.getHandler(new MockHttpServletRequest("GET", "/ext/ping"));
+        assertNull(chain, "GET /ext/ping resolved a handler — a Subsonic controller has regained the /ext prefix");
     }
 
     private HandlerMethod resolveHandler(String path) throws Exception {

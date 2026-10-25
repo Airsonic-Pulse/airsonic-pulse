@@ -58,7 +58,7 @@ import static org.springframework.web.bind.ServletRequestUtils.getRequiredIntPar
 import static org.springframework.web.bind.ServletRequestUtils.getRequiredIntParameters;
 
 @Controller
-@RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
+@RequestMapping(value = "/rest", method = {RequestMethod.GET, RequestMethod.POST})
 public class SubsonicAnnotationController extends AbstractSubsonicController {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsonicAnnotationController.class);

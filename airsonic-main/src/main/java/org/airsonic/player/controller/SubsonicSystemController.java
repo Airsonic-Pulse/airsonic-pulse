@@ -35,7 +35,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 @Controller
-@RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
+@RequestMapping(value = "/rest", method = {RequestMethod.GET, RequestMethod.POST})
 public class SubsonicSystemController extends AbstractSubsonicController {
 
     @Autowired
