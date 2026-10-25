@@ -44,7 +44,7 @@ import static org.springframework.web.bind.ServletRequestUtils.getLongParameter;
 import static org.springframework.web.bind.ServletRequestUtils.getRequiredStringParameter;
 
 @Controller
-@RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
+@RequestMapping(value = "/rest", method = {RequestMethod.GET, RequestMethod.POST})
 public class SubsonicPlayQueueController extends AbstractSubsonicController {
 
     @Autowired

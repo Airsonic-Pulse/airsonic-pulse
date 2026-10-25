@@ -49,7 +49,7 @@ import java.util.List;
 import static org.springframework.web.bind.ServletRequestUtils.getIntParameter;
 
 @Controller
-@RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
+@RequestMapping(value = "/rest", method = {RequestMethod.GET, RequestMethod.POST})
 public class SubsonicSearchController extends AbstractSubsonicController {
 
     /**

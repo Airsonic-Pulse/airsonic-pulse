@@ -41,7 +41,7 @@ import static org.springframework.web.bind.ServletRequestUtils.getRequiredIntPar
 import static org.springframework.web.bind.ServletRequestUtils.getRequiredLongParameter;
 
 @Controller
-@RequestMapping(value = {"/rest", "/ext"}, method = {RequestMethod.GET, RequestMethod.POST})
+@RequestMapping(value = "/rest", method = {RequestMethod.GET, RequestMethod.POST})
 public class SubsonicBookmarkController extends AbstractSubsonicController {
 
     private static final Logger LOG = LoggerFactory.getLogger(SubsonicBookmarkController.class);
