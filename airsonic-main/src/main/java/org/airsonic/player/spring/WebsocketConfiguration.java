@@ -116,10 +116,19 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
     public static class WebsocketInterceptedServletRequest implements HttpServletRequest {
         private final ServletServerHttpRequest originalRequest;
         private final String contextPath;
+        // #354: snapshotted while the handshake request is still live — the underlying servlet
+        // request is recycled by the container long before STOMP messages arrive, and the URI-host
+        // fallback stored the server's own hostname as the client address
+        private final String remoteAddr;
+        private final String remoteHost;
 
         public WebsocketInterceptedServletRequest(ServletServerHttpRequest originalRequest, String contextPath) {
             this.originalRequest = originalRequest;
             this.contextPath = contextPath;
+            this.remoteAddr = Optional.ofNullable(originalRequest.getServletRequest().getRemoteAddr())
+                    .orElse(originalRequest.getRemoteAddress().getHostString());
+            this.remoteHost = Optional.ofNullable(originalRequest.getServletRequest().getRemoteHost())
+                    .orElse(originalRequest.getRemoteAddress().getHostName());
         }
 
         public ServletServerHttpRequest getOriginalRequest() {
@@ -226,14 +235,12 @@ public class WebsocketConfiguration implements WebSocketMessageBrokerConfigurer 
 
         @Override
         public String getRemoteAddr() {
-            return getAddress(() -> Optional.ofNullable(getOriginalRequest().getServletRequest().getRemoteAddr())
-                    .orElse(getOriginalRequest().getRemoteAddress().getHostString()), URI::getHost);
+            return remoteAddr;
         }
 
         @Override
         public String getRemoteHost() {
-            return getAddress(() -> Optional.ofNullable(getOriginalRequest().getServletRequest().getRemoteHost())
-                    .orElse(getOriginalRequest().getRemoteAddress().getHostName()), URI::getHost);
+            return remoteHost;
         }
 
         @Override
