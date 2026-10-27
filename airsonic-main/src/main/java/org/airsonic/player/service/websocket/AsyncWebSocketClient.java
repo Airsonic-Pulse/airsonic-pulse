@@ -48,6 +48,10 @@ public class AsyncWebSocketClient {
 
     @Async("BroadcastThreadPool")
     public CompletableFuture<Void> sendToUser(String user, String destination, Object payload) {
+        if (user == null) {
+            LOG.warn("Dropping message to {}: no user to address it to (#354)", destination);
+            return CompletableFuture.completedFuture(null);
+        }
         LOG.debug("Sending to user {}: {}: {}", user, destination, payload);
         brokerTemplate.convertAndSendToUser(user, destination, payload);
         return CompletableFuture.completedFuture(null);
@@ -55,6 +59,10 @@ public class AsyncWebSocketClient {
 
     @Async("BroadcastThreadPool")
     public CompletableFuture<Void> sendToUser(String user, String destination, Object payload, Map<String, Object> headers) {
+        if (user == null) {
+            LOG.warn("Dropping message to {}: no user to address it to (#354)", destination);
+            return CompletableFuture.completedFuture(null);
+        }
         LOG.debug("Sending to user {}: {}: {}", user, destination, payload);
         brokerTemplate.convertAndSendToUser(user, destination, payload, headers);
         return CompletableFuture.completedFuture(null);
