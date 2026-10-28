@@ -146,7 +146,7 @@
         <xs:attribute name="id" type="xs:string" use="required"/>
         <xs:attribute name="name" type="xs:string" use="required"/>
         <xs:attribute name="coverArt" type="xs:string" use="optional"/>
-        <xs:attribute name="albumCount" type="xs:int" use="required"/>
+        <xs:attribute name="albumCount" type="xs:int" use="optional"/>  <!-- Optional per OpenSubsonic; absent on contributor artists -->
         <xs:attribute name="starred" type="xs:dateTime" use="optional"/>
         <xs:attribute name="mediaType" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
         <xs:attribute name="musicBrainzId" type="xs:string" use="optional"/>  <!-- Added in OpenSubsonic -->
