@@ -200,7 +200,12 @@ public class PodcastRefresher {
 
         AtomicInteger counter = new AtomicInteger(downloadCount);
 
-        episodeElements.parallelStream()
+        // Sequential on purpose: transactions are thread-bound, so parallel workers would run
+        // updateEpisode/createEpisode in their own transactions on ForkJoin threads while sharing
+        // the detached channel and episode entities across threads (#353 — same class of defect
+        // as the #345 delete loop). The work here is DB-bound dedup only; the network-bound feed
+        // fetch happens before this loop, and channel-level concurrency stays on the refresh pool.
+        episodeElements.stream()
                 .map(episodeElement -> {
                     String title = StringUtil.removeMarkup(episodeElement.getChildTextTrim("title"));
                     String guid = StringUtil.removeMarkup(episodeElement.getChildTextTrim("guid"));
