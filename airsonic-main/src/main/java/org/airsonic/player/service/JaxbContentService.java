@@ -407,11 +407,12 @@ public class JaxbContentService {
         // Uncatalogued tag-derived contributor: no Airsonic Artist record matches this name,
         // so there is no resolvable id under the local XSD's required-id rule. Emit a "" id
         // sentinel with the raw tag name; a stable synthetic id is a possible future refinement
-        // if clients struggle with the empty value.
+        // if clients struggle with the empty value (#374). albumCount is intentionally absent on
+        // contributor artists: the spec's Contributor note says only the required ArtistID3
+        // fields (id, name) should be returned by default (#375).
         ArtistID3 jaxb = new ArtistID3();
         jaxb.setId("");
         jaxb.setName(name);
-        jaxb.setAlbumCount(0);
         return jaxb;
     }
 

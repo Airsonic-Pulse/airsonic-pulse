@@ -35,11 +35,14 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.subsonic.restapi.AlbumID3;
 import org.subsonic.restapi.ArtistID3;
 import org.subsonic.restapi.Child;
 import org.subsonic.restapi.Contributor;
 import org.subsonic.restapi.MediaType;
+import org.subsonic.restapi.Response;
+import org.subsonic.restapi.SearchResult3;
 
 import java.time.Instant;
 import java.util.Arrays;
@@ -1032,14 +1035,14 @@ class JaxbContentServiceTest {
         @Test
         void createJaxbArtistByName_uncatalogedArtistEmitsEmptyIdSentinel() {
             // No matching Airsonic Artist for this tag-derived name → empty-string id
-            // sentinel + raw tag name + albumCount=0 (the local XSD requires albumCount).
+            // sentinel + raw tag name; albumCount stays unset on contributor artists (#375).
             when(artistService.getArtist("Unknown Composer")).thenReturn(null);
 
             ArtistID3 result = service.createJaxbArtistByName("Unknown Composer");
 
             assertEquals("", result.getId());
             assertEquals("Unknown Composer", result.getName());
-            assertEquals(0, result.getAlbumCount());
+            assertNull(result.getAlbumCount());
         }
 
         @Test
@@ -1225,6 +1228,68 @@ class JaxbContentServiceTest {
             assertNull(JaxbContentService.parseItemDate("not-a-date"));
             assertNull(JaxbContentService.parseItemDate("20"));
             assertNull(JaxbContentService.parseItemDate("99999"));
+        }
+    }
+
+    // #375: albumCount is optional in the XSD so contributor artists serialise as {id, name},
+    // per the spec's Contributor note; the full createJaxbArtist path still emits the real count.
+    // Serialization goes through the project's own JAXBWriter (MOXy for JSON, JAXB for XML).
+    @Nested
+    class ArtistAlbumCountSerializationTest {
+
+        private String serialize(ArtistID3 artist, String format) {
+            Response response = new Response();
+            SearchResult3 searchResult = new SearchResult3();
+            searchResult.getArtist().add(artist);
+            response.setSearchResult3(searchResult);
+            MockHttpServletRequest request = new MockHttpServletRequest();
+            request.setParameter("f", format);
+            return jaxbWriter.serializeForType(request, response).getValue();
+        }
+
+        @Test
+        void uncatalogedContributorArtistSerializesWithoutAlbumCount() {
+            when(artistService.getArtist("Unknown Composer")).thenReturn(null);
+            ArtistID3 artist = service.createJaxbArtistByName("Unknown Composer");
+
+            String json = serialize(artist, "json");
+            String xml = serialize(artist, "xml");
+
+            assertFalse(json.contains("albumCount"), json);
+            assertFalse(xml.contains("albumCount"), xml);
+        }
+
+        @Test
+        void catalogedContributorArtistSerializesWithExactlyIdAndName() {
+            Artist catalogued = mock(Artist.class);
+            when(catalogued.getId()).thenReturn(42);
+            when(catalogued.getName()).thenReturn("John Williams");
+            when(artistService.getArtist("John Williams")).thenReturn(catalogued);
+            ArtistID3 artist = service.createJaxbArtistByName("John Williams");
+
+            String json = serialize(artist, "json");
+
+            assertTrue(json.matches("(?s).*\"id\"\\s*:\\s*\"42\".*"), json);
+            assertTrue(json.contains("John Williams"), json);
+            assertFalse(json.contains("albumCount"), json);
+            assertFalse(json.contains("coverArt"), json);
+            assertFalse(json.contains("starred"), json);
+            assertFalse(json.contains("mediaType"), json);
+        }
+
+        @Test
+        void fullArtistMappingStillSerializesRealAlbumCount() {
+            Artist artist = mock(Artist.class);
+            when(artist.getId()).thenReturn(7);
+            when(artist.getName()).thenReturn("Catalogued Artist");
+            when(artist.getAlbumCount()).thenReturn(3);
+            when(artistService.getStarredDate(eq(7), anyString())).thenReturn(null);
+            when(coverArtService.getArtistArt(7)).thenReturn(CoverArt.NULL_ART);
+            ArtistID3 jaxbArtist = service.createJaxbArtist(new ArtistID3(), artist, "user");
+
+            String json = serialize(jaxbArtist, "json");
+
+            assertTrue(json.matches("(?s).*\"albumCount\"\\s*:\\s*3.*"), json);
         }
     }
 
