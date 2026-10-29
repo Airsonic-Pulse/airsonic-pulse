@@ -17,6 +17,13 @@
         provided-scope and must not leak downstream.</description>
     <packaging>jar</packaging>
 
+    <licenses>
+        <license>
+            <name>GPL-3.0-or-later</name>
+            <url>https://www.gnu.org/licenses/gpl-3.0.html</url>
+        </license>
+    </licenses>
+
     <properties>
         <auto-service.version>1.1.1</auto-service.version>
         <!-- unset the release flag inherited from spring-boot-starter-parent: javac refuses
