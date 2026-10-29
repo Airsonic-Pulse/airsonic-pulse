@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.controller;
 
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.command.SearchCommand;
 import org.airsonic.player.command.SearchResultAlbum;
 import org.airsonic.player.command.SearchResultArtist;
@@ -127,6 +128,7 @@ public class SearchController {
      * @param artists the search result to create the artists from (media files)
      * @return a list of search result artists
      */
+    @UnmodifiableResult
     private List<SearchResultArtist> createArtistResults(SearchResult artists) {
 
         Map<Pair<String, Integer>, SearchResultArtist> artistMap = new LinkedHashMap<>();
@@ -151,6 +153,7 @@ public class SearchController {
      * @param musicFolders the music folders to search for the media files
      * @return a list of search result artists
      */
+    @UnmodifiableResult
     private List<SearchResultArtist> createArtistResultsFromId3Tag(SearchResult artistsId3,
             List<MusicFolder> musicFolders) {
 
@@ -178,6 +181,7 @@ public class SearchController {
      * @param albums the search result to create the albums from (media files)
      * @return a list of search result albums
      */
+    @UnmodifiableResult
     private List<SearchResultAlbum> createAlbumResults(SearchResult albums) {
 
         Map<Triple<String, String, Integer>, SearchResultAlbum> albumMap = new LinkedHashMap<>();
@@ -201,6 +205,7 @@ public class SearchController {
      * @param albums the search result to create the albums from (media files)
      * @return a list of search result albums
      */
+    @UnmodifiableResult
     private List<SearchResultAlbum> createAlbumResultsFromId3Tag(SearchResult albumsId3) {
 
         Map<Triple<String, String, Integer>, SearchResultAlbum> albumId3Map = new LinkedHashMap<>();

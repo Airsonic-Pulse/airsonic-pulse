@@ -24,3 +24,6 @@ jobs:
         with:
           fail-on-severity: high
           allow-licenses: GPL-3.0-only, GPL-3.0-or-later, GPL-2.0-only, GPL-2.0-or-later, LGPL-2.1-only, LGPL-2.1-or-later, MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause, MPL-2.0, EPL-2.0, CC0-1.0, Unlicense, ISC
+          # error_prone_annotation's POM declares Apache 2.0 only, but the scanner reports
+          # Apache-1.1 AND Apache-2.0 from a notice bundled in the jar.
+          allow-dependencies-licenses: pkg:maven/com.google.errorprone/error_prone_annotation

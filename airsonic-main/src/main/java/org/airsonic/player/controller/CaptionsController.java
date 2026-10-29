@@ -1,5 +1,6 @@
 package org.airsonic.player.controller;
 
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.io.InputStreamReaderThread;
@@ -179,6 +180,7 @@ public class CaptionsController {
     }
 
     @GetMapping("/list")
+    @UnmodifiableResult
     public @ResponseBody List<CaptionInfo> listCaptions(Authentication authentication, @RequestParam("id") int id, HttpServletRequest request) {
         MediaFile video = mediaFileService.getMediaFile(id);
         if (!(authentication instanceof JWTAuthenticationToken)
@@ -197,10 +199,12 @@ public class CaptionsController {
         return listCaptions(video, NetworkUtil.getBaseUrl(request), user, expiration);
     }
 
+    @UnmodifiableResult
     public List<CaptionInfo> listCaptions(MediaFile video, String basePath) {
         return listCaptions(video, basePath, null, null);
     }
 
+    @UnmodifiableResult
     public List<CaptionInfo> listCaptions(MediaFile video, String basePath, String externalUser, Instant externalExpiration) {
         MetaData metaData = getVideoMetaData(video);
         Stream<CaptionInfo> internalCaptions;

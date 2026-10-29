@@ -1,5 +1,6 @@
 package org.airsonic.player.ajax;
 
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.domain.PodcastChannel;
 import org.airsonic.player.domain.PodcastEpisode;
 import org.airsonic.player.domain.PodcastStatus;
@@ -31,6 +32,7 @@ public class PodcastWSController {
     PodcastIndexService podcastIndexService;
 
     @SubscribeMapping("all")
+    @UnmodifiableResult
     public List<PodcastChannelInfo> getAllPodcastChannels() {
         return podcastPersistenceService.getAllChannels().stream().map(this::wrap).toList();
     }

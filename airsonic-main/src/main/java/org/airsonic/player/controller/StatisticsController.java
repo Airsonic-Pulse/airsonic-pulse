@@ -1,5 +1,6 @@
 package org.airsonic.player.controller;
 
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.domain.TransferStatus;
@@ -32,6 +33,7 @@ public class StatisticsController {
     private UserService userService;
 
     @GetMapping("/users")
+    @UnmodifiableResult
     public List<UserDataTransferStatistics> getUserStatistics() {
         return userService.getAllUsers().stream().map(x -> new UserDataTransferStatistics(x.getUsername(), x.getBytesStreamed(), x.getBytesDownloaded(), x.getBytesUploaded())).toList();
     }

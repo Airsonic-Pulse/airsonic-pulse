@@ -1,5 +1,6 @@
 package org.airsonic.player.service;
 
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
@@ -339,6 +340,7 @@ public class AlbumService {
      *
      * @return list of album ids
      */
+    @UnmodifiableResult
     public List<Integer> getExpungeIds() {
         return albumRepository.findByPresentFalse().stream().map(Album::getId).toList();
     }
