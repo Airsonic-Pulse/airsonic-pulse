@@ -711,21 +711,29 @@ public class MediaFileService {
 
     /**
      * Returns random songs for the given parent.
+     * <p>
+     * The pick is a single subtree-scoped query ordered by the database's random function and
+     * bounded to {@code count} rows (#351) — the subtree is never materialised in memory and no
+     * per-descendant last-modified check runs, so the result reflects the state of the last scan.
      *
      * @param parent The parent.
      * @param count  Max number of songs to return.
      * @return Random songs.
      */
-    @Transactional(isolation = Isolation.READ_COMMITTED)
+    @Transactional(readOnly = true)
     public List<MediaFile> getRandomSongsForParent(MediaFile parent, int count) {
-        List<MediaFile> children = getDescendantsOf(parent, false);
-        removeVideoFiles(children);
-
-        if (children.isEmpty()) {
-            return children;
+        if (count == 0) {
+            return new ArrayList<>();
         }
-        Collections.shuffle(children);
-        return children.subList(0, Math.min(count, children.size()));
+        if (parent.isFile()) {
+            // a file parent is its own single candidate, videos excluded as before
+            return parent.isVideo() ? new ArrayList<>() : new ArrayList<>(List.of(parent));
+        }
+        // copy: the paged result is unmodifiable and callers (PlayQueueService.doPlay) mutate it
+        return new ArrayList<>(mediaFileRepository.findAll(
+                MediaFileSpecifications.randomSongsUnderParent(parent.getFolder(), parent.getPath(),
+                        settingsService.getHideVirtualTracks(), settingsService.getDatabaseType()),
+                Pageable.ofSize(count)));
     }
 
     /**

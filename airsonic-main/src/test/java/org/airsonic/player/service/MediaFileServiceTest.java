@@ -38,9 +38,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.nio.file.Path;
@@ -59,7 +62,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -516,5 +521,76 @@ public class MediaFileServiceTest {
         // a repeat play inside the 1-second floor is still debounced
         mediaFileService.incrementPlayCount(player, file);
         assertEquals(1, file.getPlayCount());
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Folder shuffle (#351): getRandomSongsForParent must run one subtree-scoped query bounded
+    // to count rows — not walk the directory tree loading every descendant, and not trigger
+    // any checkLastModified-driven refresh write while doing so.
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    public void getRandomSongsForParentRunsSingleBoundedQueryWithoutChildWalk() {
+        MediaFile parent = new MediaFile();
+        parent.setMediaType(MediaType.DIRECTORY);
+        parent.setPath("Artist");
+        parent.setFolder(mockedFolder);
+
+        MediaFile song = new MediaFile();
+        song.setMediaType(MediaType.MUSIC);
+
+        // lenient: only the legacy descendant walk reads these; they keep the two-state red leg
+        // (old body restored) on its DB children-query path so the never() verifies below name it
+        lenient().when(settingsService.isFastCacheEnabled()).thenReturn(true);
+        lenient().when(settingsService.getHideVirtualTracks()).thenReturn(false);
+        lenient().when(settingsService.getDatabaseType()).thenReturn("HSQLDB");
+        // unmodifiable, like the real paged repository result
+        lenient().when(mediaFileRepository.findAll(ArgumentMatchers.<Specification<MediaFile>>any(), any(Pageable.class))).thenReturn(List.copyOf(List.of(song)));
+
+        List<MediaFile> songs = mediaFileService.getRandomSongsForParent(parent, 10);
+
+        // the issue's lever: no per-directory children query, no refresh write
+        verify(mediaFileRepository, never()).findByFolderAndParentPathAndPresentTrue(any(), any());
+        verify(mediaFileRepository, never()).findByFolderAndParentPathAndPresentTrue(any(), any(), any());
+        verify(mediaFileRepository, never()).save(any());
+        // one subtree-scoped query, bounded to count rows
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(mediaFileRepository).findAll(ArgumentMatchers.<Specification<MediaFile>>any(), pageableCaptor.capture());
+        assertEquals(10, pageableCaptor.getValue().getPageSize());
+        // callers mutate the result (PlayQueueService.doPlay runs removeVideoFiles on it), so the
+        // unmodifiable paged result must come back as a mutable copy
+        assertDoesNotThrow(() -> songs.removeIf(MediaFile::isVideo));
+        assertDoesNotThrow(() -> songs.add(song));
+    }
+
+    @Test
+    public void getRandomSongsForParentWithZeroCountReturnsEmptyWithoutQuery() {
+        MediaFile parent = new MediaFile();
+        parent.setMediaType(MediaType.DIRECTORY);
+
+        assertTrue(mediaFileService.getRandomSongsForParent(parent, 0).isEmpty());
+
+        verifyNoInteractions(mediaFileRepository);
+    }
+
+    @Test
+    public void getRandomSongsForParentWithFileParentReturnsTheFileItself() {
+        MediaFile parent = new MediaFile();
+        parent.setMediaType(MediaType.MUSIC);
+
+        List<MediaFile> result = mediaFileService.getRandomSongsForParent(parent, 10);
+
+        assertEquals(List.of(parent), result);
+        verifyNoInteractions(mediaFileRepository);
+    }
+
+    @Test
+    public void getRandomSongsForParentWithVideoFileParentReturnsEmpty() {
+        MediaFile parent = new MediaFile();
+        parent.setMediaType(MediaType.VIDEO);
+
+        assertTrue(mediaFileService.getRandomSongsForParent(parent, 10).isEmpty());
+
+        verifyNoInteractions(mediaFileRepository);
     }
 }
