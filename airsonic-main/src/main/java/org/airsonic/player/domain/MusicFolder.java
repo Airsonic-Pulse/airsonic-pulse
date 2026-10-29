@@ -20,6 +20,8 @@
  */
 package org.airsonic.player.domain;
 
+import org.airsonic.player.build.UnmodifiableResult;
+
 import jakarta.persistence.*;
 
 import java.io.Serializable;
@@ -221,10 +223,12 @@ public class MusicFolder implements Serializable {
     }
 
 
+    @UnmodifiableResult
     public static List<Integer> toIdList(List<MusicFolder> from) {
         return from.stream().map(toId()).toList();
     }
 
+    @UnmodifiableResult
     public static List<String> toPathList(List<MusicFolder> from) {
         return from.stream().map(toPath()).toList();
     }

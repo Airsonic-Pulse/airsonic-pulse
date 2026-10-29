@@ -21,6 +21,7 @@
 package org.airsonic.player.service.metadata;
 
 import com.google.common.collect.ImmutableSet;
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.domain.Contributor;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.MediaFolderService;
@@ -222,6 +223,7 @@ public class JaudiotaggerParser extends MetaDataParser {
         }
     }
 
+    @UnmodifiableResult
     static List<String> getAllTagFields(Tag tag, FieldKey fieldKey) {
         try {
             List<String> values = tag.getAll(fieldKey);

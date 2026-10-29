@@ -20,6 +20,7 @@
  */
 package org.airsonic.player.service;
 
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.command.PersonalSettingsCommand;
 import org.airsonic.player.config.AirsonicHomeConfig;
 import org.airsonic.player.domain.AlbumListType;
@@ -78,6 +79,7 @@ public class PersonalSettingsService {
     @Autowired
     private UserSettingsCache userSettingsCache;
 
+    @UnmodifiableResult
     public List<Avatar> getSystemAvatars() {
         return systemAvatarRepository.findAll().stream().map(SystemAvatar::toAvatar).toList();
     }

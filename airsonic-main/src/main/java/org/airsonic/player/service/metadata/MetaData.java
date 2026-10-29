@@ -20,6 +20,7 @@
  */
 package org.airsonic.player.service.metadata;
 
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.domain.Contributor;
 
 import java.util.ArrayList;
@@ -336,22 +337,27 @@ public class MetaData {
         this.tracks.add(track);
     }
 
+    @UnmodifiableResult
     public List<Track> getTracks() {
         return Collections.unmodifiableList(this.tracks);
     }
 
+    @UnmodifiableResult
     public List<Track> getAudioTracks() {
         return this.getTracks().stream().filter(i -> i.isAudio()).toList();
     }
 
+    @UnmodifiableResult
     public List<Track> getVideoTracks() {
         return this.getTracks().stream().filter(i -> i.isVideo()).toList();
     }
 
+    @UnmodifiableResult
     public List<Track> getSubtitleTracks() {
         return this.getTracks().stream().filter(i -> i.isSubtitle()).toList();
     }
 
+    @UnmodifiableResult
     public List<Chapter> getChapters() {
         return Collections.unmodifiableList(this.chapters);
     }

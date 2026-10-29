@@ -20,6 +20,7 @@
  */
 package org.airsonic.player.service;
 
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.command.PodcastSettingsCommand.PodcastRule;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
@@ -226,6 +227,7 @@ public class PodcastPersistenceService {
      *
      * @return channels without rule
      */
+    @UnmodifiableResult
     public List<PodcastChannel> getChannelsWithoutRule() {
         Set<Integer> ruleIds = podcastRuleRepository.findAll().parallelStream().map(r -> r.getId()).collect(toSet());
         return podcastChannelRepository.findAll().parallelStream().filter(c -> !ruleIds.contains(c.getId())).toList();

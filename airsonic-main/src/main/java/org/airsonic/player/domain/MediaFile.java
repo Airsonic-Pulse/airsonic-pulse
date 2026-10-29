@@ -21,6 +21,7 @@
 package org.airsonic.player.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.util.FileUtil;
 import org.apache.commons.io.FilenameUtils;
 
@@ -765,6 +766,7 @@ public class MediaFile {
         return getName();
     }
 
+    @UnmodifiableResult
     public static List<Integer> toIdList(List<MediaFile> from) {
         return from.stream().map(toId()).toList();
     }

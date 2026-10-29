@@ -19,6 +19,7 @@
  */
 package org.airsonic.player.domain;
 
+import org.airsonic.player.build.UnmodifiableResult;
 import org.apache.commons.lang3.StringUtils;
 
 import java.util.ArrayList;
@@ -74,6 +75,7 @@ public class Genres {
      * this across multiple raw tag values typically apply another {@code .distinct()} downstream
      * to dedup across frames as well.
      */
+    @UnmodifiableResult
     public static List<String> split(String genre, String separators) {
         if (StringUtils.isBlank(genre)) {
             return List.of();

@@ -20,6 +20,7 @@
  */
 package org.airsonic.player.controller;
 
+import org.airsonic.player.build.UnmodifiableResult;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
@@ -60,6 +61,7 @@ public class SubsonicRESTController extends AbstractSubsonicController {
 
     private static final List<OpenSubsonicExtension> OPENSUBSONIC_EXTENSIONS = buildExtensionList();
 
+    @UnmodifiableResult
     private static List<OpenSubsonicExtension> buildExtensionList() {
         return List.of(
             buildExtension("formPost", 1),

@@ -29,6 +29,7 @@
         <snakeyaml.version>2.4</snakeyaml.version>
         <lucene.version>10.4.0</lucene.version>
         <logback.version>1.5.35</logback.version>
+        <error-prone.version>2.49.0</error-prone.version>
         <docker.container.repo>ghcr.io/airsonic-pulse/airsonic-pulse</docker.container.repo>
         <airsonic.project.url>https://github.com/Airsonic-Pulse/airsonic-pulse</airsonic.project.url>
     </properties>
@@ -66,6 +67,7 @@
     <modules>
         <module>subsonic-rest-api</module>
         <module>airsonic-sonos-api</module>
+        <module>airsonic-build-checks</module>
         <module>airsonic-main</module>
     </modules>
 
@@ -490,6 +492,7 @@
             <modules>
                 <module>subsonic-rest-api</module>
                 <module>airsonic-sonos-api</module>
+                <module>airsonic-build-checks</module>
                 <module>airsonic-main</module>
                 <module>install/docker</module>
             </modules>
@@ -499,6 +502,7 @@
             <modules>
                 <module>subsonic-rest-api</module>
                 <module>airsonic-sonos-api</module>
+                <module>airsonic-build-checks</module>
                 <module>airsonic-main</module>
                 <module>install/docker</module>
                 <module>integration-test</module>

@@ -118,6 +118,28 @@ mvn clean package
 ```
 Requires Java 21 and Maven 3.9+. The WAR file will be at `airsonic-main/target/airsonic.war`.
 
+### Build-time guard: ImmutableListMutation
+
+The `airsonic-main` compile runs a custom [error-prone](https://errorprone.info) check,
+`ImmutableListMutation` (module `airsonic-build-checks`), that fails the build when code
+structurally mutates (`add`, `remove`, `set`, `clear`, `removeIf`, `sort`, ...) a List known to be
+unmodifiable: the result of `Stream.toList()`, `List.of/copyOf`,
+`Collectors.toUnmodifiableList()`, `Collections.unmodifiableList/unmodifiableCollection`, Spring
+Data's `Page/Slice.getContent()`, `Arrays.asList` (size changes only), or any method annotated
+`@org.airsonic.player.build.UnmodifiableResult`. Such mutations compile fine but throw
+`UnsupportedOperationException` at runtime (#296, #351); the guard turns them into compile errors
+(#302).
+
+* When a method returns an unmodifiable List on **every** path, annotate it with
+  `@UnmodifiableResult` so callers are guarded too. Never annotate a method with mixed
+  mutable/immutable return paths.
+* When a caller needs a mutable list, copy first: `new ArrayList<>(producer())`.
+* A false positive can be suppressed with `@SuppressWarnings("ImmutableListMutation")` plus a
+  comment justifying why the mutation is safe — and is worth an issue against the checker.
+
+Measured cost: one to a few seconds on the `airsonic-main` javac pass (1.3–4.4s across measured
+runs, under 2% of a full test build).
+
 ## 6. Configuration
 
 See the [Configuration](./docs/configuration/README.md)

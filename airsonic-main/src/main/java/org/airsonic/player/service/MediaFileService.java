@@ -24,6 +24,7 @@ import com.google.common.math.DoubleMath;
 import com.ibm.icu.text.CharsetDetector;
 import com.ibm.icu.text.CharsetMatch;
 import org.airsonic.player.ajax.MediaFileEntry;
+import org.airsonic.player.build.UnmodifiableResult;
 import org.airsonic.player.controller.HomeController;
 import org.airsonic.player.domain.*;
 import org.airsonic.player.domain.CoverArt.EntityType;
@@ -348,6 +349,7 @@ public class MediaFileService {
      * @param sort               Whether to sort files in the same directory.
      * @return All children media files.
      */
+    @UnmodifiableResult
     public List<MediaFile> getChildrenOf(MediaFile parent, boolean includeFiles, boolean includeDirectories, boolean sort) {
         return getChildrenOf(parent, includeFiles, includeDirectories, sort, settingsService.isFastCacheEnabled());
     }
@@ -361,6 +363,7 @@ public class MediaFileService {
      * @param minimizeDiskAccess Whether to refrain from checking for new or changed files
      * @return All children media files.
      */
+    @UnmodifiableResult
     public List<MediaFile> getChildrenOf(MediaFile parent, boolean includeFiles, boolean includeDirectories, boolean sort, boolean minimizeDiskAccess) {
 
         if (!parent.isDirectory()) {
