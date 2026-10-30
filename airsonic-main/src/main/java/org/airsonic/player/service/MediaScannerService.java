@@ -216,9 +216,15 @@ public class MediaScannerService {
         ForkJoinPool pool = new ForkJoinPool(scannerParallelism, mediaScannerThreadFactory, null, true);
 
         boolean isFullScan = settingsService.getFullScan();
-        long timeoutSeconds = isFullScan ? scanConfig.getFullTimeout() : scanConfig.getTimeout();
+        // A timeout set in General Settings (or written to airsonic.properties) wins; the
+        // startup-bound AirsonicScanConfig value is the fallback. Read here, per scan, so a
+        // settings change applies to the next scan without a restart.
+        Integer timeoutSetting = isFullScan ? settingsService.getFullScanTimeoutSeconds() : settingsService.getScanTimeoutSeconds();
+        long timeoutSeconds = timeoutSetting != null ? timeoutSetting
+                : (isFullScan ? scanConfig.getFullTimeout() : scanConfig.getTimeout());
         MediaLibraryStatistics statistics = new MediaLibraryStatistics();
-        LOG.info("Starting media library scan with timeout {} seconds.", timeoutSeconds);
+        LOG.info("Starting {} scan, timeout {} s ({}).", isFullScan ? "full" : "quick", timeoutSeconds,
+                timeoutSetting != null ? "from General Settings" : "from AirsonicScanConfig default");
         CompletableFuture.runAsync(() -> {
             doScanLibrary(pool, statistics);
         }, pool)

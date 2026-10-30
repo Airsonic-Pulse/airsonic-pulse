@@ -143,6 +143,24 @@
             </td>
         </tr>
 
+        <tr>
+            <td th:text="#{generalsettings.scantimeout}"></td>
+            <td>
+                <input type="number" step="1" min="60" max="86400" th:field="*{scanTimeoutSeconds}" style="width:15em"/>
+                <th:block th:replace="~{helpToolTip((topic=scantimeout))}" />
+                <span class="warning" th:errors="*{scanTimeoutSeconds}"></span>
+            </td>
+        </tr>
+
+        <tr>
+            <td th:text="#{generalsettings.fullscantimeout}"></td>
+            <td>
+                <input type="number" step="1" min="60" max="86400" th:field="*{fullScanTimeoutSeconds}" style="width:15em"/>
+                <th:block th:replace="~{helpToolTip((topic=fullscantimeout))}" />
+                <span class="warning" th:errors="*{fullScanTimeoutSeconds}"></span>
+            </td>
+        </tr>
+
         <tr><td colspan="2">&nbsp;</td></tr>
 
         <tr>

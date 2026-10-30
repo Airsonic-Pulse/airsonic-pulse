@@ -87,6 +87,10 @@ public class SettingsService {
     private static final String KEY_INDEX_CREATION_HOUR = "IndexCreationHour";
     private static final String KEY_FAST_CACHE_ENABLED = "FastCacheEnabled";
     private static final String KEY_FULL_SCAN = "FullScan";
+    // Same keys that AirsonicScanConfig binds, so the UI, a manual airsonic.properties edit
+    // and a startup property all meet in one place.
+    private static final String KEY_SCAN_TIMEOUT_SECONDS = "airsonic.scan.timeout";
+    private static final String KEY_FULL_SCAN_TIMEOUT_SECONDS = "airsonic.scan.fullTimeout";
     private static final String KEY_CLEAR_FULL_SCAN_SETTING_AFTER_SCAN = "ClearFullScanSettingAfterScan";
     private static final String KEY_TRANSCODE_ESTIMATE_TIME_PADDING = "TranscodeEstimateTimePadding";
     private static final String KEY_TRANSCODE_ESTIMATE_BYTE_PADDING = "TranscodeEstimateBytePadding";
@@ -868,6 +872,44 @@ public class SettingsService {
 
     public void setFullScan(Boolean fullscan) {
         setBoolean(KEY_FULL_SCAN, fullscan);
+    }
+
+    /**
+     * Returns the operator-set regular scan timeout in seconds, or {@code null} when unset
+     * (the default), in which case the scanner falls back to the startup-bound
+     * {@code AirsonicScanConfig} value. Read at each scan start, so a change applies to the
+     * next scan without a restart.
+     */
+    public Integer getScanTimeoutSeconds() {
+        return getIntegerSetting(KEY_SCAN_TIMEOUT_SECONDS);
+    }
+
+    public void setScanTimeoutSeconds(Integer seconds) {
+        setInt(KEY_SCAN_TIMEOUT_SECONDS, seconds);
+    }
+
+    /**
+     * Returns the operator-set full-scan timeout in seconds, or {@code null} when unset.
+     * Same semantics as {@link #getScanTimeoutSeconds()}.
+     */
+    public Integer getFullScanTimeoutSeconds() {
+        return getIntegerSetting(KEY_FULL_SCAN_TIMEOUT_SECONDS);
+    }
+
+    public void setFullScanTimeoutSeconds(Integer seconds) {
+        setInt(KEY_FULL_SCAN_TIMEOUT_SECONDS, seconds);
+    }
+
+    private Integer getIntegerSetting(String key) {
+        String raw = getString(key, null);
+        if (raw == null) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(raw);
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     public boolean getClearFullScanSettingAfterScan() {
