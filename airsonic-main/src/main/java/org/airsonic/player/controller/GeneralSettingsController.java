@@ -26,6 +26,7 @@ import org.airsonic.player.service.SettingsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,6 +57,11 @@ public class GeneralSettingsController {
 
     @ModelAttribute
     protected void formBackingObject(Model model) {
+        // A command flashed back by doSubmitAction after a validation error carries the
+        // rejected input and its binding result; don't overwrite it with the saved settings.
+        if (model.containsAttribute("command")) {
+            return;
+        }
         GeneralSettingsCommand command = new GeneralSettingsCommand();
         command.setCoverArtFileTypes(settingsService.getCoverArtFileTypes());
         command.setCoverArtSource(settingsService.getCoverArtSource());
@@ -68,6 +74,7 @@ public class GeneralSettingsController {
         command.setPlaylistFolder(settingsService.getPlaylistFolder());
         command.setMusicFileTypes(settingsService.getMusicFileTypes());
         command.setVideoFileTypes(settingsService.getVideoFileTypes());
+        command.setReplayGainFallback(settingsService.getReplayGainFallback());
         command.setSortAlbumsByYear(settingsService.isSortAlbumsByYear());
         command.setGettingStartedEnabled(settingsService.isGettingStartedEnabled());
         command.setShowVersionOnLogin(settingsService.isShowVersionOnLogin());
@@ -103,7 +110,18 @@ public class GeneralSettingsController {
     }
 
     @PostMapping
-    protected String doSubmitAction(@ModelAttribute("command") GeneralSettingsCommand command, RedirectAttributes redirectAttributes) {
+    protected String doSubmitAction(@ModelAttribute("command") GeneralSettingsCommand command, BindingResult bindingResult, RedirectAttributes redirectAttributes) {
+
+        Double replayGainFallback = command.getReplayGainFallback();
+        if (replayGainFallback != null
+                && (!Double.isFinite(replayGainFallback) || replayGainFallback < -12.0 || replayGainFallback > 12.0)) {
+            bindingResult.rejectValue("replayGainFallback", "generalsettings.replaygainfallback.invalid");
+        }
+        if (bindingResult.hasErrors()) {
+            redirectAttributes.addFlashAttribute("command", command);
+            redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.command", bindingResult);
+            return "redirect:generalSettings.view";
+        }
 
         int themeIndex = Integer.parseInt(command.getThemeIndex());
         Theme theme = settingsService.getAvailableThemes()[themeIndex];
@@ -132,6 +150,7 @@ public class GeneralSettingsController {
         settingsService.setCoverArtSource(command.getCoverArtSource());
         settingsService.setCoverArtConcurrency(command.getCoverArtConcurrency());
         settingsService.setCoverArtQuality(command.getCoverArtQuality());
+        settingsService.setReplayGainFallback(command.getReplayGainFallback());
         settingsService.setSortAlbumsByYear(command.isSortAlbumsByYear());
         settingsService.setGettingStartedEnabled(command.isGettingStartedEnabled());
         settingsService.setShowVersionOnLogin(command.isShowVersionOnLogin());

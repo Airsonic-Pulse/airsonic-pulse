@@ -31,19 +31,26 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.ui.ExtendedModelMap;
 import org.springframework.ui.Model;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 
 import java.util.Locale;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Tests that {@link GeneralSettingsController} binds the show-version-on-login toggle (#246) in
- * both directions — read into the form-backing command on GET, written back to
- * {@link SettingsService} on POST.
+ * Tests that {@link GeneralSettingsController} binds the show-version-on-login toggle (#246) and
+ * the ReplayGain fallback (#252) in both directions — read into the form-backing command on GET,
+ * written back to {@link SettingsService} on POST — and that an out-of-range or non-finite
+ * fallback produces a field error and persists nothing.
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -97,8 +104,102 @@ class GeneralSettingsControllerTest {
         command.setLocaleIndex("0");
         command.setShowVersionOnLogin(false);
 
-        controller.doSubmitAction(command, new RedirectAttributesModelMap());
+        controller.doSubmitAction(command, new BeanPropertyBindingResult(command, "command"), new RedirectAttributesModelMap());
 
         verify(settingsService).setShowVersionOnLogin(false);
+    }
+
+    @Test
+    void formBackingObjectReadsReplayGainFallback() {
+        stubThemesAndLocales();
+        when(settingsService.getReplayGainFallback()).thenReturn(3.5);
+
+        Model model = new ExtendedModelMap();
+        controller.formBackingObject(model);
+
+        GeneralSettingsCommand command = (GeneralSettingsCommand) model.getAttribute("command");
+        assertEquals(3.5, command.getReplayGainFallback());
+    }
+
+    @Test
+    void formBackingObjectReadsReplayGainFallbackWhenUnset() {
+        stubThemesAndLocales();
+        when(settingsService.getReplayGainFallback()).thenReturn(null);
+
+        Model model = new ExtendedModelMap();
+        controller.formBackingObject(model);
+
+        GeneralSettingsCommand command = (GeneralSettingsCommand) model.getAttribute("command");
+        assertNull(command.getReplayGainFallback());
+    }
+
+    @Test
+    void formBackingObjectKeepsFlashedCommand() {
+        GeneralSettingsCommand flashed = new GeneralSettingsCommand();
+        flashed.setReplayGainFallback(13.0);
+        Model model = new ExtendedModelMap();
+        model.addAttribute("command", flashed);
+
+        controller.formBackingObject(model);
+
+        assertEquals(flashed, model.getAttribute("command"));
+    }
+
+    @Test
+    void doSubmitActionWritesReplayGainFallback() {
+        stubThemesAndLocales();
+
+        GeneralSettingsCommand command = new GeneralSettingsCommand();
+        command.setThemeIndex("0");
+        command.setLocaleIndex("0");
+        command.setReplayGainFallback(3.5);
+
+        controller.doSubmitAction(command, new BeanPropertyBindingResult(command, "command"), new RedirectAttributesModelMap());
+
+        verify(settingsService).setReplayGainFallback(3.5);
+    }
+
+    @Test
+    void doSubmitActionClearsReplayGainFallbackWhenEmpty() {
+        stubThemesAndLocales();
+
+        GeneralSettingsCommand command = new GeneralSettingsCommand();
+        command.setThemeIndex("0");
+        command.setLocaleIndex("0");
+        command.setReplayGainFallback(null);
+
+        controller.doSubmitAction(command, new BeanPropertyBindingResult(command, "command"), new RedirectAttributesModelMap());
+
+        verify(settingsService).setReplayGainFallback(null);
+    }
+
+    @Test
+    void doSubmitActionRejectsOutOfRangeReplayGainFallback() {
+        GeneralSettingsCommand command = new GeneralSettingsCommand();
+        command.setThemeIndex("0");
+        command.setLocaleIndex("0");
+        command.setReplayGainFallback(13.0);
+        BindingResult bindingResult = new BeanPropertyBindingResult(command, "command");
+
+        String view = controller.doSubmitAction(command, bindingResult, new RedirectAttributesModelMap());
+
+        assertTrue(bindingResult.hasFieldErrors("replayGainFallback"));
+        assertEquals("redirect:generalSettings.view", view);
+        verify(settingsService, never()).setReplayGainFallback(any());
+        verify(settingsService, never()).save();
+    }
+
+    @Test
+    void doSubmitActionRejectsNonFiniteReplayGainFallback() {
+        GeneralSettingsCommand command = new GeneralSettingsCommand();
+        command.setThemeIndex("0");
+        command.setLocaleIndex("0");
+        command.setReplayGainFallback(Double.NaN);
+        BindingResult bindingResult = new BeanPropertyBindingResult(command, "command");
+
+        controller.doSubmitAction(command, bindingResult, new RedirectAttributesModelMap());
+
+        assertTrue(bindingResult.hasFieldErrors("replayGainFallback"));
+        verify(settingsService, never()).setReplayGainFallback(any());
     }
 }

@@ -134,6 +134,15 @@
             </td>
         </tr>
 
+        <tr>
+            <td th:text="#{generalsettings.replaygainfallback}"></td>
+            <td>
+                <input type="number" step="0.1" min="-12" max="12" th:field="*{replayGainFallback}" style="width:15em"/>
+                <th:block th:replace="~{helpToolTip((topic=replaygainfallback))}" />
+                <span class="warning" th:errors="*{replayGainFallback}"></span>
+            </td>
+        </tr>
+
         <tr><td colspan="2">&nbsp;</td></tr>
 
         <tr>
