@@ -158,6 +158,24 @@ public class SettingsServiceTestCase {
         verifySettings(newSettingsService());
     }
 
+    @Test
+    public void testReplayGainFallbackRoundTrip() {
+        assertNull(settingsService.getReplayGainFallback());
+
+        settingsService.setReplayGainFallback(3.5);
+        assertEquals(3.5, settingsService.getReplayGainFallback());
+        settingsService.save();
+        assertEquals(3.5, newSettingsService().getReplayGainFallback());
+
+        settingsService.setReplayGainFallback(0.0);
+        assertEquals(0.0, settingsService.getReplayGainFallback());
+
+        settingsService.setReplayGainFallback(null);
+        assertNull(settingsService.getReplayGainFallback());
+        settingsService.save();
+        assertNull(newSettingsService().getReplayGainFallback());
+    }
+
     private void verifySettings(SettingsService ss) {
         assertEquals("indexString", ss.getIndexString());
         assertEquals("a the foo bar", ss.getIgnoredArticles());
