@@ -79,6 +79,8 @@ public class SubsonicArtistInfoController extends AbstractSubsonicController {
 
         int id = getRequiredIntParameter(request, "id");
         int count = getIntParameter(request, "count", 50);
+        // #286: count sizes a random-songs query page per similar artist; clamp like #262.
+        count = Math.max(0, Math.min(count, 500));
 
         SimilarSongs result = new SimilarSongs();
 
@@ -106,6 +108,9 @@ public class SubsonicArtistInfoController extends AbstractSubsonicController {
 
         int id = getRequiredIntParameter(request, "id");
         int count = getIntParameter(request, "count", 50);
+        // #286: the work is bounded by fixed caps downstream, but a negative count crashes the
+        // final subList; the #262 clamp's zero floor guards it.
+        count = Math.max(0, Math.min(count, 500));
 
         SimilarSongs2 result = new SimilarSongs2();
 
@@ -133,6 +138,7 @@ public class SubsonicArtistInfoController extends AbstractSubsonicController {
         String username = securityService.getCurrentUsername(request);
 
         String artist = getRequiredStringParameter(request, "artist");
+        // No clamp needed (#286): the loop is bounded by the Last.fm top-tracks response; count only stops it early, and count <= 0 returns an empty list.
         int count = getIntParameter(request, "count", 50);
 
         TopSongs result = new TopSongs();
@@ -155,6 +161,7 @@ public class SubsonicArtistInfoController extends AbstractSubsonicController {
         String username = securityService.getCurrentUsername(request);
 
         int id = getRequiredIntParameter(request, "id");
+        // No clamp needed (#286): the loop is bounded by the Last.fm similar-artists response; count only stops it early.
         int count = getIntParameter(request, "count", 20);
         boolean includeNotPresent = ServletRequestUtils.getBooleanParameter(request, "includeNotPresent", false);
 
@@ -193,6 +200,7 @@ public class SubsonicArtistInfoController extends AbstractSubsonicController {
         String username = securityService.getCurrentUsername(request);
 
         int id = getRequiredIntParameter(request, "id");
+        // No clamp needed (#286): the loop is bounded by the Last.fm similar-artists response; count only stops it early.
         int count = getIntParameter(request, "count", 20);
         boolean includeNotPresent = ServletRequestUtils.getBooleanParameter(request, "includeNotPresent", false);
 
