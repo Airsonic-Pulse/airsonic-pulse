@@ -23,6 +23,7 @@ import org.airsonic.player.domain.Artist;
 import org.airsonic.player.domain.CoverArt;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MediaFile.MediaType;
+import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.Playlist;
 import org.airsonic.player.domain.dto.AlbumCoverArtRequest;
 import org.airsonic.player.domain.dto.ArtistCoverArtRequest;
@@ -47,11 +48,15 @@ import org.springframework.test.web.servlet.MvcResult;
 import javax.imageio.ImageIO;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -313,6 +318,79 @@ public class CoverArtControllerTest {
         verify(coverArtService).createPodcastCoverArtRequest(eq(PODCAST_ID), eq(60));
         verify(coverArtService).getImageInputStreamWithType(eq(PODCAST_RESOURCE.getFile().toPath()));
         verifyNoMoreInteractions(coverArtService);
+    }
+
+    /** an abusive size is silently clamped to 2048 before it can size a BufferedImage (#286) */
+    @Test
+    @WithMockUser(username = AIRSONIC_USER, password = AIRSONIC_PASSWORD)
+    public void getCoverArtClampsAbusiveSizeTest() throws Exception {
+
+        final Integer MEDIA_ID = 100;
+        MediaFile mockedMediaFile = scalableMediaFile(MEDIA_ID);
+
+        MediaFileCoverArtRequest request = new MediaFileCoverArtRequest(mockedCoverArt, mockedMediaFile);
+        doReturn(request).when(coverArtService).createMediaFileCoverArtRequest(anyInt(), anyInt());
+        doReturn(IMAGE_RESOURCE.getFile().toPath()).when(mockedCoverArt).getFullPath();
+        doReturn(new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB))
+                .when(coverArtService).createImage(any(), anyInt());
+
+        mvc.perform(get("/coverArt")
+                .param("id", MEDIA_ID.toString())
+                .param("size", String.valueOf(Integer.MAX_VALUE)))
+                .andExpect(status().isOk());
+
+        verify(coverArtService).createImage(any(), eq(2048));
+    }
+
+    /** a normal size passes through to the image creation unchanged */
+    @Test
+    @WithMockUser(username = AIRSONIC_USER, password = AIRSONIC_PASSWORD)
+    public void getCoverArtPassesNormalSizeThroughTest() throws Exception {
+
+        final Integer MEDIA_ID = 100;
+        MediaFile mockedMediaFile = scalableMediaFile(MEDIA_ID);
+
+        MediaFileCoverArtRequest request = new MediaFileCoverArtRequest(mockedCoverArt, mockedMediaFile);
+        doReturn(request).when(coverArtService).createMediaFileCoverArtRequest(anyInt(), anyInt());
+        doReturn(IMAGE_RESOURCE.getFile().toPath()).when(mockedCoverArt).getFullPath();
+        doReturn(new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB))
+                .when(coverArtService).createImage(any(), anyInt());
+
+        mvc.perform(get("/coverArt")
+                .param("id", MEDIA_ID.toString())
+                .param("size", "256"))
+                .andExpect(status().isOk());
+
+        verify(coverArtService).createImage(any(), eq(256));
+    }
+
+    /** a negative size is floored to 1 instead of crashing the fallback scaling (#286) */
+    @Test
+    @WithMockUser(username = AIRSONIC_USER, password = AIRSONIC_PASSWORD)
+    public void getCoverArtClampsNegativeSizeTest() throws Exception {
+
+        // no id: the fallback image is scaled to the requested size
+        byte[] actual = mvc.perform(get("/coverArt")
+                .param("size", "-5"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsByteArray();
+
+        BufferedImage image = ImageIO.read(new ByteArrayInputStream(actual));
+        assertEquals(1, image.getWidth());
+        assertEquals(1, image.getHeight());
+    }
+
+    /**
+     * A media file complete enough for the scaled-image path: unlike the unscaled tests,
+     * getCachedImage derives its cache key from the file's folder and path.
+     */
+    private MediaFile scalableMediaFile(int id) {
+        MediaFile mediaFile = new MediaFile();
+        mediaFile.setId(id);
+        mediaFile.setMediaType(MediaType.ALBUM);
+        mediaFile.setFolder(new MusicFolder(1, tempDir, "folder", MusicFolder.Type.MEDIA, true, Instant.now()));
+        mediaFile.setPath("album");
+        return mediaFile;
     }
 
 }
