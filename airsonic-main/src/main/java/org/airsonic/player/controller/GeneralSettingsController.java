@@ -75,6 +75,8 @@ public class GeneralSettingsController {
         command.setMusicFileTypes(settingsService.getMusicFileTypes());
         command.setVideoFileTypes(settingsService.getVideoFileTypes());
         command.setReplayGainFallback(settingsService.getReplayGainFallback());
+        command.setScanTimeoutSeconds(settingsService.getScanTimeoutSeconds());
+        command.setFullScanTimeoutSeconds(settingsService.getFullScanTimeoutSeconds());
         command.setSortAlbumsByYear(settingsService.isSortAlbumsByYear());
         command.setGettingStartedEnabled(settingsService.isGettingStartedEnabled());
         command.setShowVersionOnLogin(settingsService.isShowVersionOnLogin());
@@ -117,6 +119,16 @@ public class GeneralSettingsController {
                 && (!Double.isFinite(replayGainFallback) || replayGainFallback < -12.0 || replayGainFallback > 12.0)) {
             bindingResult.rejectValue("replayGainFallback", "generalsettings.replaygainfallback.invalid");
         }
+        Integer scanTimeout = command.getScanTimeoutSeconds();
+        if (scanTimeout != null && (scanTimeout < 60 || scanTimeout > 86400)) {
+            bindingResult.rejectValue("scanTimeoutSeconds", "generalsettings.scantimeout.invalid");
+        }
+        Integer fullScanTimeout = command.getFullScanTimeoutSeconds();
+        if (fullScanTimeout != null && (fullScanTimeout < 60 || fullScanTimeout > 86400)) {
+            bindingResult.rejectValue("fullScanTimeoutSeconds", "generalsettings.fullscantimeout.invalid");
+        } else if (scanTimeout != null && fullScanTimeout != null && fullScanTimeout < scanTimeout) {
+            bindingResult.rejectValue("fullScanTimeoutSeconds", "generalsettings.fullscantimeout.lessthanscan");
+        }
         if (bindingResult.hasErrors()) {
             redirectAttributes.addFlashAttribute("command", command);
             redirectAttributes.addFlashAttribute("org.springframework.validation.BindingResult.command", bindingResult);
@@ -151,6 +163,8 @@ public class GeneralSettingsController {
         settingsService.setCoverArtConcurrency(command.getCoverArtConcurrency());
         settingsService.setCoverArtQuality(command.getCoverArtQuality());
         settingsService.setReplayGainFallback(command.getReplayGainFallback());
+        settingsService.setScanTimeoutSeconds(command.getScanTimeoutSeconds());
+        settingsService.setFullScanTimeoutSeconds(command.getFullScanTimeoutSeconds());
         settingsService.setSortAlbumsByYear(command.isSortAlbumsByYear());
         settingsService.setGettingStartedEnabled(command.isGettingStartedEnabled());
         settingsService.setShowVersionOnLogin(command.isShowVersionOnLogin());

@@ -159,6 +159,30 @@ public class SettingsServiceTestCase {
     }
 
     @Test
+    public void testScanTimeoutsRoundTrip() {
+        assertNull(settingsService.getScanTimeoutSeconds());
+        assertNull(settingsService.getFullScanTimeoutSeconds());
+
+        settingsService.setScanTimeoutSeconds(600);
+        settingsService.setFullScanTimeoutSeconds(7200);
+        assertEquals(600, settingsService.getScanTimeoutSeconds());
+        assertEquals(7200, settingsService.getFullScanTimeoutSeconds());
+        settingsService.save();
+        SettingsService freshService = newSettingsService();
+        assertEquals(600, freshService.getScanTimeoutSeconds());
+        assertEquals(7200, freshService.getFullScanTimeoutSeconds());
+
+        settingsService.setScanTimeoutSeconds(null);
+        settingsService.setFullScanTimeoutSeconds(null);
+        assertNull(settingsService.getScanTimeoutSeconds());
+        assertNull(settingsService.getFullScanTimeoutSeconds());
+        settingsService.save();
+        freshService = newSettingsService();
+        assertNull(freshService.getScanTimeoutSeconds());
+        assertNull(freshService.getFullScanTimeoutSeconds());
+    }
+
+    @Test
     public void testReplayGainFallbackRoundTrip() {
         assertNull(settingsService.getReplayGainFallback());
 

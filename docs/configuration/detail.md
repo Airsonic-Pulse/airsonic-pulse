@@ -110,27 +110,33 @@ Configuration by Java options, environment variables are working as default valu
 ## airsonic.scan.full-timeout
 
 The maximum time in seconds that Airsonic will spend scanning  media folders when FullScan is enabled.
+A value set in the web interface or in airsonic.properties takes effect at the next scan, without a restart; Java options and environment variables are read at startup.
 
 | item | description |
 | --- | --- |
 | type | integer |
 | default | 14400 |
 | example | airsonic.scan.full-timeout=3600 |
-| configurable by | Java options, environment variables |
+| configurable by | Java options, environment variables, airsonic.properties, web interface |
 | environment variable | AIRSONIC_SCAN_FULLTIMEOUT |
+| airsonic.properties | airsonic.scan.fullTimeout |
+| web interface | Settings > General > Full-scan timeout (seconds) |
 
 
 ## airsonic.scan.timeout
 
 The maximum time in seconds that Airsonic will spend scanning  media folders when FullScan is disabled.
+A value set in the web interface or in airsonic.properties takes effect at the next scan, without a restart; Java options and environment variables are read at startup.
 
 | item | description |
 | --- | --- |
 | type | integer |
 | default | 3600 |
 | example | airsonic.scan.timeout=600 |
-| configurable by | Java options, environment variables |
+| configurable by | Java options, environment variables, airsonic.properties, web interface |
 | environment variable | AIRSONIC_SCAN_TIMEOUT |
+| airsonic.properties | airsonic.scan.timeout |
+| web interface | Settings > General > Scan timeout (seconds) |
 
 ## airsonic.scan.parallelism
 
