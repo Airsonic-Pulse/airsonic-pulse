@@ -45,10 +45,14 @@ public class SavedPlayQueue {
     private Integer id;
     @Column(name = "username", nullable = false)
     private String username;
+    // #214: the explicit position column makes the saved order a guarantee instead of an
+    // accident — without @OrderColumn, JPA gives a @ManyToMany no iteration order and the
+    // queue only held together because rows happened to come back in id order.
     @ManyToMany
     @JoinTable(name = "play_queue_file",
         joinColumns = @JoinColumn(name = "play_queue_id", referencedColumnName = "id"),
         inverseJoinColumns = @JoinColumn(name = "media_file_id", referencedColumnName = "id"))
+    @OrderColumn(name = "position")
     private List<MediaFile> mediaFiles = new ArrayList<>();
     @OneToOne
     @JoinColumn(name = "current_media_file_id", referencedColumnName = "id")
