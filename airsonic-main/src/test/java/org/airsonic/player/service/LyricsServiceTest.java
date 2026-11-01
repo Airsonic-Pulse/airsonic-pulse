@@ -4,24 +4,32 @@ import org.airsonic.player.domain.Lyrics;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.StructuredLyricsLine;
 import org.airsonic.player.parser.lyrics.EmbeddedLyricsParser;
+import org.airsonic.player.parser.lyrics.LrcParser;
 import org.airsonic.player.repository.LyricsRepository;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
@@ -39,6 +47,20 @@ class LyricsServiceTest {
 
     @Mock
     private MediaFile mediaFile;
+
+    @TempDir
+    private Path tempDir;
+
+    /** Copies the committed simple.lrc fixture beside a hypothetical {@code <base>.mp3} in the temp dir. */
+    private Path copySidecar(String base) throws Exception {
+        Path sidecar = tempDir.resolve(base + ".lrc");
+        Files.copy(MusicFolderTestData.resolveLyricsFolderPath().resolve("simple.lrc"), sidecar);
+        return sidecar;
+    }
+
+    private Instant mtime(Path path) throws Exception {
+        return Files.getLastModifiedTime(path).toInstant().truncatedTo(ChronoUnit.MICROS);
+    }
 
     @Test
     void getLyricsFromMediaFile_shouldReturnNullForDirectory() {
@@ -64,11 +86,15 @@ class LyricsServiceTest {
     }
 
     @Test
-    void getLyricsFromMediaFile_shouldReturnExistingLyrics() {
+    void getLyricsFromMediaFile_shouldReturnExistingLyrics() throws Exception {
+        // A cached "file" row is returned as long as it is still fresh against its sidecar (#281):
+        // the stored signal matches the sidecar's current mtime.
         MediaFile mediaFile = mock(MediaFile.class);
         when(mediaFile.isDirectory()).thenReturn(false);
         when(mediaFile.getId()).thenReturn(2);
+        when(mediaFile.getFullPath()).thenReturn(MusicFolderTestData.resolveLyricsFolderPath().resolve("simple.mp3"));
         Lyrics lyrics = new Lyrics("existing lyrics", 2, "file");
+        lyrics.setSourceLastModified(mtime(MusicFolderTestData.resolveLyricsFolderPath().resolve("simple.lrc")));
         when(lyricsRepository.findByMediaFileId(eq(2))).thenReturn(Optional.of(lyrics));
 
         Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
@@ -239,10 +265,14 @@ class LyricsServiceTest {
 
     @Test
     void getLyricsFromMediaFile_shouldPreferCacheOverEmbedded() {
-        // A DB cache hit short-circuits everything — neither sidecar nor embedded is consulted.
+        // A FRESH DB cache hit short-circuits everything — neither sidecar nor embedded is
+        // consulted. A "tag" row is fresh while its signal matches media_file.changed (#281).
+        Instant changed = Instant.parse("2026-01-15T12:00:00Z");
         when(mediaFile.isDirectory()).thenReturn(false);
         when(mediaFile.getId()).thenReturn(22);
+        when(mediaFile.getChanged()).thenReturn(changed);
         Lyrics cached = new Lyrics("cached lyrics", 22, "tag");
+        cached.setSourceLastModified(changed);
         when(lyricsRepository.findByMediaFileId(eq(22))).thenReturn(Optional.of(cached));
 
         Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
@@ -324,5 +354,242 @@ class LyricsServiceTest {
         assertFalse(result.isSynced());
         assertTrue(result.getLines().isEmpty());
         assertEquals("tag", result.getSource());
+    }
+
+    // ---------------------------------------------------------------------------------------
+    // Cache invalidation (#281): a cached row stores the change signal of the source it was
+    // built from (sidecar mtime for "file", media_file.changed for "tag") and is re-resolved
+    // when the signal no longer matches. "user" and "chartlyrics.com" rows are never compared.
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    void getLyricsFromMediaFile_sidecarEditSurfacesNewContentAndSignal() throws Exception {
+        Path sidecar = copySidecar("song");
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.isIndexedTrack()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(40);
+        when(mediaFile.getFullPath()).thenReturn(tempDir.resolve("song.mp3"));
+        when(lyricsRepository.findByMediaFileId(eq(40))).thenReturn(Optional.empty());
+        when(lyricsRepository.save(any(Lyrics.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Lyrics cached = lyricsService.getLyricsFromMediaFile(mediaFile);
+        assertEquals("file", cached.getSource());
+        assertEquals(mtime(sidecar), cached.getSourceLastModified());
+        assertTrue(cached.getLyrics().startsWith("Lyrics1 Line 1\n"));
+
+        // Edit the sidecar: new content, bumped mtime.
+        Files.writeString(sidecar, "[00:01.00]Edited line\n");
+        Files.setLastModifiedTime(sidecar, FileTime.from(cached.getSourceLastModified().plusSeconds(5)));
+        when(lyricsRepository.findByMediaFileId(eq(40))).thenReturn(Optional.of(cached));
+
+        Lyrics refreshed = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertSame(cached, refreshed);
+        assertTrue(refreshed.getLyrics().contains("Edited line"));
+        assertEquals(mtime(sidecar), refreshed.getSourceLastModified());
+        verify(lyricsRepository, times(2)).save(any(Lyrics.class));
+        verifyNoInteractions(embeddedLyricsParser);
+    }
+
+    @Test
+    void getLyricsFromMediaFile_sidecarUnchangedReturnsCachedWithoutReparse() throws Exception {
+        Path sidecar = copySidecar("steady");
+        LrcParser parserSpy = spy(new LrcParser());
+        ReflectionTestUtils.setField(lyricsService, "lrcParser", parserSpy);
+        Lyrics cached = new Lyrics("Lyrics1 Line 1\n", 41, "file");
+        cached.setSourceLastModified(mtime(sidecar));
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(41);
+        when(mediaFile.getFullPath()).thenReturn(tempDir.resolve("steady.mp3"));
+        when(lyricsRepository.findByMediaFileId(eq(41))).thenReturn(Optional.of(cached));
+
+        Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertSame(cached, result);
+        verify(parserSpy, never()).parse(any(Path.class));
+        verify(lyricsRepository, never()).save(any(Lyrics.class));
+        verifyNoInteractions(embeddedLyricsParser);
+    }
+
+    @Test
+    void getLyricsFromMediaFile_sidecarRemovedFallsThroughToEmbedded() {
+        // No .lrc exists for this path any more: the stale "file" row is re-resolved through the
+        // normal tiers and lands on the embedded tag.
+        Path song = tempDir.resolve("gone.mp3");
+        Instant changed = Instant.parse("2026-03-01T08:00:00Z");
+        Lyrics cached = new Lyrics("old sidecar text", 42, "file");
+        cached.setSourceLastModified(Instant.parse("2026-01-01T00:00:00Z"));
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.isIndexedTrack()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(42);
+        when(mediaFile.getFullPath()).thenReturn(song);
+        when(mediaFile.getChanged()).thenReturn(changed);
+        when(lyricsRepository.findByMediaFileId(eq(42))).thenReturn(Optional.of(cached));
+        when(embeddedLyricsParser.getLyrics(song)).thenReturn("embedded fallback");
+        when(lyricsRepository.save(any(Lyrics.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertSame(cached, result);
+        assertEquals("tag", result.getSource());
+        assertEquals("embedded fallback", result.getLyrics());
+        assertEquals(changed, result.getSourceLastModified());
+    }
+
+    @Test
+    void getLyricsFromMediaFile_sidecarRemovedNoEmbeddedDeletesStaleRow() {
+        Path song = tempDir.resolve("vanished.mp3");
+        Lyrics cached = new Lyrics("old sidecar text", 43, "file");
+        cached.setSourceLastModified(Instant.parse("2026-01-01T00:00:00Z"));
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.isIndexedTrack()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(43);
+        when(mediaFile.getFullPath()).thenReturn(song);
+        when(lyricsRepository.findByMediaFileId(eq(43))).thenReturn(Optional.of(cached));
+        when(embeddedLyricsParser.getLyrics(song)).thenReturn(null);
+
+        Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertNull(result);
+        verify(lyricsRepository).delete(cached);
+        verify(lyricsRepository, never()).save(any(Lyrics.class));
+    }
+
+    @Test
+    void getLyricsFromMediaFile_retagSurfacesNewEmbeddedLyrics() {
+        // media_file.changed moved past the stored signal: the tag is re-read and the row is
+        // replaced with the new signal.
+        Path song = tempDir.resolve("retag.mp3");
+        Instant oldChanged = Instant.parse("2026-01-01T00:00:00Z");
+        Instant newChanged = Instant.parse("2026-02-01T00:00:00Z");
+        Lyrics cached = new Lyrics("old embedded", 44, "tag");
+        cached.setSourceLastModified(oldChanged);
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.isIndexedTrack()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(44);
+        when(mediaFile.getFullPath()).thenReturn(song);
+        when(mediaFile.getChanged()).thenReturn(newChanged);
+        when(lyricsRepository.findByMediaFileId(eq(44))).thenReturn(Optional.of(cached));
+        when(embeddedLyricsParser.getLyrics(song)).thenReturn("new embedded");
+        when(lyricsRepository.save(any(Lyrics.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertSame(cached, result);
+        assertEquals("new embedded", result.getLyrics());
+        assertEquals(newChanged, result.getSourceLastModified());
+        verify(lyricsRepository).save(cached);
+    }
+
+    @Test
+    void getLyricsFromMediaFile_tagUnchangedReturnsCachedWithoutTagRead() {
+        Instant changed = Instant.parse("2026-02-01T00:00:00Z");
+        Lyrics cached = new Lyrics("embedded text", 45, "tag");
+        cached.setSourceLastModified(changed);
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(45);
+        when(mediaFile.getChanged()).thenReturn(changed);
+        when(lyricsRepository.findByMediaFileId(eq(45))).thenReturn(Optional.of(cached));
+
+        Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertSame(cached, result);
+        verifyNoInteractions(embeddedLyricsParser);
+        verify(lyricsRepository, never()).save(any(Lyrics.class));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "user", "chartlyrics.com" })
+    void getLyricsFromMediaFile_manualAndExternalRowsNeverRefreshed(String source) {
+        // No comparison ever: neither the sidecar nor media_file.changed is consulted (no
+        // getFullPath/getChanged stubs — touching them would fail the strict-stubs harness).
+        Lyrics cached = new Lyrics("protected text", 46, source);
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(46);
+        when(lyricsRepository.findByMediaFileId(eq(46))).thenReturn(Optional.of(cached));
+
+        Lyrics result = lyricsService.getLyricsFromMediaFile(mediaFile);
+
+        assertSame(cached, result);
+        verify(lyricsRepository, never()).save(any(Lyrics.class));
+        verify(lyricsRepository, never()).delete(any(Lyrics.class));
+        verifyNoInteractions(embeddedLyricsParser);
+    }
+
+    @Test
+    void getLyricsFromMediaFile_nullSignalFileRowRefreshesOnceAndIsStamped() throws Exception {
+        // A pre-#281 "file" row has no signal: it refreshes once, gets stamped, and the second
+        // request is a plain fresh hit with no further save.
+        Path sidecar = copySidecar("legacy");
+        Lyrics cached = new Lyrics("stale pre-281 text", 47, "file");
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.isIndexedTrack()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(47);
+        when(mediaFile.getFullPath()).thenReturn(tempDir.resolve("legacy.mp3"));
+        when(lyricsRepository.findByMediaFileId(eq(47))).thenReturn(Optional.of(cached));
+        when(lyricsRepository.save(any(Lyrics.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Lyrics refreshed = lyricsService.getLyricsFromMediaFile(mediaFile);
+        assertEquals(mtime(sidecar), refreshed.getSourceLastModified());
+        assertTrue(refreshed.getLyrics().startsWith("Lyrics1 Line 1\n"));
+
+        Lyrics second = lyricsService.getLyricsFromMediaFile(mediaFile);
+        assertSame(refreshed, second);
+        verify(lyricsRepository, times(1)).save(any(Lyrics.class));
+    }
+
+    @Test
+    void getLyricsFromMediaFile_nullSignalTagRowRefreshesOnceAndIsStamped() {
+        Path song = tempDir.resolve("legacytag.mp3");
+        Instant changed = Instant.parse("2026-02-01T00:00:00Z");
+        Lyrics cached = new Lyrics("stale pre-281 tag text", 48, "tag");
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.isIndexedTrack()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(48);
+        when(mediaFile.getFullPath()).thenReturn(song);
+        when(mediaFile.getChanged()).thenReturn(changed);
+        when(lyricsRepository.findByMediaFileId(eq(48))).thenReturn(Optional.of(cached));
+        when(embeddedLyricsParser.getLyrics(song)).thenReturn("fresh tag text");
+        when(lyricsRepository.save(any(Lyrics.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Lyrics refreshed = lyricsService.getLyricsFromMediaFile(mediaFile);
+        assertEquals("fresh tag text", refreshed.getLyrics());
+        assertEquals(changed, refreshed.getSourceLastModified());
+
+        Lyrics second = lyricsService.getLyricsFromMediaFile(mediaFile);
+        assertSame(refreshed, second);
+        verify(embeddedLyricsParser, times(1)).getLyrics(song);
+        verify(lyricsRepository, times(1)).save(any(Lyrics.class));
+    }
+
+    @Test
+    void saveLyricsForMediaFile_clearsStructuredLinesAndRefreshesUpdated() throws Exception {
+        // The row-replace helper closes the old wart: repurposing a synced sidecar row as a
+        // manual edit clears the #140 structured lines, refreshes updated, and stores a null
+        // signal (manual rows are exempt from comparison).
+        copySidecar("manual");
+        when(mediaFile.isDirectory()).thenReturn(false);
+        when(mediaFile.isIndexedTrack()).thenReturn(false);
+        when(mediaFile.getId()).thenReturn(49);
+        when(mediaFile.getFullPath()).thenReturn(tempDir.resolve("manual.mp3"));
+        when(lyricsRepository.findByMediaFileId(eq(49))).thenReturn(Optional.empty());
+        when(lyricsRepository.save(any(Lyrics.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Lyrics row = lyricsService.getLyricsFromMediaFile(mediaFile);
+        assertTrue(row.isSynced());
+        assertTrue(row.getLines().size() > 0);
+        Instant updatedBefore = row.getUpdated();
+        when(lyricsRepository.findByMediaFileId(eq(49))).thenReturn(Optional.of(row));
+
+        Thread.sleep(2); // ensure the micros-truncated updated stamp can move
+        boolean saved = lyricsService.saveLyricsForMediaFile(mediaFile, "manual text", "user");
+
+        assertTrue(saved);
+        assertEquals(0, row.getLines().size());
+        assertEquals("manual text", row.getLyrics());
+        assertEquals("user", row.getSource());
+        assertFalse(row.isSynced());
+        assertNull(row.getSourceLastModified());
+        assertTrue(row.getUpdated().isAfter(updatedBefore));
     }
 }
