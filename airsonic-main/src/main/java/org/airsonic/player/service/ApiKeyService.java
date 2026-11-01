@@ -125,11 +125,28 @@ public class ApiKeyService {
     /**
      * Resolve a presented raw key to the persisted {@link ApiKey}, if the hash exists, the key
      * is enabled, and (when present) has not expired. Read-only — does NOT update last_used.
+     * Delegates to {@link #resolveWithReason} so there is a single lookup path (#284).
      */
     @Transactional(readOnly = true)
     public Optional<ApiKey> resolve(String rawKey) {
+        if (resolveWithReason(rawKey) instanceof ResolveResult.Resolved(ApiKey key)) {
+            return Optional.of(key);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Resolve a presented raw key like {@link #resolve}, but report WHICH state rejected it:
+     * unknown (no matching hash), disabled, or expired (#284). The DB lookup runs for every
+     * mode before either state check — the same order resolve has always used — so no
+     * timing branch distinguishes the modes. The reason is for the operator audit sink only;
+     * callers must never let it reach a client response (the #145/#237 enumeration-oracle
+     * defence depends on that).
+     */
+    @Transactional(readOnly = true)
+    public ResolveResult resolveWithReason(String rawKey) {
         if (rawKey == null || rawKey.isBlank() || !rawKey.startsWith(KEY_PREFIX)) {
-            return Optional.empty();
+            return new ResolveResult.Unknown();
         }
         String hash;
         try {
@@ -139,11 +156,20 @@ public class ApiKeyService {
             // diagnose; the raw key is not part of the exception's data so logging the
             // exception is safe.
             LOG.warn("Failed to HMAC API key candidate; check pepper configuration", x);
-            return Optional.empty();
+            return new ResolveResult.Unknown();
         }
-        return apiKeyRepository.findByKeyHash(hash)
-                .filter(ApiKey::isEnabled)
-                .filter(k -> k.getExpiresAt() == null || k.getExpiresAt().isAfter(Instant.now()));
+        Optional<ApiKey> found = apiKeyRepository.findByKeyHash(hash);
+        if (found.isEmpty()) {
+            return new ResolveResult.Unknown();
+        }
+        ApiKey key = found.get();
+        if (!key.isEnabled()) {
+            return new ResolveResult.Disabled(key);
+        }
+        if (key.getExpiresAt() != null && !key.getExpiresAt().isAfter(Instant.now())) {
+            return new ResolveResult.Expired(key);
+        }
+        return new ResolveResult.Resolved(key);
     }
 
     @Transactional(readOnly = true)
@@ -211,5 +237,25 @@ public class ApiKeyService {
      * and the persisted entity (id, name, created, etc. — but NOT the raw key).
      */
     public record GeneratedApiKey(String rawKey, ApiKey persisted) {
+    }
+
+    /**
+     * Outcome of {@link #resolveWithReason} (#284): which state the presented key was in.
+     * {@code Disabled} and {@code Expired} carry the matched entity so the audit log can be
+     * keyed on the key id; {@code Unknown} has no entity by definition. The distinction is
+     * for the operator audit sink ONLY — it must never surface in a client-facing response.
+     */
+    public sealed interface ResolveResult {
+        record Resolved(ApiKey apiKey) implements ResolveResult {
+        }
+
+        record Unknown() implements ResolveResult {
+        }
+
+        record Disabled(ApiKey apiKey) implements ResolveResult {
+        }
+
+        record Expired(ApiKey apiKey) implements ResolveResult {
+        }
     }
 }

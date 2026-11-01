@@ -309,6 +309,81 @@ class ApiKeyServiceTest {
         verify(apiKeyRepository, never()).findByKeyHash(any());
     }
 
+    // ---------------------------------------------------------------------------------------
+    // resolveWithReason (#284): same lookup path as resolve, but reports WHICH state rejected
+    // the key — for the operator audit sink only.
+    // ---------------------------------------------------------------------------------------
+
+    @Test
+    void resolveWithReason_returnsResolvedWithEntityForValidKey() {
+        wireSetterCapture();
+        service.bootstrapPepper();
+        String raw = "ap_canary";
+        ApiKey entity = new ApiKey("alice", service.hash(raw), "phone", Instant.now(), null);
+        entity.setId(1);
+        when(apiKeyRepository.findByKeyHash(service.hash(raw))).thenReturn(Optional.of(entity));
+
+        ApiKeyService.ResolveResult result = service.resolveWithReason(raw);
+
+        assertThat(result).isInstanceOf(ApiKeyService.ResolveResult.Resolved.class);
+        assertSame(entity, ((ApiKeyService.ResolveResult.Resolved) result).apiKey());
+    }
+
+    @Test
+    void resolveWithReason_returnsUnknownWhenNoHashMatches() {
+        wireSetterCapture();
+        service.bootstrapPepper();
+        when(apiKeyRepository.findByKeyHash(any())).thenReturn(Optional.empty());
+
+        ApiKeyService.ResolveResult result = service.resolveWithReason("ap_no_match");
+
+        assertThat(result).isInstanceOf(ApiKeyService.ResolveResult.Unknown.class);
+        // The lookup must still have run — the reason comes from post-lookup checks only,
+        // so no timing branch distinguishes the modes.
+        verify(apiKeyRepository).findByKeyHash(any());
+    }
+
+    @Test
+    void resolveWithReason_returnsDisabledWithEntityForDisabledKey() {
+        wireSetterCapture();
+        service.bootstrapPepper();
+        String raw = "ap_disabled";
+        ApiKey entity = new ApiKey("alice", service.hash(raw), "phone", Instant.now(), null);
+        entity.setEnabled(false);
+        when(apiKeyRepository.findByKeyHash(service.hash(raw))).thenReturn(Optional.of(entity));
+
+        ApiKeyService.ResolveResult result = service.resolveWithReason(raw);
+
+        assertThat(result).isInstanceOf(ApiKeyService.ResolveResult.Disabled.class);
+        assertSame(entity, ((ApiKeyService.ResolveResult.Disabled) result).apiKey());
+    }
+
+    @Test
+    void resolveWithReason_returnsExpiredWithEntityForExpiredKey() {
+        wireSetterCapture();
+        service.bootstrapPepper();
+        String raw = "ap_expired";
+        ApiKey entity = new ApiKey("alice", service.hash(raw), "phone", Instant.now(),
+                Instant.now().minus(1, ChronoUnit.DAYS));
+        when(apiKeyRepository.findByKeyHash(service.hash(raw))).thenReturn(Optional.of(entity));
+
+        ApiKeyService.ResolveResult result = service.resolveWithReason(raw);
+
+        assertThat(result).isInstanceOf(ApiKeyService.ResolveResult.Expired.class);
+        assertSame(entity, ((ApiKeyService.ResolveResult.Expired) result).apiKey());
+    }
+
+    @Test
+    void resolveWithReason_returnsUnknownForBlankOrUnprefixedInputWithoutLookup() {
+        wireSetterCapture();
+        service.bootstrapPepper();
+
+        assertThat(service.resolveWithReason(null)).isInstanceOf(ApiKeyService.ResolveResult.Unknown.class);
+        assertThat(service.resolveWithReason("")).isInstanceOf(ApiKeyService.ResolveResult.Unknown.class);
+        assertThat(service.resolveWithReason("no-prefix-here")).isInstanceOf(ApiKeyService.ResolveResult.Unknown.class);
+        verify(apiKeyRepository, never()).findByKeyHash(any());
+    }
+
     @Test
     void resolve_doesNotWriteLastUsed() {
         // PR-A's contract: resolve is read-only. last_used is the throttled concern of PR-B

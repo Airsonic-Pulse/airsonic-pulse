@@ -30,8 +30,6 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
-import java.util.Optional;
-
 /**
  * Resolves an {@link APIKeyAuthenticationToken} against the apiKey storage layer. Returns a
  * fully-authenticated token carrying the user's principal + authorities, or throws
@@ -41,11 +39,12 @@ import java.util.Optional;
  * The raw key is never logged or included in exception messages.
  * <p>
  * Each failure path additionally emits an operator-only audit log at INFO recording the actual
- * reason (#237). The audit log is keyed on {@link ApiKey#getId()} where a key resolved (the
- * user-gone / user-disabled paths); the unresolved paths (blank credentials, unknown/disabled/
- * expired key) have no {@code ApiKey} object and log the reason with no key material — never the
- * raw key or its hash. The audit log distinguishes the modes for forensics; the thrown exception
- * stays opaque so the client-facing response reveals nothing (the enumeration-oracle defence).
+ * reason (#237, refined by #284 to distinguish unknown, disabled, and expired keys). The audit
+ * log is keyed on {@link ApiKey#getId()} wherever a key row was matched (disabled key, expired
+ * key, user-gone, user-disabled); the paths with no matched row (blank credentials, unknown key)
+ * log the reason with no key material — never the raw key or its hash. The audit log
+ * distinguishes the modes for forensics; the thrown exception stays opaque so the client-facing
+ * response reveals nothing (the enumeration-oracle defence).
  */
 public class APIKeyAuthenticationProvider implements AuthenticationProvider {
 
@@ -69,15 +68,25 @@ public class APIKeyAuthenticationProvider implements AuthenticationProvider {
             throw new BadCredentialsException("Invalid API key");
         }
 
-        Optional<ApiKey> resolved = apiKeyService.resolve(rawKey);
-        if (resolved.isEmpty()) {
-            // ApiKeyService.resolve already filters disabled + expired keys, so unknown, disabled,
-            // and expired all collapse here indistinguishably — there is no ApiKey object and no
-            // id to log, and the raw key must never be logged.
-            LOG.info("API key authentication failed: unknown or unresolvable API key (unknown, disabled, or expired)");
+        ApiKeyService.ResolveResult result = apiKeyService.resolveWithReason(rawKey);
+        if (!(result instanceof ApiKeyService.ResolveResult.Resolved(ApiKey resolvedKey))) {
+            // #284: the audit sink distinguishes the modes; the client response must not. Each
+            // mode logs its reason (keyed on the key id where a row matched, never the raw key
+            // or its hash), then every mode falls through to the one identical throw below.
+            switch (result) {
+                case ApiKeyService.ResolveResult.Unknown ignored ->
+                    LOG.info("API key authentication failed: unknown API key (no issued key matches; probe, typo, or a key from a different pepper)");
+                case ApiKeyService.ResolveResult.Disabled(ApiKey disabledKey) ->
+                    LOG.info("API key authentication failed: key is disabled but still being presented [apiKeyId={}]", disabledKey.getId());
+                case ApiKeyService.ResolveResult.Expired(ApiKey expiredKey) ->
+                    LOG.info("API key authentication failed: key has expired and needs rotation [apiKeyId={}]", expiredKey.getId());
+                case ApiKeyService.ResolveResult.Resolved ignored -> {
+                    // Unreachable — the resolved case is handled above; present for exhaustiveness.
+                }
+            }
             throw new BadCredentialsException("Invalid API key");
         }
-        ApiKey apiKey = resolved.get();
+        ApiKey apiKey = resolvedKey;
 
         UserDetails user;
         try {

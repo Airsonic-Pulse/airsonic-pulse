@@ -42,7 +42,6 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -100,6 +99,14 @@ class APIKeyAuthenticationProviderTest {
         return k;
     }
 
+    private ApiKey keyWithHash(String keyHash) {
+        // A distinctive hash value so the no-key-material log assertions have something
+        // recognisable to assert the absence of.
+        ApiKey k = new ApiKey("alice", keyHash, "phone", Instant.now(), null);
+        k.setId(7);
+        return k;
+    }
+
     @Test
     void supports_onlyAPIKeyToken() {
         assertTrue(provider.supports(APIKeyAuthenticationToken.class));
@@ -109,7 +116,8 @@ class APIKeyAuthenticationProviderTest {
     @Test
     void authenticate_validKey_returnsAuthenticatedTokenWithUserAuthorities() {
         ApiKey apiKey = aliceKey();
-        when(apiKeyService.resolve("ap_alpha")).thenReturn(Optional.of(apiKey));
+        when(apiKeyService.resolveWithReason("ap_alpha"))
+                .thenReturn(new ApiKeyService.ResolveResult.Resolved(apiKey));
         when(securityService.loadUserByUsername("alice")).thenReturn(activeUser());
 
         Authentication result = provider.authenticate(new APIKeyAuthenticationToken(null, "ap_alpha"));
@@ -124,7 +132,8 @@ class APIKeyAuthenticationProviderTest {
 
     @Test
     void authenticate_unknownKey_collapsesToBadCredentials() {
-        when(apiKeyService.resolve("ap_unknown")).thenReturn(Optional.empty());
+        when(apiKeyService.resolveWithReason("ap_unknown"))
+                .thenReturn(new ApiKeyService.ResolveResult.Unknown());
 
         assertThrows(BadCredentialsException.class,
                 () -> provider.authenticate(new APIKeyAuthenticationToken(null, "ap_unknown")));
@@ -132,18 +141,25 @@ class APIKeyAuthenticationProviderTest {
 
     @Test
     void authenticate_disabledOrExpiredKey_collapsesToBadCredentials() {
-        // ApiKeyService.resolve already filters disabled + expired — provider sees Optional.empty.
-        when(apiKeyService.resolve("ap_disabled")).thenReturn(Optional.empty());
+        // #284: the provider now sees the distinct Disabled / Expired results, but both must
+        // still collapse to the identical opaque exception.
+        when(apiKeyService.resolveWithReason("ap_disabled"))
+                .thenReturn(new ApiKeyService.ResolveResult.Disabled(aliceKey()));
+        when(apiKeyService.resolveWithReason("ap_expired"))
+                .thenReturn(new ApiKeyService.ResolveResult.Expired(aliceKey()));
 
         assertThrows(BadCredentialsException.class,
                 () -> provider.authenticate(new APIKeyAuthenticationToken(null, "ap_disabled")));
+        assertThrows(BadCredentialsException.class,
+                () -> provider.authenticate(new APIKeyAuthenticationToken(null, "ap_expired")));
     }
 
     @Test
     void authenticate_userGone_collapsesToBadCredentials() {
         // Enumeration-oracle defence: a key pointing at a deleted user must look identical
         // to "no such key" from the outside.
-        when(apiKeyService.resolve("ap_orphaned")).thenReturn(Optional.of(aliceKey()));
+        when(apiKeyService.resolveWithReason("ap_orphaned"))
+                .thenReturn(new ApiKeyService.ResolveResult.Resolved(aliceKey()));
         when(securityService.loadUserByUsername("alice"))
                 .thenThrow(new UsernameNotFoundException("alice"));
 
@@ -153,7 +169,8 @@ class APIKeyAuthenticationProviderTest {
 
     @Test
     void authenticate_disabledUser_collapsesToBadCredentials() {
-        when(apiKeyService.resolve("ap_alpha")).thenReturn(Optional.of(aliceKey()));
+        when(apiKeyService.resolveWithReason("ap_alpha"))
+                .thenReturn(new ApiKeyService.ResolveResult.Resolved(aliceKey()));
         UserDetails locked = new User("alice", "n/a", false, true, true, true,
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
         when(securityService.loadUserByUsername("alice")).thenReturn(locked);
@@ -190,21 +207,64 @@ class APIKeyAuthenticationProviderTest {
 
     @Test
     void auditLog_unknownKey_logsReasonNoIdAndNoRawKey() {
-        when(apiKeyService.resolve("ap_unknown_secret")).thenReturn(Optional.empty());
+        when(apiKeyService.resolveWithReason("ap_unknown_secret"))
+                .thenReturn(new ApiKeyService.ResolveResult.Unknown());
 
-        assertThrows(BadCredentialsException.class,
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class,
                 () -> provider.authenticate(new APIKeyAuthenticationToken(null, "ap_unknown_secret")));
 
+        // The response stays opaque — same class, message, and (absent) cause as every mode.
+        assertThat(ex.getMessage()).isEqualTo("Invalid API key");
+        assertThat(ex.getCause()).isNull();
         assertThat(infoMessages()).hasSize(1);
-        assertThat(infoMessages().get(0)).contains("unknown or unresolvable API key");
+        assertThat(infoMessages().get(0)).contains("unknown API key");
         assertThat(infoMessages().get(0)).doesNotContain("apiKeyId=");
         // The presented raw key must never reach any log sink.
         assertThat(infoMessages().get(0)).doesNotContain("ap_unknown_secret");
     }
 
     @Test
+    void auditLog_disabledKey_logsReasonWithApiKeyIdAndNoKeyMaterial() {
+        // #284: a disabled key matched a row, so the audit line carries the key id — but the
+        // raw key and the stored hash must stay out of the log, and the throw stays opaque.
+        ApiKey disabled = keyWithHash("0123456789abcdef_disabled_hash");
+        when(apiKeyService.resolveWithReason("ap_disabled_secret"))
+                .thenReturn(new ApiKeyService.ResolveResult.Disabled(disabled));
+
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class,
+                () -> provider.authenticate(new APIKeyAuthenticationToken(null, "ap_disabled_secret")));
+
+        assertThat(ex.getMessage()).isEqualTo("Invalid API key");
+        assertThat(ex.getCause()).isNull();
+        assertThat(infoMessages()).hasSize(1);
+        assertThat(infoMessages().get(0)).contains("key is disabled");
+        assertThat(infoMessages().get(0)).contains("apiKeyId=7");
+        assertThat(infoMessages().get(0)).doesNotContain("ap_disabled_secret");
+        assertThat(infoMessages().get(0)).doesNotContain("0123456789abcdef_disabled_hash");
+    }
+
+    @Test
+    void auditLog_expiredKey_logsReasonWithApiKeyIdAndNoKeyMaterial() {
+        ApiKey expired = keyWithHash("0123456789abcdef_expired_hash");
+        when(apiKeyService.resolveWithReason("ap_expired_secret"))
+                .thenReturn(new ApiKeyService.ResolveResult.Expired(expired));
+
+        BadCredentialsException ex = assertThrows(BadCredentialsException.class,
+                () -> provider.authenticate(new APIKeyAuthenticationToken(null, "ap_expired_secret")));
+
+        assertThat(ex.getMessage()).isEqualTo("Invalid API key");
+        assertThat(ex.getCause()).isNull();
+        assertThat(infoMessages()).hasSize(1);
+        assertThat(infoMessages().get(0)).contains("key has expired");
+        assertThat(infoMessages().get(0)).contains("apiKeyId=7");
+        assertThat(infoMessages().get(0)).doesNotContain("ap_expired_secret");
+        assertThat(infoMessages().get(0)).doesNotContain("0123456789abcdef_expired_hash");
+    }
+
+    @Test
     void auditLog_userGone_logsReasonWithApiKeyId() {
-        when(apiKeyService.resolve("ap_orphaned")).thenReturn(Optional.of(aliceKey()));
+        when(apiKeyService.resolveWithReason("ap_orphaned"))
+                .thenReturn(new ApiKeyService.ResolveResult.Resolved(aliceKey()));
         when(securityService.loadUserByUsername("alice"))
                 .thenThrow(new UsernameNotFoundException("alice"));
 
@@ -218,7 +278,8 @@ class APIKeyAuthenticationProviderTest {
 
     @Test
     void auditLog_disabledUser_logsReasonWithApiKeyId() {
-        when(apiKeyService.resolve("ap_alpha")).thenReturn(Optional.of(aliceKey()));
+        when(apiKeyService.resolveWithReason("ap_alpha"))
+                .thenReturn(new ApiKeyService.ResolveResult.Resolved(aliceKey()));
         UserDetails locked = new User("alice", "n/a", false, true, true, true,
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
         when(securityService.loadUserByUsername("alice")).thenReturn(locked);
@@ -236,9 +297,12 @@ class APIKeyAuthenticationProviderTest {
         // The enumeration-oracle defence: every failure mode must throw the identical opaque
         // exception — same type, same message, no distinguishing cause — regardless of the
         // (distinguishing) audit log. This is the test that proves the defence wasn't weakened.
-        when(apiKeyService.resolve("ap_unknown")).thenReturn(Optional.empty());
-        when(apiKeyService.resolve("ap_orphaned")).thenReturn(Optional.of(aliceKey()));
-        when(apiKeyService.resolve("ap_disabled_user")).thenReturn(Optional.of(aliceKey()));
+        when(apiKeyService.resolveWithReason("ap_unknown"))
+                .thenReturn(new ApiKeyService.ResolveResult.Unknown());
+        when(apiKeyService.resolveWithReason("ap_orphaned"))
+                .thenReturn(new ApiKeyService.ResolveResult.Resolved(aliceKey()));
+        when(apiKeyService.resolveWithReason("ap_disabled_user"))
+                .thenReturn(new ApiKeyService.ResolveResult.Resolved(aliceKey()));
         UserDetails lockedUser = new User("bob", "n/a", false, true, true, true,
                 List.of(new SimpleGrantedAuthority("ROLE_USER")));
         when(securityService.loadUserByUsername("alice"))
@@ -261,7 +325,8 @@ class APIKeyAuthenticationProviderTest {
 
     @Test
     void auditLog_successPath_emitsNoFailureAudit() {
-        when(apiKeyService.resolve("ap_alpha")).thenReturn(Optional.of(aliceKey()));
+        when(apiKeyService.resolveWithReason("ap_alpha"))
+                .thenReturn(new ApiKeyService.ResolveResult.Resolved(aliceKey()));
         when(securityService.loadUserByUsername("alice")).thenReturn(activeUser());
 
         Authentication result = provider.authenticate(new APIKeyAuthenticationToken(null, "ap_alpha"));
