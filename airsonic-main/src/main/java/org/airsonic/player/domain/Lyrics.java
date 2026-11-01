@@ -54,6 +54,13 @@ public class Lyrics {
     @Column(name = "updated", nullable = false)
     private Instant updated;
 
+    // The change signal of the source this cached row was built from (#281): the LRC sidecar's
+    // file mtime for source="file", media_file.changed for source="tag". Null for user and
+    // chartlyrics.com rows (never compared) and for rows cached before the column existed
+    // (those refresh once on the next request).
+    @Column(name = "source_last_modified", nullable = true)
+    private Instant sourceLastModified;
+
     /**
      * Creates a new Lyrics instance with the provided lyrics.
      * The created and updated timestamps are set to the current time.
@@ -111,6 +118,14 @@ public class Lyrics {
 
     public void setUpdated(Instant updated) {
         this.updated = updated;
+    }
+
+    public Instant getSourceLastModified() {
+        return sourceLastModified;
+    }
+
+    public void setSourceLastModified(Instant sourceLastModified) {
+        this.sourceLastModified = sourceLastModified;
     }
 
     public String getSource() {
