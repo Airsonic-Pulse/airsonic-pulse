@@ -39,7 +39,7 @@ import org.airsonic.player.service.hls.HlsSession;
 import org.airsonic.player.util.FileUtil;
 import org.airsonic.player.util.NetworkUtil;
 import org.airsonic.player.util.StringUtil;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -22,7 +22,7 @@ package org.airsonic.player.service.metadata;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.MediaFolderService;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.jaudiotagger.tag.reference.GenreTypes;
 
 import java.nio.file.Path;

@@ -23,7 +23,7 @@ import org.airsonic.player.command.UserSettingsCommand;
 import org.airsonic.player.controller.UserSettingsController;
 import org.airsonic.player.service.SecurityService;
 import org.airsonic.player.service.SettingsService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 

@@ -22,7 +22,7 @@ package org.airsonic.player.controller;
 import org.airsonic.player.command.DLNACommand;
 import org.airsonic.player.service.SettingsService;
 import org.airsonic.player.service.UPnPService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;

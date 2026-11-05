@@ -24,7 +24,7 @@ import org.airsonic.player.domain.PlayerTechnology;
 import org.airsonic.player.service.MediaFileService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.util.StringUtil;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.subsonic.restapi.Response;
 
@@ -89,7 +89,9 @@ public abstract class AbstractSubsonicController {
     }
 
     protected String mapId(String id) {
-        if (id == null || id.startsWith(CoverArtController.ALBUM_COVERART_PREFIX) ||
+        // lang3 isNumeric("") is false (lang 2.x returned true); the explicit isEmpty keeps an
+        // empty id short-circuiting here instead of falling into the hex-decode lookup below.
+        if (id == null || id.isEmpty() || id.startsWith(CoverArtController.ALBUM_COVERART_PREFIX) ||
                 id.startsWith(CoverArtController.ARTIST_COVERART_PREFIX) || StringUtils.isNumeric(id)) {
             return id;
         }
