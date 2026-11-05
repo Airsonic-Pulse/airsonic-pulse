@@ -1,5 +1,8 @@
 package org.airsonic.player.repository;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.database.jvm.JdbcConnection;
@@ -15,13 +18,13 @@ import org.airsonic.player.domain.SavedPlayQueue;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.service.PlayQueueService;
 import org.airsonic.player.spring.migrations.PlayQueueFilePositionBackfill;
-import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,7 +40,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -48,9 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * the Liquibase backfill, and the @OrderColumn mapping that reads and writes it.
  */
 @EnableConfigurationProperties({ AirsonicHomeConfig.class })
-@SpringBootTest(properties = {
-    "spring.jpa.properties.hibernate.session_factory.statement_inspector="
-            + "org.airsonic.player.repository.SavedPlayQueueRepositoryTest$RecordingStatementInspector" })
+@SpringBootTest
 public class SavedPlayQueueRepositoryTest {
 
     private static final String USER_A = "pq214_user_a";
@@ -271,32 +271,34 @@ public class SavedPlayQueueRepositoryTest {
         // The mapping-level proof (#214 two-state): the SELECT that loads the collection must
         // carry the position column — with @OrderColumn removed it does not, even though the
         // order-through-reload test above would still pass on HSQLDB by id-order accident.
+        // The SQL is captured from the org.hibernate.SQL logger at DEBUG rather than a
+        // StatementInspector, so the test needs no compile-time Hibernate dependency.
         savedPlayQueueRepository.save(newQueue(USER_A, List.of(song1, song2, song3)));
         entityManager.flush();
         entityManager.clear();
 
-        RecordingStatementInspector.STATEMENTS.clear();
-        SavedPlayQueue reloaded = savedPlayQueueRepository.findByUsername(USER_A).orElseThrow();
-        assertEquals(3, reloaded.getMediaFiles().size());
+        ch.qos.logback.classic.Logger sqlLogger =
+                (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.hibernate.SQL");
+        Level previousLevel = sqlLogger.getLevel();
+        sqlLogger.setLevel(Level.DEBUG);
+        ListAppender<ILoggingEvent> appender = new ListAppender<>();
+        appender.start();
+        sqlLogger.addAppender(appender);
+        try {
+            SavedPlayQueue reloaded = savedPlayQueueRepository.findByUsername(USER_A).orElseThrow();
+            assertEquals(3, reloaded.getMediaFiles().size());
+        } finally {
+            sqlLogger.detachAppender(appender);
+            sqlLogger.setLevel(previousLevel);
+        }
 
-        List<String> joinTableSelects = RecordingStatementInspector.STATEMENTS.stream()
-                .filter(sql -> sql.startsWith("select") && sql.contains("play_queue_file"))
+        List<String> joinTableSelects = appender.list.stream()
+                .map(event -> event.getFormattedMessage().toLowerCase())
+                .filter(sql -> sql.contains("select") && sql.contains("play_queue_file"))
                 .toList();
         assertTrue(!joinTableSelects.isEmpty(), "the collection load must query play_queue_file");
         assertTrue(joinTableSelects.stream().anyMatch(sql -> sql.contains("position")),
                 "the collection load must read the position column (@OrderColumn drives the order); got: "
                         + joinTableSelects);
-    }
-
-    /** Captures every SQL statement Hibernate issues, for the mapping assertions. */
-    public static class RecordingStatementInspector implements StatementInspector {
-
-        static final List<String> STATEMENTS = new CopyOnWriteArrayList<>();
-
-        @Override
-        public String inspect(String sql) {
-            STATEMENTS.add(sql.toLowerCase());
-            return sql;
-        }
     }
 }
