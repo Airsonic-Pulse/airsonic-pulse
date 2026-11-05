@@ -19,7 +19,7 @@
  */
 package org.airsonic.player.util;
 
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.Locale;
@@ -36,11 +36,11 @@ public class StringUtilTestCase {
 
     @Test
     public void testToHtml() {
-        assertEquals(null, StringEscapeUtils.escapeHtml(null));
-        assertEquals("", StringEscapeUtils.escapeHtml(""));
-        assertEquals(" ", StringEscapeUtils.escapeHtml(" "));
-        assertEquals("q &amp; a", StringEscapeUtils.escapeHtml("q & a"));
-        assertEquals("q &amp; a &lt;&gt; b", StringEscapeUtils.escapeHtml("q & a <> b"));
+        assertEquals(null, StringEscapeUtils.escapeHtml4(null));
+        assertEquals("", StringEscapeUtils.escapeHtml4(""));
+        assertEquals(" ", StringEscapeUtils.escapeHtml4(" "));
+        assertEquals("q &amp; a", StringEscapeUtils.escapeHtml4("q & a"));
+        assertEquals("q &amp; a &lt;&gt; b", StringEscapeUtils.escapeHtml4("q & a <> b"));
     }
 
     @Test

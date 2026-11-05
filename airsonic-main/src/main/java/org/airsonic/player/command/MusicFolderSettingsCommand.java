@@ -24,7 +24,7 @@ import com.google.re2j.Pattern;
 import org.airsonic.player.controller.MusicFolderSettingsController;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

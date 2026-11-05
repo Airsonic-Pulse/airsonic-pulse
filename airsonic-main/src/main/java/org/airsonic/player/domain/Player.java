@@ -20,7 +20,7 @@
  */
 package org.airsonic.player.domain;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import jakarta.persistence.*;
 

@@ -23,7 +23,7 @@ package org.airsonic.player.controller;
 import org.airsonic.player.command.ChangeCoverArtCommand;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.service.MediaFileService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.ServletRequestUtils;

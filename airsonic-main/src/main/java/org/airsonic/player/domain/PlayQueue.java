@@ -19,7 +19,7 @@
  */
 package org.airsonic.player.domain;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.nio.file.Files;
 import java.util.*;

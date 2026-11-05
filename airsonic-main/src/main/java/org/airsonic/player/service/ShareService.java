@@ -27,7 +27,7 @@ import org.airsonic.player.domain.entity.Share;
 import org.airsonic.player.domain.entity.ShareFile;
 import org.airsonic.player.repository.ShareRepository;
 import org.airsonic.player.util.NetworkUtil;
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -102,7 +102,7 @@ public class ShareService {
 
         Instant now = Instant.now();
         Share share = new Share();
-        share.setName(RandomStringUtils.random(5, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"));
+        share.setName(RandomStringUtils.secure().next(5, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"));
         share.setCreated(now);
         share.setUsername(username);
         share.setExpires(now.plus(ChronoUnit.YEARS.getDuration()));

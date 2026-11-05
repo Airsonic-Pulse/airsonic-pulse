@@ -9,7 +9,7 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.repository.CoverArtRepository;
 import org.airsonic.player.repository.MediaFileRepository;
 import org.airsonic.player.service.cache.CoverArtCache;
-import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.commons.text.StringEscapeUtils;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -213,7 +213,7 @@ public class CoverArtService {
         Path fullPath = dir.getFullPath();
         Path newCoverFile = fullPath.resolve("cover." + suffix);
         if (!securityService.isWriteAllowed(folder.getPath().relativize(newCoverFile), folder)) {
-            throw new SecurityException("Permission denied: " + StringEscapeUtils.escapeHtml(newCoverFile.toString()));
+            throw new SecurityException("Permission denied: " + StringEscapeUtils.escapeHtml4(newCoverFile.toString()));
         }
 
         try (CloseableHttpClient client = HttpClients.createDefault();

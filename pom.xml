@@ -410,7 +410,6 @@
                                 <ignoredUsedUndeclaredDependency>org.junit.jupiter:junit-jupiter-api:*</ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>org.junit.jupiter:junit-jupiter-params:*</ignoredUsedUndeclaredDependency>
                                 <ignoredUsedUndeclaredDependency>org.mockito:mockito-junit-jupiter:*</ignoredUsedUndeclaredDependency>
-                                <ignoredUsedUndeclaredDependency>commons-lang:*:*</ignoredUsedUndeclaredDependency>
 				                <ignoredUsedUndeclaredDependency>jakarta.persistence:jakarta.persistence-api</ignoredUsedUndeclaredDependency>
 				                <ignoredUsedUndeclaredDependency>org.springframework.data:spring-data-jpa</ignoredUsedUndeclaredDependency>
 				                <ignoredUsedUndeclaredDependency>org.junit.jupiter:junit-jupiter-params:*</ignoredUsedUndeclaredDependency>

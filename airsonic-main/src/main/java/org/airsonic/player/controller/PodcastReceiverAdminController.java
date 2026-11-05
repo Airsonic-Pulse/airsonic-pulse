@@ -24,7 +24,7 @@ import org.airsonic.player.domain.PodcastStatus;
 import org.airsonic.player.service.PodcastManagementService;
 import org.airsonic.player.service.PodcastPersistenceService;
 import org.airsonic.player.service.podcast.PodcastDownloadClient;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.RequestMapping;
