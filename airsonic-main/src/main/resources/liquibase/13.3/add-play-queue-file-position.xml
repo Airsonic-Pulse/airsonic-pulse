@@ -1,0 +1,63 @@
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <!-- #214: saved play-queue ordering relied on play_queue_file.id auto-increment matching
+         insertion order. Make it explicit: a position column managed by @OrderColumn, backfilled
+         from the current id order so existing saved queues keep their order through the upgrade. -->
+
+    <changeSet id="add-play-queue-file-position-column" author="litebito">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <columnExists tableName="play_queue_file" columnName="position" />
+            </not>
+        </preConditions>
+        <addColumn tableName="play_queue_file">
+            <column name="position" type="int">
+                <constraints nullable="true" />
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="backfill-play-queue-file-position" author="litebito">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="play_queue_file" columnName="position" />
+        </preConditions>
+        <!-- Assigns 0..n-1 per play_queue_id in ascending id order — the order rows were
+             returned in before this change. Only touches rows whose position is NULL, so a
+             re-run is a no-op. One JDBC implementation, identical on all four dialects. -->
+        <customChange class="org.airsonic.player.spring.migrations.PlayQueueFilePositionBackfill"></customChange>
+        <rollback>
+            <update tableName="play_queue_file">
+                <column name="position"></column>
+            </update>
+        </rollback>
+    </changeSet>
+
+    <changeSet id="play-queue-file-position-not-null" author="litebito">
+        <preConditions onFail="MARK_RAN">
+            <columnExists tableName="play_queue_file" columnName="position" />
+        </preConditions>
+        <addNotNullConstraint tableName="play_queue_file" columnName="position" columnDataType="int" />
+        <rollback>
+            <dropNotNullConstraint tableName="play_queue_file" columnName="position" columnDataType="int" />
+        </rollback>
+    </changeSet>
+
+    <changeSet id="add-play-queue-file-queue-position-index" author="litebito">
+        <preConditions onFail="MARK_RAN">
+            <not>
+                <indexExists tableName="play_queue_file" indexName="idx_play_queue_file_queue_position" />
+            </not>
+        </preConditions>
+        <createIndex tableName="play_queue_file" indexName="idx_play_queue_file_queue_position">
+            <column name="play_queue_id" />
+            <column name="position" />
+        </createIndex>
+        <rollback>
+            <dropIndex tableName="play_queue_file" indexName="idx_play_queue_file_queue_position" />
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>
