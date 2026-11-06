@@ -8,11 +8,13 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.repository.MusicFolderRepository;
 import org.airsonic.player.service.search.IndexManager;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,7 @@ import static org.mockito.Mockito.when;
     "airsonic.scan.parallelism=1"
 })
 @SpringBootTest
+@ExtendWith(FixtureTableGuardExtension.class)
 public class MediaScannerServiceTest {
 
     @Autowired
@@ -88,6 +91,9 @@ public class MediaScannerServiceTest {
 
     @AfterEach
     public void cleanup() {
+        // artist/album rows have no FK to music_folder; delete the scan's rows for this
+        // class's folder ids before the folders themselves (#266).
+        MusicFolderTestData.deleteScannedArtistsAndAlbums(jdbcTemplate, testFolders);
         musicFolderRepository.deleteAll(testFolders);
         testFolders = new ArrayList<>();
     }

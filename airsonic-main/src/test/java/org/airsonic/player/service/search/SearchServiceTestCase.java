@@ -19,19 +19,21 @@ import org.airsonic.player.service.AlbumService;
 import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.service.SearchService;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.subsonic.restapi.ArtistID3;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
@@ -41,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest
 @EnableConfigurationProperties
+@ExtendWith(FixtureTableGuardExtension.class)
 public class SearchServiceTestCase {
 
     @Autowired
@@ -55,6 +58,9 @@ public class SearchServiceTestCase {
 
     @Autowired
     private MediaScannerService mediaScannerService;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @TempDir
     private static Path airsonicHome;
@@ -73,16 +79,15 @@ public class SearchServiceTestCase {
 
     @BeforeEach
     public void setup() {
-        persistedFolders = new ArrayList<>();
-        for (MusicFolder musicFolder : MusicFolderTestData.getTestMusicFolders()) {
-            mediaFolderService.createMusicFolder(musicFolder);
-            persistedFolders.add(musicFolder);
-        }
+        persistedFolders = MusicFolderTestData.createTestMusicFolders(mediaFolderService);
         TestCaseUtils.execScan(mediaScannerService);
     }
 
     @AfterEach
     public void cleanup() {
+        // artist/album rows have no FK to music_folder, so the scan's rows must go explicitly,
+        // scoped to this class's folder ids, before the folders themselves (#266).
+        MusicFolderTestData.deleteScannedArtistsAndAlbums(jdbcTemplate, persistedFolders);
         for (MusicFolder folder : persistedFolders) {
             mediaFolderService.deleteMusicFolder(folder.getId());
         }

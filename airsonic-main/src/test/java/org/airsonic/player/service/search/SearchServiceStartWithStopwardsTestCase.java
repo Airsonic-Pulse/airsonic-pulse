@@ -9,15 +9,18 @@ import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.service.SearchService;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.nio.file.Path;
 import java.time.Instant;
@@ -37,6 +40,7 @@ import static org.springframework.util.ObjectUtils.isEmpty;
  */
 @SpringBootTest
 @EnableConfigurationProperties
+@ExtendWith(FixtureTableGuardExtension.class)
 public class SearchServiceStartWithStopwardsTestCase {
 
     private List<MusicFolder> musicFolders;
@@ -51,6 +55,9 @@ public class SearchServiceStartWithStopwardsTestCase {
     private MediaFolderService mediaFolderService;
 
     @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
     private MediaScannerService mediaScannerService;
 
     @BeforeAll
@@ -60,17 +67,21 @@ public class SearchServiceStartWithStopwardsTestCase {
 
     @BeforeEach
     public void setup() {
-        for (MusicFolder musicFolder : getMusicFolders()) {
-            mediaFolderService.createMusicFolder(musicFolder);
-        }
+        MusicFolderTestData.createMusicFolders(mediaFolderService, getMusicFolders());
         TestCaseUtils.execScan(mediaScannerService);
     }
 
     @AfterEach
     public void tearDown() {
+        // artist/album rows have no FK to music_folder; delete the scan's rows for this
+        // class's folder ids before the folders themselves (#266).
+        MusicFolderTestData.deleteScannedArtistsAndAlbums(jdbcTemplate, getMusicFolders());
         for (MusicFolder musicFolder : getMusicFolders()) {
             mediaFolderService.deleteMusicFolder(musicFolder.getId());
         }
+        // deleteMusicFolder only soft-deletes a scanned folder; expunge hard-deletes it and
+        // cascades its media_file rows (#266 — this class previously left both behind).
+        mediaFolderService.expunge();
         musicFolders.clear();
     }
 

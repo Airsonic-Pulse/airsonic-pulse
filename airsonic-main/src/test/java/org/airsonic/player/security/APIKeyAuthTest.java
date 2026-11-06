@@ -22,9 +22,12 @@ import org.airsonic.player.config.AirsonicHomeConfig;
 import org.airsonic.player.domain.ApiKey;
 import org.airsonic.player.repository.ApiKeyRepository;
 import org.airsonic.player.service.ApiKeyService;
+import org.airsonic.player.util.FixtureTableGuardExtension;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -36,6 +39,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -53,6 +58,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @AutoConfigureMockMvc
 @SpringBootTest
+@ExtendWith(FixtureTableGuardExtension.class)
 @EnableConfigurationProperties({AirsonicHomeConfig.class})
 public class APIKeyAuthTest {
 
@@ -74,6 +80,7 @@ public class APIKeyAuthTest {
 
     private String aliveKey;
     private Integer aliveKeyId;
+    private final List<Integer> createdKeyIds = new ArrayList<>();
 
     @BeforeAll
     public static void beforeAll() {
@@ -86,6 +93,16 @@ public class APIKeyAuthTest {
         ApiKeyService.GeneratedApiKey g = apiKeyService.generate(USERNAME, "test-key", null);
         this.aliveKey = g.rawKey();
         this.aliveKeyId = g.persisted().getId();
+        this.createdKeyIds.add(this.aliveKeyId);
+    }
+
+    @AfterEach
+    public void cleanUp() {
+        // Delete exactly the keys this class created, by their captured ids; without this the
+        // last test's rows outlived the class (#266 — the setUp deleteAll only shields the
+        // next test in THIS class, not whoever runs after).
+        this.createdKeyIds.forEach(apiKeyRepository::deleteById);
+        this.createdKeyIds.clear();
     }
 
     // ---------------------------------------------------------------------------------------
@@ -250,6 +267,7 @@ public class APIKeyAuthTest {
         // Issue a key already expired; resolve filters it out → BadCredentials → 40.
         ApiKeyService.GeneratedApiKey expired = apiKeyService.generate(USERNAME, "expired",
                 Instant.now().minus(Duration.ofMinutes(1)));
+        this.createdKeyIds.add(expired.persisted().getId());
 
         mvc.perform(get("/rest/getArtists")
                 .param("v", API_VERSION)

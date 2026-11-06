@@ -24,11 +24,13 @@ import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MediaFile.MediaType;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -54,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Y.Tory
  */
 @SpringBootTest
+@ExtendWith(FixtureTableGuardExtension.class)
 @EnableConfigurationProperties(AirsonicHomeConfig.class)
 @ContextConfiguration(initializers = ConfigDataApplicationContextInitializer.class)
 public class MediaFileRepositoryTest {

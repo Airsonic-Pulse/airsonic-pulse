@@ -11,6 +11,7 @@ import org.airsonic.player.domain.UserCredential.App;
 import org.airsonic.player.repository.UserCredentialRepository;
 import org.airsonic.player.repository.UserRepository;
 import org.airsonic.player.security.PasswordEncoderConfig;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +41,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
+@ExtendWith(FixtureTableGuardExtension.class)
 @EnableConfigurationProperties({ AirsonicHomeConfig.class })
 @ExtendWith(MockitoExtension.class)
 public class SecurityServiceTest {

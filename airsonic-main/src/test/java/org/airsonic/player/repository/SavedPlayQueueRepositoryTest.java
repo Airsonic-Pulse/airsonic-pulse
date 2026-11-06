@@ -18,11 +18,13 @@ import org.airsonic.player.domain.SavedPlayQueue;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.service.PlayQueueService;
 import org.airsonic.player.spring.migrations.PlayQueueFilePositionBackfill;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @EnableConfigurationProperties({ AirsonicHomeConfig.class })
 @SpringBootTest
+@ExtendWith(FixtureTableGuardExtension.class)
 public class SavedPlayQueueRepositoryTest {
 
     private static final String USER_A = "pq214_user_a";
