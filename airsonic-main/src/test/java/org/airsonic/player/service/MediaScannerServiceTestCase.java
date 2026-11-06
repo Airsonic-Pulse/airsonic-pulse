@@ -13,11 +13,13 @@ import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.repository.MediaFileRepository;
 import org.airsonic.player.repository.MusicFolderRepository;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,6 +67,7 @@ import static org.mockito.Mockito.when;
     "airsonic.cue.enabled=true"
 })
 @SpringBootTest
+@ExtendWith(FixtureTableGuardExtension.class)
 @EnableConfigurationProperties({AirsonicHomeConfig.class})
 public class MediaScannerServiceTestCase {
 
@@ -135,6 +138,10 @@ public class MediaScannerServiceTestCase {
 
     @AfterEach
     public void cleanup() {
+        // artist/album rows have no FK to music_folder; delete the scan's rows for this
+        // class's folder ids before the folders themselves (#266). The table wipes in
+        // setup() only protect this class's own tests, not whoever runs after the last one.
+        MusicFolderTestData.deleteScannedArtistsAndAlbums(jdbcTemplate, testFolders);
         testFolders.forEach(f -> musicFolderRepository.delete(f));
         testFolders.clear();
     }
@@ -150,6 +157,7 @@ public class MediaScannerServiceTestCase {
         Timer.Context globalTimerContext = globalTimer.time();
         testFolders = MusicFolderTestData.getTestMusicFolders();
         musicFolderRepository.saveAll(testFolders);
+        testFolders.forEach(MusicFolderTestData::requirePersisted);
         mediaFolderService.clearMusicFolderCache();
         TestCaseUtils.execScan(mediaScannerService);
 

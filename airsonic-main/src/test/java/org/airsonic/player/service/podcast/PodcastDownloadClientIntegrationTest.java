@@ -12,6 +12,7 @@ import org.airsonic.player.repository.PodcastChannelRepository;
 import org.airsonic.player.repository.PodcastEpisodeRepository;
 import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.VersionService;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.apache.http.HttpEntity;
 import org.apache.http.ProtocolVersion;
 import org.apache.http.StatusLine;
@@ -49,6 +50,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest
+@ExtendWith(FixtureTableGuardExtension.class)
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {PodcastTestConfig.class})
 @EnableConfigurationProperties({AirsonicHomeConfig.class})
@@ -94,6 +96,8 @@ public class PodcastDownloadClientIntegrationTest {
 
     private MediaFile channelMediaFile;
 
+    private PodcastChannel podcastChannel;
+
     private String folderPath;
 
     @BeforeAll
@@ -122,7 +126,7 @@ public class PodcastDownloadClientIntegrationTest {
         mediaFileRepository.saveAndFlush(channelMediaFile);
         Files.createDirectories(tempFolder.resolve("test"));
 
-        PodcastChannel podcastChannel = new PodcastChannel();
+        podcastChannel = new PodcastChannel();
         podcastChannel.setUrl("http://example.com");
         podcastChannel.setMediaFile(channelMediaFile);
         podcastChannel.setTitle("Test");
@@ -151,8 +155,11 @@ public class PodcastDownloadClientIntegrationTest {
         // assertion in IndexManagerTestCase.testExpunge:177 under matrix-DB ordering.
         mediaFileRepository.findByFolderAndParentPath(channelMediaFile.getFolder(), "test", Sort.unsorted())
                 .forEach(mediaFileRepository::delete);
-        mediaFileRepository.delete(channelMediaFile);
         podcastEpisodeRepository.delete(podcastEpisode);
+        // The channel row was created by setUp but never deleted — it leaked one
+        // podcast_channel row per test (#266). FK-safe order: episode, channel, media file.
+        podcastChannelRepository.delete(podcastChannel);
+        mediaFileRepository.delete(channelMediaFile);
         deleteDirectory(tempFolder.resolve("test"));
     }
 

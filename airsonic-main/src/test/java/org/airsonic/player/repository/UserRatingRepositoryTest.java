@@ -27,10 +27,12 @@ import org.airsonic.player.domain.MusicFolder.Type;
 import org.airsonic.player.domain.User;
 import org.airsonic.player.domain.User.Role;
 import org.airsonic.player.domain.entity.UserRating;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -54,6 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
+@ExtendWith(FixtureTableGuardExtension.class)
 @EnableConfigurationProperties({AirsonicHomeConfig.class})
 public class UserRatingRepositoryTest {
 

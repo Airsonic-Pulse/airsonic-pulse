@@ -37,6 +37,7 @@ import org.airsonic.player.repository.MusicFolderRepository;
 import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.MediaScannerService;
 import org.airsonic.player.service.SearchService;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -49,6 +50,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.data.domain.Sort;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.nio.file.Path;
@@ -62,6 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest
 @ExtendWith(SpringExtension.class)
+@ExtendWith(FixtureTableGuardExtension.class)
 @EnableConfigurationProperties({ AirsonicHomeConfig.class })
 public class IndexManagerTestCase {
 
@@ -94,14 +97,9 @@ public class IndexManagerTestCase {
     public void beforeEach() {
         mediaFolderService.clearMusicFolderCache();
         mediaFolderService.clearMediaFileCache();
-        // Sweep present=false Artist/Album orphans left behind by earlier test classes whose
-        // @AfterEach deletes their music folder but not the Artist/Album rows the scan created.
-        // testExpunge's zero-state pre-assertions at lines 189 and 208 require this — HSQLDB
-        // tolerates the residue (in-memory + fresh per run), Postgres/MariaDB do not. The
-        // underlying multi-offender cleanup antipattern is tracked separately as a hygiene
-        // audit; this sweep keeps testExpunge robust under any suite ordering.
-        artistRepository.deleteAll(artistRepository.findByPresentFalse());
-        albumRepository.deleteAll(albumRepository.findByPresentFalse());
+        // The present=false Artist/Album orphan sweep that used to sit here was retired by
+        // #266: every offender now deletes the Artist/Album rows its own scan created, so
+        // testExpunge's zero-state pre-assertions hold without it.
         // Defensive sweep against leaked music_folder rows on the MEDIAS/Music path from
         // earlier test classes whose @AfterEach failed to delete by the JPA-assigned ID.
         // Same matrix-DB failure mode as the Artist/Album sweep above (duplicate-key under
@@ -119,9 +117,16 @@ public class IndexManagerTestCase {
 
     @AfterEach
     public void afterEach() {
+        // artist/album rows have no FK to music_folder; delete the scan's rows for this
+        // class's folder ids before the folders themselves (#266). testExpunge leaves its
+        // artists/albums as present=false, which this removes too.
+        MusicFolderTestData.deleteScannedArtistsAndAlbums(jdbcTemplate, musicFolders);
         musicFolderRepository.deleteAll(musicFolders);
         musicFolders = new ArrayList<>();
     }
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @Autowired
     private ArtistRepository artistRepository;
