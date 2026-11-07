@@ -8,13 +8,18 @@ import org.airsonic.player.TestCaseUtils;
 import org.airsonic.player.config.AirsonicHomeConfig;
 import org.airsonic.player.domain.Album;
 import org.airsonic.player.domain.Artist;
+import org.airsonic.player.domain.Genre;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
+import org.airsonic.player.repository.GenreRepository;
 import org.airsonic.player.repository.MediaFileRepository;
 import org.airsonic.player.repository.MusicFolderRepository;
 import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.airsonic.player.util.MusicFolderTestData;
+import org.jaudiotagger.audio.AudioFile;
+import org.jaudiotagger.audio.AudioFileIO;
+import org.jaudiotagger.tag.FieldKey;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +52,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
@@ -87,6 +93,9 @@ public class MediaScannerServiceTestCase {
     @Autowired
     private MusicFolderRepository musicFolderRepository;
 
+    @Autowired
+    private GenreRepository genreRepository;
+
     @MockitoSpyBean
     private MediaFileService mediaFileService;
 
@@ -109,6 +118,8 @@ public class MediaScannerServiceTestCase {
     private Path temporaryFolder;
 
     private List<MusicFolder> testFolders = new ArrayList<>();
+
+    private final List<String> createdGenreNames = new ArrayList<>();
 
     @BeforeAll
     public static void beforeAll() {
@@ -144,6 +155,9 @@ public class MediaScannerServiceTestCase {
         MusicFolderTestData.deleteScannedArtistsAndAlbums(jdbcTemplate, testFolders);
         testFolders.forEach(f -> musicFolderRepository.delete(f));
         testFolders.clear();
+        // Genre rows are keyed by name; delete exactly the ones this test created (#266).
+        createdGenreNames.forEach(name -> genreRepository.findById(name).ifPresent(genreRepository::delete));
+        createdGenreNames.clear();
     }
 
     /**
@@ -217,6 +231,56 @@ public class MediaScannerServiceTestCase {
         assertThat(mediaFile.getFolder().getId()).isEqualTo(musicFolder.getId());
         MediaFile relativeMediaFile = mediaFileService.getMediaFile(temporaryFolder.relativize(musicFile), musicFolder);
         assertEquals(relativeMediaFile.getRelativePath(), mediaFile.getRelativePath());
+    }
+
+    @Test
+    public void testRescanRemovesStaleGenreRows() throws Exception {
+        LOG.info("start testRescanRemovesStaleGenreRows");
+        Path artistDir = temporaryFolder.resolve("GenreArtist");
+        Path musicFile = artistDir.resolve("genre-rescan.mp3");
+        Files.createDirectories(artistDir);
+        Files.copy(Paths.get(Resources.getResource("MEDIAS/piano.mp3").toURI()), musicFile);
+        createdGenreNames.add("StaleGenre319");
+        createdGenreNames.add("FreshGenre319");
+        writeGenreTag(musicFile, "StaleGenre319");
+
+        MusicFolder musicFolder = new MusicFolder(temporaryFolder, "MusicGenreRescan", Type.MEDIA, true,
+                Instant.now().truncatedTo(ChronoUnit.MICROS));
+        testFolders.add(musicFolder);
+        musicFolderRepository.saveAll(testFolders);
+        mediaFolderService.clearMusicFolderCache();
+        TestCaseUtils.execScan(mediaScannerService);
+
+        Map<String, Genre> genresByName = genreTableByName();
+        assertTrue(genresByName.containsKey("StaleGenre319"), "first scan must create the genre row");
+        assertEquals(1, genresByName.get("StaleGenre319").getSongCount());
+
+        // Retag the only carrier of the genre and rescan: the old row must disappear (#319).
+        writeGenreTag(musicFile, "FreshGenre319");
+        TestCaseUtils.execScan(mediaScannerService);
+
+        genresByName = genreTableByName();
+        assertFalse(genresByName.containsKey("StaleGenre319"), "rescan must delete the stale genre row");
+        assertTrue(genresByName.containsKey("FreshGenre319"), "rescan must create the new genre row");
+        assertEquals(1, genresByName.get("FreshGenre319").getSongCount());
+
+        // A rescan with no tag change leaves the genre set unchanged.
+        TestCaseUtils.execScan(mediaScannerService);
+        Map<String, Genre> genresAfterNoopRescan = genreTableByName();
+        assertEquals(genresByName.keySet(), genresAfterNoopRescan.keySet());
+        assertEquals(1, genresAfterNoopRescan.get("FreshGenre319").getSongCount());
+    }
+
+    private Map<String, Genre> genreTableByName() {
+        Map<String, Genre> byName = new HashMap<>();
+        genreRepository.findAll().forEach(genre -> byName.put(genre.getName(), genre));
+        return byName;
+    }
+
+    private void writeGenreTag(Path file, String genre) throws Exception {
+        AudioFile audioFile = AudioFileIO.read(file.toFile());
+        audioFile.getTagOrCreateAndSetDefault().setField(FieldKey.GENRE, genre);
+        audioFile.commit();
     }
 
     @Test
