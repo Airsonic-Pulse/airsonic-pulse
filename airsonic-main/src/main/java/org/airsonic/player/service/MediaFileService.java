@@ -480,6 +480,7 @@ public class MediaFileService {
      * @return The most recently starred songs for this user.
      */
     @Transactional
+    @UnmodifiableResult
     public List<MediaFile> getStarredSongs(int offset, int count, String username, List<MusicFolder> musicFolders) {
         if (CollectionUtils.isEmpty(musicFolders)) {
             return Collections.emptyList();
