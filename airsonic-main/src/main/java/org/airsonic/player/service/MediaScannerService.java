@@ -327,6 +327,15 @@ public class MediaScannerService {
                         LOG.info("Updating genres");
                         long count = mediaFileService.updateGenres(genres.getGenres()).size();
                         boolean genresSuccessful = count == genres.getGenres().size();
+                        // The accumulator above was rebuilt from scratch over every music folder,
+                        // and this block is only reached when that walk completed uncancelled
+                        // (the isMediaScanning() check after the join), so any genre row not in
+                        // the seen set is stale (#319). A partial walk (per-folder scan, #357)
+                        // must skip or scope this delete, or it would remove valid genres.
+                        int staleCount = mediaFileService.deleteStaleGenres(genres.getGenres());
+                        if (staleCount > 0) {
+                            LOG.info("Removed {} stale genre(s) no longer present on any scanned file.", staleCount);
+                        }
                         LOG.info("Genre persistence successfully complete: {}", genresSuccessful);
                     }, pool);
 

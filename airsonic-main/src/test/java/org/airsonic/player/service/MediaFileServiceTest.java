@@ -18,11 +18,13 @@
  */
 package org.airsonic.player.service;
 
+import org.airsonic.player.domain.Genre;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MediaFile.MediaType;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.repository.AlbumRepository;
+import org.airsonic.player.repository.GenreRepository;
 import org.airsonic.player.repository.MediaFileRepository;
 import org.airsonic.player.repository.MusicFileInfoRepository;
 import org.airsonic.player.service.cache.MediaFileCache;
@@ -86,6 +88,8 @@ public class MediaFileServiceTest {
     private MusicFileInfoRepository musicFileInfoRepository;
     @Mock
     private AlbumRepository albumRepository;
+    @Mock
+    private GenreRepository genreRepository;
 
     @InjectMocks
     private MediaFileService mediaFileService;
@@ -102,6 +106,43 @@ public class MediaFileServiceTest {
     @BeforeEach
     public void setUp() {
         lenient().when(mockedFolder.getPath()).thenReturn(CLASS_PATH.resolve("MEDIAS"));
+    }
+
+    @Test
+    public void deleteStaleGenresDeletesOnlyRowsOutsideTheSeenSet() {
+        Genre rowA = new Genre("A", 1, 1);
+        Genre rowB = new Genre("B", 2, 1);
+        Genre rowC = new Genre("C", 3, 1);
+        when(genreRepository.findAll()).thenReturn(List.of(rowA, rowB, rowC));
+
+        int deleted = mediaFileService.deleteStaleGenres(List.of(new Genre("B", 5, 2), new Genre("C", 6, 2)));
+
+        assertEquals(1, deleted);
+        verify(genreRepository).deleteAllInBatch(List.of(rowA));
+    }
+
+    @Test
+    public void deleteStaleGenresWithEmptySeenSetDeletesEveryRow() {
+        // Intended: a completed walk of an empty library has no genres, so every row is stale.
+        Genre rowA = new Genre("A", 1, 1);
+        Genre rowB = new Genre("B", 2, 1);
+        when(genreRepository.findAll()).thenReturn(List.of(rowA, rowB));
+
+        int deleted = mediaFileService.deleteStaleGenres(List.of());
+
+        assertEquals(2, deleted);
+        verify(genreRepository).deleteAllInBatch(List.of(rowA, rowB));
+    }
+
+    @Test
+    public void deleteStaleGenresWithSeenSupersetDeletesNothing() {
+        Genre rowA = new Genre("A", 1, 1);
+        when(genreRepository.findAll()).thenReturn(List.of(rowA));
+
+        int deleted = mediaFileService.deleteStaleGenres(List.of(new Genre("A", 1, 1), new Genre("B", 1, 0)));
+
+        assertEquals(0, deleted);
+        verify(genreRepository, never()).deleteAllInBatch(any());
     }
 
     @Test
