@@ -19,10 +19,18 @@
 package org.airsonic.player.service;
 
 import com.google.common.collect.ImmutableMap;
+import org.airsonic.player.domain.InternetRadio;
 import org.airsonic.player.domain.MediaFile;
+import org.airsonic.player.domain.MediaFile.MediaType;
+import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.PlayQueue;
 import org.airsonic.player.domain.Player;
+import org.airsonic.player.domain.PodcastChannel;
+import org.airsonic.player.domain.PodcastEpisode;
+import org.airsonic.player.domain.PodcastStatus;
 import org.airsonic.player.domain.SavedPlayQueue;
+import org.airsonic.player.domain.UserSettings;
+import org.airsonic.player.repository.InternetRadioRepository;
 import org.airsonic.player.repository.SavedPlayQueueRepository;
 import org.airsonic.player.service.websocket.AsyncWebSocketClient;
 import org.junit.jupiter.api.AfterEach;
@@ -30,27 +38,35 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.function.Executable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doCallRealMethod;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -67,6 +83,23 @@ public class PlayQueueServiceTest {
     private MediaFileService mediaFileService;
     @Mock
     private SavedPlayQueueRepository savedPlayQueueRepository;
+    @Mock
+    private MediaFolderService mediaFolderService;
+    @Mock
+    private PersonalSettingsService personalSettingsService;
+    @Mock
+    private LastFmService lastFmService;
+    @Mock
+    private SearchService searchService;
+    @Mock
+    private PodcastPersistenceService podcastService;
+    @Mock
+    private InternetRadioRepository internetRadioRepository;
+    @Mock
+    private InternetRadioService internetRadioService;
+
+    @Captor
+    private ArgumentCaptor<Collection<MediaFile>> queuedFilesCaptor;
 
     @InjectMocks
     private PlayQueueService playQueueService;
@@ -385,6 +418,101 @@ public class PlayQueueServiceTest {
         assertEquals(2, saved.getMediaFiles().size());
         assertNull(saved.getCurrentIndex());
         assertNull(saved.getCurrentMediaFile());
+    }
+
+    @Nested
+    class DoPlayDefensiveCopyTests {
+
+        @BeforeEach
+        public void setup() {
+            when(mockedPlayer.isWeb()).thenReturn(true);
+            when(mockedPlayer.getUsername()).thenReturn("testuser");
+            when(mockedPlayer.getId()).thenReturn(1);
+            when(mockedPlayer.getPlayQueue()).thenReturn(mockedPlayQueue);
+            // the mutation doPlay performs must be the production one, not a mock no-op
+            doCallRealMethod().when(mediaFileService).removeVideoFiles(any());
+            when(webSocketClient.sendToUser(anyString(), anyString(), any())).thenReturn(CompletableFuture.completedFuture(null));
+        }
+
+        private MediaFile mediaFile(int id, MediaType mediaType) {
+            MediaFile file = new MediaFile();
+            file.setId(id);
+            file.setMediaType(mediaType);
+            file.setPresent(true);
+            return file;
+        }
+
+        @Test
+        public void testPlayStarredSurvivesUnmodifiableStarredSongsList() {
+            // given the production shape: getStarredSongs returns an unmodifiable list (#371)
+            MediaFile song = mediaFile(1, MediaType.MUSIC);
+            MediaFile video = mediaFile(2, MediaType.VIDEO);
+            List<MusicFolder> folders = List.of();
+            when(mediaFolderService.getMusicFoldersForUser("testuser")).thenReturn(folders);
+            when(mediaFileService.getStarredSongs(0, Integer.MAX_VALUE, "testuser", folders))
+                    .thenReturn(List.copyOf(List.of(song, video)));
+
+            // when
+            playQueueService.playStarred(mockedPlayer, "sessionId");
+
+            // then: the queue got the starred songs minus the video, nothing thrown
+            verify(mockedPlayQueue).addFiles(eq(false), queuedFilesCaptor.capture());
+            assertEquals(List.of(song), List.copyOf(queuedFilesCaptor.getValue()));
+        }
+
+        @Test
+        public void testEveryDoPlayCallerSurvivesAnUnmodifiableList() {
+            MediaFile song = mediaFile(1, MediaType.MUSIC);
+            List<MusicFolder> folders = List.of();
+            UserSettings settings = new UserSettings();
+            when(mediaFolderService.getMusicFoldersForUser("testuser")).thenReturn(folders);
+            when(mediaFolderService.getMusicFoldersForUser("testuser", -1)).thenReturn(folders);
+            when(personalSettingsService.getUserSettings("testuser")).thenReturn(settings);
+
+            MediaFile directory = mediaFile(10, MediaType.DIRECTORY);
+            when(mediaFileService.getMediaFile(10)).thenReturn(directory);
+            when(mediaFileService.getDescendantsOf(directory, true)).thenReturn(List.of(song));
+
+            MediaFile topSongArtist = mediaFile(11, MediaType.DIRECTORY);
+            when(mediaFileService.getMediaFile(11)).thenReturn(topSongArtist);
+            when(lastFmService.getTopSongsByMediaFile(topSongArtist, 50, folders)).thenReturn(List.of(song));
+
+            MediaFile randomParent = mediaFile(12, MediaType.DIRECTORY);
+            when(mediaFileService.getMediaFile(12)).thenReturn(randomParent);
+            when(mediaFileService.getRandomSongsForParent(randomParent, 3)).thenReturn(List.of(song));
+
+            MediaFile similarArtist = mediaFile(13, MediaType.DIRECTORY);
+            when(mediaFileService.getMediaFile(13)).thenReturn(similarArtist);
+            when(lastFmService.getSimilarSongsByMediaFile(similarArtist, 3, folders)).thenReturn(List.of(song));
+
+            MediaFile album = mediaFile(14, MediaType.ALBUM);
+            when(searchService.getRandomAlbums(40, folders)).thenReturn(List.of(album));
+            when(mediaFileService.getVisibleChildrenOf(album, false, false)).thenReturn(List.of(song));
+
+            PodcastChannel channel = new PodcastChannel(5, "https://example.com/feed", "channel", null, null,
+                    PodcastStatus.COMPLETED, null, null);
+            PodcastEpisode episode = new PodcastEpisode(21, channel, "guid", "https://example.com/episode",
+                    mediaFile(15, MediaType.MUSIC), "episode", null, null, null, null, null,
+                    PodcastStatus.COMPLETED, null);
+            when(podcastService.getEpisodes(5)).thenReturn(List.of(episode));
+            when(podcastService.getEpisode(21, false)).thenReturn(episode);
+
+            InternetRadio radio = new InternetRadio("radio", "https://example.com/stream", null, true, null);
+            radio.setId(7);
+            when(internetRadioRepository.findByIdAndEnabledTrue(7)).thenReturn(Optional.of(radio));
+
+            Map<String, Executable> callers = new LinkedHashMap<>();
+            callers.put("playMediaFile", () -> playQueueService.playMediaFile(mockedPlayer, 10, "sessionId"));
+            callers.put("playTopSong", () -> playQueueService.playTopSong(mockedPlayer, 11, null, "sessionId"));
+            callers.put("playRandom", () -> playQueueService.playRandom(mockedPlayer, 12, 3, "sessionId"));
+            callers.put("playSimilar", () -> playQueueService.playSimilar(mockedPlayer, 13, 3, "sessionId"));
+            callers.put("playShuffle", () -> playQueueService.playShuffle(mockedPlayer, "random", 0, 40, null, null, "sessionId"));
+            callers.put("playPodcastChannel", () -> playQueueService.playPodcastChannel(mockedPlayer, 5, "sessionId"));
+            callers.put("playPodcastEpisode", () -> playQueueService.playPodcastEpisode(mockedPlayer, 21, "sessionId"));
+            callers.put("playInternetRadio", () -> playQueueService.playInternetRadio(mockedPlayer, 7, null, "sessionId"));
+
+            callers.forEach((name, call) -> assertDoesNotThrow(call, name + " must tolerate an unmodifiable list"));
+        }
     }
 
     @Test

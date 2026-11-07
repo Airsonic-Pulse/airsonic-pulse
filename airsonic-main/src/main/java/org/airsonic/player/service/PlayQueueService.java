@@ -418,6 +418,8 @@ public class PlayQueueService {
     }
 
     private void doPlay(Player player, List<MediaFile> files, InternetRadio radio, String sessionId) {
+        // This method mutates the list (removeVideoFiles) and callers may pass immutable ones.
+        files = new ArrayList<>(files);
         if (player.isWeb()) {
             mediaFileService.removeVideoFiles(files);
         }
