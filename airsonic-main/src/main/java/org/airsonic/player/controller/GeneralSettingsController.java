@@ -23,6 +23,8 @@ import org.airsonic.player.command.GeneralSettingsCommand;
 import org.airsonic.player.domain.Theme;
 import org.airsonic.player.service.PlaylistFileService;
 import org.airsonic.player.service.SettingsService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -33,6 +35,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.nio.file.InvalidPathException;
+import java.nio.file.Paths;
 import java.util.Locale;
 
 /**
@@ -43,6 +47,8 @@ import java.util.Locale;
 @Controller
 @RequestMapping({"/generalSettings", "/generalSettings.view"})
 public class GeneralSettingsController {
+
+    private static final Logger LOG = LoggerFactory.getLogger(GeneralSettingsController.class);
 
     @Autowired
     private SettingsService settingsService;
@@ -153,9 +159,15 @@ public class GeneralSettingsController {
         settingsService.setIgnoredArticles(command.getIgnoredArticles());
         settingsService.setGenreSeparators(command.getGenreSeparators());
         settingsService.setShortcuts(command.getShortcuts());
+        String previousPlaylistFolder = settingsService.getPlaylistFolder();
         settingsService.setPlaylistFolder(command.getPlaylistFolder());
-        playlistFileService.addPlaylistFolderWatcher();
-        playlistFileService.importPlaylists();
+        String newPlaylistFolder = normalizedPlaylistFolder(command.getPlaylistFolder());
+        if (!newPlaylistFolder.isEmpty() && !newPlaylistFolder.equals(normalizedPlaylistFolder(previousPlaylistFolder))) {
+            playlistFileService.addPlaylistFolderWatcher();
+            playlistFileService.importPlaylists();
+        } else {
+            LOG.debug("Playlist folder setting unchanged or blank; skipping watcher registration and playlist import.");
+        }
         settingsService.setMusicFileTypes(command.getMusicFileTypes());
         settingsService.setVideoFileTypes(command.getVideoFileTypes());
         settingsService.setCoverArtFileTypes(command.getCoverArtFileTypes());
@@ -178,6 +190,17 @@ public class GeneralSettingsController {
         settingsService.save();
 
         return "redirect:generalSettings.view";
+    }
+
+    private static String normalizedPlaylistFolder(String folder) {
+        if (folder == null || folder.isBlank()) {
+            return "";
+        }
+        try {
+            return Paths.get(folder.trim()).normalize().toString();
+        } catch (InvalidPathException e) {
+            return folder.trim();
+        }
     }
 
 }
