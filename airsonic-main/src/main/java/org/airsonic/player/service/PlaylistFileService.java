@@ -34,6 +34,8 @@ public class PlaylistFileService {
 
     private static final Logger LOG = LoggerFactory.getLogger(PlaylistFileService.class);
 
+    private static final String PLAYLIST_FOLDER_WATCHER_NAME = "Playlist folder watcher";
+
     private final PlaylistService playlistService;
     private final SettingsService settingsService;
     private final UserRepository userRepository;
@@ -73,12 +75,16 @@ public class PlaylistFileService {
         Path playlistFolder = Paths.get(playlistFolderPath);
         if (Files.exists(playlistFolder) && Files.isDirectory(playlistFolder)) {
             try {
-                pathWatcherService.setWatcher("Playlist folder watcher", playlistFolder,
+                pathWatcherService.setWatcher(PLAYLIST_FOLDER_WATCHER_NAME, playlistFolder,
                         this::handleModifiedPlaylist, null, this::handleModifiedPlaylist, null);
             } catch (Exception e) {
                 LOG.warn("Issues setting watcher for folder: {}", playlistFolder);
             }
         }
+    }
+
+    public void removePlaylistFolderWatcher() {
+        pathWatcherService.removeWatcher(PLAYLIST_FOLDER_WATCHER_NAME);
     }
 
     private void handleModifiedPlaylist(Path path, WatchEvent<Path> event) {

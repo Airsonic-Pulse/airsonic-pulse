@@ -162,9 +162,13 @@ public class GeneralSettingsController {
         String previousPlaylistFolder = settingsService.getPlaylistFolder();
         settingsService.setPlaylistFolder(command.getPlaylistFolder());
         String newPlaylistFolder = normalizedPlaylistFolder(command.getPlaylistFolder());
-        if (!newPlaylistFolder.isEmpty() && !newPlaylistFolder.equals(normalizedPlaylistFolder(previousPlaylistFolder))) {
+        String previousNormalizedFolder = normalizedPlaylistFolder(previousPlaylistFolder);
+        if (!newPlaylistFolder.isEmpty() && !newPlaylistFolder.equals(previousNormalizedFolder)) {
+            playlistFileService.removePlaylistFolderWatcher();
             playlistFileService.addPlaylistFolderWatcher();
             playlistFileService.importPlaylists();
+        } else if (newPlaylistFolder.isEmpty() && !previousNormalizedFolder.isEmpty()) {
+            playlistFileService.removePlaylistFolderWatcher();
         } else {
             LOG.debug("Playlist folder setting unchanged or blank; skipping watcher registration and playlist import.");
         }

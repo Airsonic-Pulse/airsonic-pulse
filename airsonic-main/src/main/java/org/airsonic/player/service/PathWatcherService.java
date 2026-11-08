@@ -95,8 +95,13 @@ public class PathWatcherService {
         });
     }
 
-    public void invalidateWatcher(String id) {
+    public void removeWatcher(String id) {
         WatchKey key = watchNames.remove(id);
+        if (key == null) {
+            LOG.debug("No watcher registered under name {}; nothing to remove.", id);
+            return;
+        }
+        LOG.info("Cancelled watcher {} for path {}", id, key.watchable());
         invalidateWatcher(key);
     }
 
@@ -104,7 +109,7 @@ public class PathWatcherService {
         watchNames.entrySet().stream()
             .filter(e -> e.getValue().watchable().equals(watchable))
             .findAny()
-            .ifPresent(e -> invalidateWatcher(e.getKey()));
+            .ifPresent(e -> removeWatcher(e.getKey()));
     }
 
     public void invalidateWatcher(WatchKey key) {
