@@ -38,7 +38,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-public class PlaylistFileServiceTestImport {
+public class PlaylistFileServiceImportTest {
 
     @InjectMocks
     private DefaultPlaylistImportHandler defaultPlaylistImportHandler;
