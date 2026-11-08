@@ -24,6 +24,7 @@ import org.airsonic.player.service.PlaylistFileService;
 import org.airsonic.player.service.SettingsService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -42,6 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -317,6 +319,7 @@ class GeneralSettingsControllerTest {
         controller.doSubmitAction(command, new BeanPropertyBindingResult(command, "command"), new RedirectAttributesModelMap());
 
         verify(settingsService).setPlaylistFolder("/var/playlists");
+        verify(playlistFileService, never()).removePlaylistFolderWatcher();
         verify(playlistFileService, never()).addPlaylistFolderWatcher();
         verify(playlistFileService, never()).importPlaylists();
     }
@@ -331,8 +334,10 @@ class GeneralSettingsControllerTest {
         controller.doSubmitAction(command, new BeanPropertyBindingResult(command, "command"), new RedirectAttributesModelMap());
 
         verify(settingsService).setPlaylistFolder("/srv/playlists");
-        verify(playlistFileService, times(1)).addPlaylistFolderWatcher();
-        verify(playlistFileService, times(1)).importPlaylists();
+        InOrder inOrder = inOrder(playlistFileService);
+        inOrder.verify(playlistFileService, times(1)).removePlaylistFolderWatcher();
+        inOrder.verify(playlistFileService, times(1)).addPlaylistFolderWatcher();
+        inOrder.verify(playlistFileService, times(1)).importPlaylists();
     }
 
     @Test
@@ -360,6 +365,7 @@ class GeneralSettingsControllerTest {
         controller.doSubmitAction(command, new BeanPropertyBindingResult(command, "command"), new RedirectAttributesModelMap());
 
         verify(settingsService).setPlaylistFolder("");
+        verify(playlistFileService, times(1)).removePlaylistFolderWatcher();
         verify(playlistFileService, never()).addPlaylistFolderWatcher();
         verify(playlistFileService, never()).importPlaylists();
     }
