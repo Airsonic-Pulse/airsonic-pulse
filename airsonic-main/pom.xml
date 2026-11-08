@@ -686,6 +686,13 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <reuseForks>false</reuseForks>
+                    <!-- Explicit copy of surefire's default patterns: test classes named outside them do not run (#395). -->
+                    <includes>
+                        <include>**/Test*.java</include>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*TestCase.java</include>
+                    </includes>
                 </configuration>
             </plugin>
             <plugin>

@@ -21,17 +21,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-public class PlaylistFileServiceTestExport {
+public class PlaylistFileServiceExportTest {
 
     PlaylistFileService playlistFileService;
 
@@ -48,9 +48,6 @@ public class PlaylistFileServiceTestExport {
     private MediaFileService mediaFileService;
 
     @Mock
-    private MediaFolderService mediaFolderService;
-
-    @Mock
     private SettingsService settingsService;
 
     @Mock
@@ -64,9 +61,6 @@ public class PlaylistFileServiceTestExport {
 
     @Mock
     private PlaylistImportThrottle importThrottle;
-
-    @Mock
-    MusicFolder mockedFolder;
 
     @TempDir
     private Path tempDir;
@@ -103,8 +97,6 @@ public class PlaylistFileServiceTestExport {
         playlist.setPlaylistMediaFiles(playlistMediaFiles);
         when(playlistRepository.findById(eq(23))).thenReturn(Optional.of(playlist));
         when(settingsService.getPlaylistExportFormat()).thenReturn("m3u");
-        when(mediaFolderService.getMusicFolderById(any())).thenReturn(mockedFolder);
-        when(mockedFolder.getPath()).thenReturn(Paths.get("/"));
 
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         playlistFileService.exportPlaylist(23, outputStream);
@@ -114,23 +106,27 @@ public class PlaylistFileServiceTestExport {
     }
 
     private List<MediaFile> getPlaylistFiles() {
+        MusicFolder folder = new MusicFolder(1, Paths.get("/"), "music", MusicFolder.Type.MEDIA, true, Instant.now());
         List<MediaFile> mediaFiles = new ArrayList<>();
 
         MediaFile mf1 = new MediaFile();
         mf1.setId(142);
         mf1.setPath("/some/path/to_album/to_artist/name - of - song.mp3");
+        mf1.setFolder(folder);
         mf1.setPresent(true);
         mediaFiles.add(mf1);
 
         MediaFile mf2 = new MediaFile();
         mf2.setId(1235);
         mf2.setPath("/some/path/to_album2/to_artist/another song.mp3");
+        mf2.setFolder(folder);
         mf2.setPresent(true);
         mediaFiles.add(mf2);
 
         MediaFile mf3 = new MediaFile();
         mf3.setId(198403);
         mf3.setPath("/some/path/to_album2/to_artist/another song2.mp3");
+        mf3.setFolder(folder);
         mf3.setPresent(false);
         mediaFiles.add(mf3);
 
