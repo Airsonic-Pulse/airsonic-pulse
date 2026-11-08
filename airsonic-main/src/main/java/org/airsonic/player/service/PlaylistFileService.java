@@ -65,7 +65,12 @@ public class PlaylistFileService {
     }
 
     public void addPlaylistFolderWatcher() {
-        Path playlistFolder = Paths.get(settingsService.getPlaylistFolder());
+        String playlistFolderPath = settingsService.getPlaylistFolder();
+        if (playlistFolderPath == null || playlistFolderPath.isBlank()) {
+            LOG.debug("Playlist folder not configured; no watcher registered.");
+            return;
+        }
+        Path playlistFolder = Paths.get(playlistFolderPath);
         if (Files.exists(playlistFolder) && Files.isDirectory(playlistFolder)) {
             try {
                 pathWatcherService.setWatcher("Playlist folder watcher", playlistFolder,
