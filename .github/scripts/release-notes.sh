@@ -15,6 +15,10 @@ set -euo pipefail
 #     that landed on this ref. Commits without a "(#N)" are skipped with a
 #     warning. This makes the listing correct on release branches, where
 #     selecting merged PRs by date listed main-only PRs (#340).
+#   - Candidates already shipped via a release branch are excluded: any PR
+#     whose number or subject-referenced issue appears in a commit reachable
+#     from [since-tag], and any "docs: release notes for vX" PR with X at or
+#     below [since-tag] (#400).
 #   - Writes to docs/release-notes/<tag>.md
 #   - Also emits the auto section to stdout for piping/preview
 #   - --dry-run: print the generated section to stdout only; no file is
@@ -46,7 +50,7 @@ set -euo pipefail
 #   infrastructure       → Infrastructure & CI
 #   documentation        → Documentation
 #   enhancement          → Features & Enhancements
-#   dependencies, chore  → Maintenance
+#   dependencies, chore, test → Maintenance
 #
 # Requires: gh CLI (authenticated), jq
 
@@ -103,6 +107,28 @@ else
     echo "Tag '${RELEASE_TAG}' does not exist yet — using HEAD as the release ref." >&2
 fi
 
+# Issue and PR numbers referenced by commits the since tag has but the release
+# ref does not: the release-branch segment main diverged from. A main candidate
+# referencing one of these numbers shipped via that branch and must not be
+# listed again (#400). Collected per subject: a leading "#N", "refs #N" /
+# "fixes #N", and every "(#N)". The range is deliberately narrow — the shared
+# history inherited from upstream reuses the same small numbers.
+declare -A SHIPPED=()
+while IFS= read -r shipped_number; do
+    SHIPPED["${shipped_number}"]=1
+done < <(git log --format=%s "$(git merge-base "${TARGET_REF}" "${SINCE_TAG}")..${SINCE_TAG}" \
+    | grep -oE '^#[0-9]+|[Rr]efs #[0-9]+|[Ff]ixes #[0-9]+|\(#[0-9]+\)' \
+    | grep -oE '[0-9]+' | sort -n -u)
+
+# True when version x is at or below y under version sort, ordering pre-release
+# suffixes before their final (13.2.1-rc.1 < 13.2.1). sort -V only yields that
+# ordering through the '~' convention, so hyphens are mapped to '~' first.
+version_at_or_below() {
+    local x="${1//-/'~'}"
+    local y="${2//-/'~'}"
+    [[ "$(printf '%s\n%s\n' "${x}" "${y}" | sort -V | head -1)" == "${x}" ]]
+}
+
 # Collect the PR number for every commit reachable from the release ref but not
 # from the since tag. The subject's LAST "(#N)" is the PR that landed on this
 # ref (cherry-picked squashes carry the original main PR number earlier in the
@@ -115,7 +141,46 @@ while IFS=$'\t' read -r commit_hash commit_subject; do
         continue
     fi
     LAST_REF="${LAST_REF#(#}"
-    PR_NUMBERS+=("${LAST_REF%)}")
+    PR_NUM="${LAST_REF%)}"
+
+    # Notes for a release at or below the since tag document a release that
+    # has already shipped (#400).
+    if [[ "${commit_subject}" =~ ^docs:\ release\ notes\ for\ v([0-9][0-9A-Za-z.-]*) ]]; then
+        NOTES_VERSION="${BASH_REMATCH[1]}"
+        if version_at_or_below "${NOTES_VERSION}" "${SINCE_TAG#v}"; then
+            echo "  skipping PR #${PR_NUM} (release notes for v${NOTES_VERSION}, at or below ${SINCE_TAG})" >&2
+            continue
+        fi
+    fi
+
+    ISSUE_REF=""
+    if [[ "${commit_subject}" =~ ^#([0-9]+) ]]; then
+        ISSUE_REF="${BASH_REMATCH[1]}"
+    elif [[ "${commit_subject}" =~ [Rr]efs[[:space:]]+#([0-9]+) ]]; then
+        ISSUE_REF="${BASH_REMATCH[1]}"
+    elif [[ "${commit_subject}" =~ [Ff]ixes[[:space:]]+#([0-9]+) ]]; then
+        ISSUE_REF="${BASH_REMATCH[1]}"
+    fi
+    # Every "(#N)" counts, not just the last: a squash picked across branches
+    # carries the other branch's PR earlier in the subject.
+    mapfile -t SUBJECT_PRS < <(grep -oE '\(#[0-9]+\)' <<< "${commit_subject}" | grep -oE '[0-9]+')
+    SKIP_REASON=""
+    if [[ -n "${ISSUE_REF}" && -n "${SHIPPED[${ISSUE_REF}]:-}" ]]; then
+        SKIP_REASON="issue #${ISSUE_REF}"
+    else
+        for subject_pr in "${SUBJECT_PRS[@]}"; do
+            if [[ -n "${SHIPPED[${subject_pr}]:-}" ]]; then
+                SKIP_REASON="PR #${subject_pr}"
+                break
+            fi
+        done
+    fi
+    if [[ -n "${SKIP_REASON}" ]]; then
+        echo "  skipping PR #${PR_NUM} (already shipped in ${SINCE_TAG}, ${SKIP_REASON})" >&2
+        continue
+    fi
+
+    PR_NUMBERS+=("${PR_NUM}")
 done < <(git log --format='%h%x09%s' "${SINCE_TAG}..${TARGET_REF}")
 
 if [[ ${#PR_NUMBERS[@]} -eq 0 ]]; then
@@ -141,6 +206,7 @@ LABEL_PRIORITY=(
     enhancement
     dependencies
     chore
+    test
 )
 
 label_to_category() {
@@ -154,6 +220,7 @@ label_to_category() {
         infrastructure)  echo "infrastructure" ;;
         dependencies)    echo "maintenance" ;;
         chore)           echo "maintenance" ;;
+        test)            echo "maintenance" ;;
         *)               echo "" ;;
     esac
 }
