@@ -299,6 +299,8 @@ public class PlayQueueService {
             }
         }
 
+        // Copy first: the single-index branch leaves a fixed-size Arrays.asList that rejects removeIf.
+        files = new ArrayList<>(files);
         // Remove non-present files
         files.removeIf(file -> !file.isPresent());
         doPlay(player, files, null, sessionId);
