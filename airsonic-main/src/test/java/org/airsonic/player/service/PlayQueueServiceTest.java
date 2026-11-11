@@ -94,6 +94,8 @@ public class PlayQueueServiceTest {
     @Mock
     private PodcastPersistenceService podcastService;
     @Mock
+    private PlaylistService playlistService;
+    @Mock
     private InternetRadioRepository internetRadioRepository;
     @Mock
     private InternetRadioService internetRadioService;
@@ -461,6 +463,36 @@ public class PlayQueueServiceTest {
         }
 
         @Test
+        public void testPlayPlaylistByIndexSkipsMissingFileWithoutThrowing() {
+            MediaFile missing = mediaFile(3, MediaType.MUSIC);
+            missing.setPresent(false);
+            UserSettings settings = new UserSettings();
+            settings.setQueueFollowingSongs(false);
+            when(personalSettingsService.getUserSettings("testuser")).thenReturn(settings);
+            when(playlistService.getFilesInPlaylist(8, true)).thenReturn(new ArrayList<>(List.of(missing)));
+
+            assertDoesNotThrow(() -> playQueueService.playPlaylist(mockedPlayer, 8, 0, "sessionId"));
+
+            verify(mockedPlayQueue).addFiles(eq(false), queuedFilesCaptor.capture());
+            assertEquals(List.of(), List.copyOf(queuedFilesCaptor.getValue()));
+        }
+
+        @Test
+        public void testPlayPlaylistByIndexQueuesThePresentFile() {
+            MediaFile other = mediaFile(4, MediaType.MUSIC);
+            MediaFile song = mediaFile(5, MediaType.MUSIC);
+            UserSettings settings = new UserSettings();
+            settings.setQueueFollowingSongs(false);
+            when(personalSettingsService.getUserSettings("testuser")).thenReturn(settings);
+            when(playlistService.getFilesInPlaylist(8, true)).thenReturn(new ArrayList<>(List.of(other, song)));
+
+            playQueueService.playPlaylist(mockedPlayer, 8, 1, "sessionId");
+
+            verify(mockedPlayQueue).addFiles(eq(false), queuedFilesCaptor.capture());
+            assertEquals(List.of(song), List.copyOf(queuedFilesCaptor.getValue()));
+        }
+
+        @Test
         public void testEveryDoPlayCallerSurvivesAnUnmodifiableList() {
             MediaFile song = mediaFile(1, MediaType.MUSIC);
             List<MusicFolder> folders = List.of();
@@ -489,6 +521,8 @@ public class PlayQueueServiceTest {
             when(searchService.getRandomAlbums(40, folders)).thenReturn(List.of(album));
             when(mediaFileService.getVisibleChildrenOf(album, false, false)).thenReturn(List.of(song));
 
+            when(playlistService.getFilesInPlaylist(8, true)).thenReturn(List.of(song));
+
             PodcastChannel channel = new PodcastChannel(5, "https://example.com/feed", "channel", null, null,
                     PodcastStatus.COMPLETED, null, null);
             PodcastEpisode episode = new PodcastEpisode(21, channel, "guid", "https://example.com/episode",
@@ -507,6 +541,7 @@ public class PlayQueueServiceTest {
             callers.put("playRandom", () -> playQueueService.playRandom(mockedPlayer, 12, 3, "sessionId"));
             callers.put("playSimilar", () -> playQueueService.playSimilar(mockedPlayer, 13, 3, "sessionId"));
             callers.put("playShuffle", () -> playQueueService.playShuffle(mockedPlayer, "random", 0, 40, null, null, "sessionId"));
+            callers.put("playPlaylist", () -> playQueueService.playPlaylist(mockedPlayer, 8, null, "sessionId"));
             callers.put("playPodcastChannel", () -> playQueueService.playPodcastChannel(mockedPlayer, 5, "sessionId"));
             callers.put("playPodcastEpisode", () -> playQueueService.playPodcastEpisode(mockedPlayer, 21, "sessionId"));
             callers.put("playInternetRadio", () -> playQueueService.playInternetRadio(mockedPlayer, 7, null, "sessionId"));
