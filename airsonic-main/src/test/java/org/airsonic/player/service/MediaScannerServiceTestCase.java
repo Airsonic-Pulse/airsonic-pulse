@@ -12,9 +12,12 @@ import org.airsonic.player.domain.Genre;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.MusicFolder;
 import org.airsonic.player.domain.MusicFolder.Type;
+import org.airsonic.player.domain.SearchCriteria;
+import org.airsonic.player.domain.SearchResult;
 import org.airsonic.player.repository.GenreRepository;
 import org.airsonic.player.repository.MediaFileRepository;
 import org.airsonic.player.repository.MusicFolderRepository;
+import org.airsonic.player.service.search.IndexType;
 import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.airsonic.player.util.MusicFolderTestData;
 import org.jaudiotagger.audio.AudioFile;
@@ -107,6 +110,9 @@ public class MediaScannerServiceTestCase {
 
     @Autowired
     private MediaFolderService mediaFolderService;
+
+    @Autowired
+    private SearchService searchService;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -269,6 +275,115 @@ public class MediaScannerServiceTestCase {
         Map<String, Genre> genresAfterNoopRescan = genreTableByName();
         assertEquals(genresByName.keySet(), genresAfterNoopRescan.keySet());
         assertEquals(1, genresAfterNoopRescan.get("FreshGenre319").getSongCount());
+    }
+
+    @Test
+    public void testRescanReflectsRetaggedAlbumArtist() throws Exception {
+        LOG.info("start testRescanReflectsRetaggedAlbumArtist");
+        List<Path> tracks = createTwoTrackAlbum("Retag405", "Various Artists");
+        MusicFolder musicFolder = scanNewFolder("MusicRetag405");
+        assertEquals("Various Artists", albumFolderRow(musicFolder, "Retag405").getArtist());
+        assertEquals(1, search(musicFolder, "Various", IndexType.ALBUM_ID3).getAlbums().size());
+
+        // Retag in place (the folder mtime does not move) and run one quick scan (#405).
+        for (Path track : tracks) {
+            writeAlbumArtistTag(track, "RepA;RepB");
+        }
+        TestCaseUtils.execScan(mediaScannerService);
+
+        assertAlbumArtistReflected(musicFolder, "Retag405", "Various Artists", "RepA;RepB");
+    }
+
+    @Test
+    public void testRescanReflectsRetaggedAlbumArtistWhenSongRowsAreAlreadyCurrent() throws Exception {
+        LOG.info("start testRescanReflectsRetaggedAlbumArtistWhenSongRowsAreAlreadyCurrent");
+        List<Path> tracks = createTwoTrackAlbum("Retag405", "Various Artists");
+        MusicFolder musicFolder = scanNewFolder("MusicRetag405Current");
+
+        for (Path track : tracks) {
+            writeAlbumArtistTag(track, "RepA;RepB");
+        }
+        // An id lookup brings each song row up to date without touching the folder row, so the
+        // rescan finds nothing to re-read. Same state as files retagged and scanned on a release
+        // that never refreshed the folder (#405).
+        mediaFolderService.clearMediaFileCache();
+        List<MediaFile> songs = mediaFileRepository.findByFolderAndParentPath(musicFolder, "Retag405", Sort.by("path"));
+        assertEquals(2, songs.size());
+        for (MediaFile song : songs) {
+            assertEquals("RepA;RepB", mediaFileService.getMediaFile(song.getId()).getAlbumArtist(),
+                    "the id lookup must refresh the song row before the rescan");
+        }
+        TestCaseUtils.execScan(mediaScannerService);
+
+        assertAlbumArtistReflected(musicFolder, "Retag405", "Various Artists", "RepA;RepB");
+    }
+
+    private List<Path> createTwoTrackAlbum(String albumName, String albumArtist) throws Exception {
+        Path albumDir = temporaryFolder.resolve(albumName);
+        Files.createDirectories(albumDir);
+        List<Path> tracks = List.of(albumDir.resolve("01.mp3"), albumDir.resolve("02.mp3"));
+        for (Path track : tracks) {
+            Files.copy(Paths.get(Resources.getResource("MEDIAS/piano.mp3").toURI()), track);
+            AudioFile audioFile = AudioFileIO.read(track.toFile());
+            audioFile.getTagOrCreateAndSetDefault().setField(FieldKey.ALBUM, albumName);
+            audioFile.getTagOrCreateAndSetDefault().setField(FieldKey.ALBUM_ARTIST, albumArtist);
+            audioFile.commit();
+        }
+        return tracks;
+    }
+
+    private void writeAlbumArtistTag(Path file, String albumArtist) throws Exception {
+        AudioFile audioFile = AudioFileIO.read(file.toFile());
+        audioFile.getTagOrCreateAndSetDefault().setField(FieldKey.ALBUM_ARTIST, albumArtist);
+        audioFile.commit();
+    }
+
+    private MusicFolder scanNewFolder(String folderName) {
+        MusicFolder musicFolder = new MusicFolder(temporaryFolder, folderName, Type.MEDIA, true,
+                Instant.now().truncatedTo(ChronoUnit.MICROS));
+        testFolders.add(musicFolder);
+        musicFolderRepository.saveAll(testFolders);
+        mediaFolderService.clearMusicFolderCache();
+        TestCaseUtils.execScan(mediaScannerService);
+        return musicFolder;
+    }
+
+    private MediaFile albumFolderRow(MusicFolder musicFolder, String albumName) {
+        List<MediaFile> rows = mediaFileRepository.findByFolderAndPath(musicFolder, albumName);
+        assertEquals(1, rows.size());
+        return rows.getFirst();
+    }
+
+    private SearchResult search(MusicFolder musicFolder, String query, IndexType indexType) {
+        SearchCriteria criteria = new SearchCriteria();
+        criteria.setQuery(query);
+        criteria.setCount(10);
+        return searchService.search(criteria, List.of(musicFolder), indexType);
+    }
+
+    private void assertAlbumArtistReflected(MusicFolder musicFolder, String albumName, String oldArtist, String newArtist) {
+        String oldTerm = oldArtist.split("\\W")[0];
+        String newTerm = newArtist.split("\\W")[0];
+        MediaFile folderRow = albumFolderRow(musicFolder, albumName);
+        assertEquals(newArtist, folderRow.getArtist(), "the album folder row must carry the new album artist");
+
+        assertFalse(albumService.getAlbumByArtistAndName(oldArtist, albumName).orElseThrow().isPresent(),
+                "the album row under the old album artist must be non-present");
+        assertTrue(albumService.getAlbumByArtistAndName(newArtist, albumName).orElseThrow().isPresent());
+
+        assertThat(search(musicFolder, oldTerm, IndexType.ALBUM_ID3).getAlbums())
+                .as("album search by the old album artist").isEmpty();
+        assertThat(search(musicFolder, oldTerm, IndexType.ARTIST_ID3).getArtists())
+                .as("artist search by the old album artist").isEmpty();
+        assertThat(search(musicFolder, oldTerm, IndexType.ALBUM).getMediaFiles())
+                .as("folder search by the old album artist").isEmpty();
+
+        assertThat(search(musicFolder, newTerm, IndexType.ALBUM_ID3).getAlbums())
+                .as("album search by the new album artist")
+                .extracting(Album::getArtist).containsExactly(newArtist);
+        assertThat(search(musicFolder, newTerm, IndexType.ALBUM).getMediaFiles())
+                .as("folder search by the new album artist")
+                .extracting(MediaFile::getId).containsExactly(folderRow.getId());
     }
 
     private Map<String, Genre> genreTableByName() {

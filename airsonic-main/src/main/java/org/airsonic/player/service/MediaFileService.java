@@ -87,6 +87,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -825,9 +826,18 @@ public class MediaFileService {
         // m4b files are treated as audio books
         Map<String, MediaFile> audioBooks = new ConcurrentHashMap<>();
 
+        // row of the child the album snapshot is taken from
+        AtomicReference<MediaFile> snapshotChild = new AtomicReference<>();
+
         // Collect all children.
         try (Stream<Path> children = Files.list(parent.getFullPath())) {
-            children.parallel()
+            List<Path> listedChildren = children.toList();
+            // same selection as the snapshot in updateMediaFileByFile: first regular media file as listed
+            Path snapshotChildPath = listedChildren.stream()
+                    .filter(this::includeMediaFileByPath)
+                    .filter(x -> Files.isRegularFile(x))
+                    .findFirst().orElse(null);
+            listedChildren.parallelStream()
                 .filter(x -> mediaFolderService.getMusicFolderForFile(x, true, true).map(f -> f.equals(folder)).orElse(false))
                 .forEach(x -> {
                     Path relativePath = folder.getPath().relativize(x);
@@ -843,6 +853,9 @@ public class MediaFileService {
                                 existingChildUpdated.set(true);
                             }
                             mediaFile = checkLastModified(mediaFile, false); // has to be false, only time it's called
+                        }
+                        if (mediaFile != null && x.equals(snapshotChildPath)) {
+                            snapshotChild.set(mediaFile);
                         }
                         // Add children that are not already stored.
                         if (mediaFile != null) {
@@ -944,12 +957,46 @@ public class MediaFileService {
             updateMediaFileByFile(parent);
         }
 
+        // The refresh above only fires when a child is re-read in this pass. A child row can
+        // already be current while the snapshot is not (the row was refreshed by an id lookup, or
+        // by a scan from a release without the refresh), so compare against the child row on
+        // every pass (#405). The parent is written below either way.
+        refreshAlbumSnapshot(parent, snapshotChild.get());
+
         // Update timestamp in parent.
         parent.setChildrenLastUpdated(parent.getChanged());
         parent.setPresent(true);
         updateMediaFile(parent);
 
         return result;
+    }
+
+    /**
+     * Brings an album directory's snapshot fields (artist, album name, year, genre, packed
+     * genres) in line with the row of the child they are taken from. The child's album artist
+     * becomes the directory's artist, as in updateMediaFileByFile.
+     *
+     * @param parent        the directory row; only changed when it is an album
+     * @param snapshotChild the row of the first media file in the directory, or null
+     * @return whether a snapshot field was changed
+     */
+    static boolean refreshAlbumSnapshot(@Nonnull MediaFile parent, @Nullable MediaFile snapshotChild) {
+        if (snapshotChild == null || !parent.isAlbum()) {
+            return false;
+        }
+        if (Objects.equals(parent.getArtist(), snapshotChild.getAlbumArtist())
+                && Objects.equals(parent.getAlbumName(), snapshotChild.getAlbumName())
+                && Objects.equals(parent.getYear(), snapshotChild.getYear())
+                && Objects.equals(parent.getGenre(), snapshotChild.getGenre())
+                && Objects.equals(parent.getGenres(), snapshotChild.getGenres())) {
+            return false;
+        }
+        parent.setArtist(snapshotChild.getAlbumArtist());
+        parent.setAlbumName(snapshotChild.getAlbumName());
+        parent.setYear(snapshotChild.getYear());
+        parent.setGenre(snapshotChild.getGenre());
+        parent.setGenres(snapshotChild.getGenres());
+        return true;
     }
 
     /**
