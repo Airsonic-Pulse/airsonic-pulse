@@ -340,6 +340,15 @@ public class MediaScannerService {
                     }, pool);
 
             CompletableFuture.allOf(albumPersistence, artistPersistence, mediaFilePersistence, genrePersistence).join();
+
+            // The index is appended to, never rebuilt, and search does not check the present
+            // flag, so the rows just marked non-present would stay searchable (#405). The
+            // marking is only valid after a complete, uncancelled walk (same condition as the
+            // stale-genre delete above); a timed-out scan clears the flag and skips this.
+            if (isMediaScanning()) {
+                indexManager.expunge();
+                LOG.info("Removed non-present albums, artists and files from the search index.");
+            }
             LOG.info("Completed media library scan.");
 
         } catch (Throwable x) {
@@ -382,13 +391,18 @@ public class MediaScannerService {
             mediaFileService.updateMediaFile(file);
         }
 
-        indexManager.index(file, musicFolder);
+        if (!file.isDirectory()) {
+            indexManager.index(file, musicFolder);
+        }
 
         try {
             pool.submit(() -> {
                 if (file.isDirectory()) {
-                    try (Stream<MediaFile> children = mediaFileService.getChildrenOf(file, true, true, false, false)
-                            .parallelStream()) {
+                    List<MediaFile> childFiles = mediaFileService.getChildrenOf(file, true, true, false, false);
+                    // Reading the children refreshes this directory's artist/album snapshot, so
+                    // index it afterwards or the document is one scan behind the row (#405).
+                    indexManager.index(file, musicFolder);
+                    try (Stream<MediaFile> children = childFiles.parallelStream()) {
                         children.forEach(child -> scanFile(pool, parent, file, child, musicFolder, statistics, albumCount,
                                 artists, albums, albumsInDb, genres));
                     }

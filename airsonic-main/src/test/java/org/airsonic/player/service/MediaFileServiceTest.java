@@ -58,6 +58,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -633,5 +634,81 @@ public class MediaFileServiceTest {
         assertTrue(mediaFileService.getRandomSongsForParent(parent, 10).isEmpty());
 
         verifyNoInteractions(mediaFileRepository);
+    }
+
+    private MediaFile albumFolder(String artist) {
+        MediaFile folder = new MediaFile();
+        folder.setMediaType(MediaType.ALBUM);
+        folder.setArtist(artist);
+        folder.setAlbumName("Album");
+        folder.setYear(2001);
+        folder.setGenre("Rock");
+        folder.setGenres("Rock;Pop");
+        return folder;
+    }
+
+    private MediaFile albumTrack(String albumArtist) {
+        MediaFile track = new MediaFile();
+        track.setMediaType(MediaType.MUSIC);
+        track.setArtist("Track Artist");
+        track.setAlbumArtist(albumArtist);
+        track.setAlbumName("Album");
+        track.setYear(2001);
+        track.setGenre("Rock");
+        track.setGenres("Rock;Pop");
+        return track;
+    }
+
+    @Test
+    public void refreshAlbumSnapshotLeavesAnUnchangedFolderAlone() {
+        MediaFile folder = albumFolder("Various Artists");
+
+        assertFalse(MediaFileService.refreshAlbumSnapshot(folder, albumTrack("Various Artists")));
+
+        assertEquals("Various Artists", folder.getArtist());
+        assertEquals("Album", folder.getAlbumName());
+        assertEquals(Integer.valueOf(2001), folder.getYear());
+        assertEquals("Rock", folder.getGenre());
+        assertEquals("Rock;Pop", folder.getGenres());
+    }
+
+    @Test
+    public void refreshAlbumSnapshotTakesTheFirstChildAlbumArtist() {
+        MediaFile folder = albumFolder("Various Artists");
+
+        assertTrue(MediaFileService.refreshAlbumSnapshot(folder, albumTrack("RepA;RepB")));
+
+        assertEquals("RepA;RepB", folder.getArtist());
+        assertNull(folder.getAlbumArtist(), "the snapshot stores the album artist in the folder's artist field");
+    }
+
+    @Test
+    public void refreshAlbumSnapshotCoversAlbumYearAndGenres() {
+        MediaFile folder = albumFolder("Various Artists");
+        MediaFile track = albumTrack("Various Artists");
+        track.setAlbumName("Renamed");
+        track.setYear(null);
+        track.setGenre("Jazz");
+        track.setGenres("Jazz");
+
+        assertTrue(MediaFileService.refreshAlbumSnapshot(folder, track));
+
+        assertEquals("Renamed", folder.getAlbumName());
+        assertNull(folder.getYear());
+        assertEquals("Jazz", folder.getGenre());
+        assertEquals("Jazz", folder.getGenres());
+    }
+
+    @Test
+    public void refreshAlbumSnapshotIgnoresPlainDirectoriesAndMissingChild() {
+        MediaFile directory = albumFolder("Folder Name");
+        directory.setMediaType(MediaType.DIRECTORY);
+
+        assertFalse(MediaFileService.refreshAlbumSnapshot(directory, albumTrack("RepA;RepB")));
+        assertEquals("Folder Name", directory.getArtist());
+
+        MediaFile folder = albumFolder("Various Artists");
+        assertFalse(MediaFileService.refreshAlbumSnapshot(folder, null));
+        assertEquals("Various Artists", folder.getArtist());
     }
 }
