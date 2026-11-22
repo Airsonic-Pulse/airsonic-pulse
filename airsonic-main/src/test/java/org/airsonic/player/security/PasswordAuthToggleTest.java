@@ -20,13 +20,16 @@ package org.airsonic.player.security;
 
 import org.airsonic.player.config.AirsonicHomeConfig;
 import org.airsonic.player.domain.User;
+import org.airsonic.player.repository.ApiKeyRepository;
 import org.airsonic.player.repository.UserRepository;
 import org.airsonic.player.service.ApiKeyService;
 import org.airsonic.player.service.cache.UserCache;
+import org.airsonic.player.util.FixtureTableGuardExtension;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -36,6 +39,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -56,6 +61,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @AutoConfigureMockMvc
 @SpringBootTest
+@ExtendWith(FixtureTableGuardExtension.class)
 @EnableConfigurationProperties({AirsonicHomeConfig.class})
 public class PasswordAuthToggleTest {
 
@@ -76,7 +82,12 @@ public class PasswordAuthToggleTest {
     private ApiKeyService apiKeyService;
 
     @Autowired
+    private ApiKeyRepository apiKeyRepository;
+
+    @Autowired
     private UserCache userCache;
+
+    private final List<Integer> createdKeyIds = new ArrayList<>();
 
     @BeforeAll
     public static void beforeAll() {
@@ -87,6 +98,20 @@ public class PasswordAuthToggleTest {
     public void resetFlag() {
         // The seed user is shared across the class; restore the default so tests don't leak state.
         setPasswordAuthEnabled(true);
+    }
+
+    @AfterEach
+    public void deleteCreatedKeys() {
+        // The database outlives this class on PostgreSQL and MariaDB, so delete exactly the keys
+        // created here; a later class would otherwise find them (#419).
+        this.createdKeyIds.forEach(apiKeyRepository::deleteById);
+        this.createdKeyIds.clear();
+    }
+
+    private String generateKey(String name) {
+        ApiKeyService.GeneratedApiKey generated = apiKeyService.generate(USERNAME, name, null);
+        this.createdKeyIds.add(generated.persisted().getId());
+        return generated.rawKey();
     }
 
     private void setPasswordAuthEnabled(boolean enabled) {
@@ -162,7 +187,7 @@ public class PasswordAuthToggleTest {
 
     @Test
     public void apiKey_succeeds_whenFlagEnabled() throws Exception {
-        String key = apiKeyService.generate(USERNAME, "toggle-on", null).rawKey();
+        String key = generateKey("toggle-on");
         mvc.perform(get("/rest/getArtists")
                 .param("v", API_VERSION).param("c", "test").param("f", "json")
                 .param("apiKey", key)
@@ -175,7 +200,7 @@ public class PasswordAuthToggleTest {
     public void apiKey_succeeds_whenFlagDisabled() throws Exception {
         // The over-reach guard: disabling legacy password auth must NOT disable apiKey auth.
         setPasswordAuthEnabled(false);
-        String key = apiKeyService.generate(USERNAME, "toggle-off", null).rawKey();
+        String key = generateKey("toggle-off");
         mvc.perform(get("/rest/getArtists")
                 .param("v", API_VERSION).param("c", "test").param("f", "json")
                 .param("apiKey", key)
