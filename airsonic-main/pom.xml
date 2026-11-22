@@ -163,7 +163,7 @@
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcprov-jdk18on</artifactId>
-            <version>1.84</version>
+            <version>1.85</version>
             <scope>runtime</scope>
         </dependency>
         <!-- END Spring -->
@@ -225,7 +225,7 @@
         <dependency>
             <groupId>com.github.junrar</groupId>
             <artifactId>junrar</artifactId>
-            <version>7.5.10</version>
+            <version>7.6.1</version>
         </dependency>
 
         <dependency>
