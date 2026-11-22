@@ -89,7 +89,6 @@ public class APIKeyAuthTest {
 
     @BeforeEach
     public void setUp() {
-        apiKeyRepository.deleteAll();
         ApiKeyService.GeneratedApiKey g = apiKeyService.generate(USERNAME, "test-key", null);
         this.aliveKey = g.rawKey();
         this.aliveKeyId = g.persisted().getId();
@@ -98,9 +97,8 @@ public class APIKeyAuthTest {
 
     @AfterEach
     public void cleanUp() {
-        // Delete exactly the keys this class created, by their captured ids; without this the
-        // last test's rows outlived the class (#266 — the setUp deleteAll only shields the
-        // next test in THIS class, not whoever runs after).
+        // Delete exactly the keys this class created, by their captured ids, and nothing else:
+        // sweeping the whole table here would hide rows another class left behind (#266, #419).
         this.createdKeyIds.forEach(apiKeyRepository::deleteById);
         this.createdKeyIds.clear();
     }
