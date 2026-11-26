@@ -18,11 +18,14 @@
  */
 package org.airsonic.player.service.sonos;
 
+import com.sonos.services._1.AbstractMedia;
 import com.sonos.services._1.MediaMetadata;
 import org.airsonic.player.domain.MediaFile;
 import org.airsonic.player.domain.Player;
 import org.airsonic.player.service.JWTSecurityService;
+import org.airsonic.player.service.LastFmService;
 import org.airsonic.player.service.MediaFileService;
+import org.airsonic.player.service.MediaFolderService;
 import org.airsonic.player.service.PlayerService;
 import org.airsonic.player.service.TranscodingService;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +37,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.mock.web.MockHttpServletRequest;
 
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -56,6 +61,12 @@ public class SonosHelperTest {
 
     @Mock
     private JWTSecurityService jwtSecurityService;
+
+    @Mock
+    private MediaFolderService mediaFolderService;
+
+    @Mock
+    private LastFmService lastFmService;
 
     @InjectMocks
     private SonosHelper sonosHelper;
@@ -97,5 +108,48 @@ public class SonosHelperTest {
         MediaMetadata result = sonosHelper.forSong(song, "user", request);
 
         assertEquals(201, result.getTrackMetadata().getDuration());
+    }
+
+    private MediaFile song(int id) {
+        MediaFile song = new MediaFile();
+        song.setId(id);
+        song.setTitle("song " + id);
+        song.setMediaType(MediaFile.MediaType.MUSIC);
+        return song;
+    }
+
+    private Set<String> idsOf(List<AbstractMedia> media) {
+        return media.stream().map(AbstractMedia::getId).collect(Collectors.toSet());
+    }
+
+    // Shuffle Play on an artist: the filtered song list is unmodifiable and must be copied
+    // before it is shuffled (#414)
+    @Test
+    public void forShuffleArtistReturnsEverySongWithoutThrowing() {
+        MediaFile artist = new MediaFile();
+        artist.setId(1);
+        when(mediaFileService.getMediaFile(1)).thenReturn(artist);
+        when(mediaFileService.getDescendantsOf(artist, false)).thenReturn(List.of(song(11), song(12), song(13)));
+
+        List<AbstractMedia> result = sonosHelper.forShuffleArtist(1, 10, "user", request);
+
+        assertEquals(3, result.size());
+        assertEquals(Set.of("11", "12", "13"), idsOf(result));
+    }
+
+    // Artist Radio: same shape, with the songs coming from the similar-songs lookup (#414)
+    @Test
+    public void forRadioArtistReturnsEverySongWithoutThrowing() {
+        MediaFile artist = new MediaFile();
+        artist.setId(1);
+        when(mediaFileService.getMediaFile(1)).thenReturn(artist);
+        when(mediaFolderService.getMusicFoldersForUser("user")).thenReturn(List.of());
+        when(lastFmService.getSimilarSongsByMediaFile(artist, 10, List.of()))
+                .thenReturn(List.of(song(21), song(22), song(23)));
+
+        List<AbstractMedia> result = sonosHelper.forRadioArtist(1, 10, "user", request);
+
+        assertEquals(3, result.size());
+        assertEquals(Set.of("21", "22", "23"), idsOf(result));
     }
 }
