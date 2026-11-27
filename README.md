@@ -122,8 +122,11 @@ Requires Java 21 and Maven 3.9+. The WAR file will be at `airsonic-main/target/a
 
 The `airsonic-main` compile runs a custom [error-prone](https://errorprone.info) check,
 `ImmutableListMutation` (module `airsonic-build-checks`), that fails the build when code
-structurally mutates (`add`, `remove`, `set`, `clear`, `removeIf`, `sort`, ...) a List known to be
-unmodifiable: the result of `Stream.toList()`, `List.of/copyOf`,
+mutates a List known to be unmodifiable. Mutation means the instance methods (`add`, `addAll`,
+`remove`, `removeAll`, `removeIf`, `retainAll`, `clear`, `set`, `sort`, `replaceAll`) and the
+static `java.util.Collections` helpers that change their first argument (`sort`, `shuffle`,
+`reverse`, `swap`, `rotate`, `fill`, `replaceAll`, `copy`, `addAll`). Known to be unmodifiable
+means the result of `Stream.toList()`, `List.of/copyOf`,
 `Collectors.toUnmodifiableList()`, `Collections.unmodifiableList/unmodifiableCollection`, Spring
 Data's `Page/Slice.getContent()`, `Arrays.asList` (size changes only), or any method annotated
 `@org.airsonic.player.build.UnmodifiableResult`. Such mutations compile fine but throw
@@ -135,7 +138,22 @@ Data's `Page/Slice.getContent()`, `Arrays.asList` (size changes only), or any me
   mutable/immutable return paths.
 * When a caller needs a mutable list, copy first: `new ArrayList<>(producer())`.
 * A false positive can be suppressed with `@SuppressWarnings("ImmutableListMutation")` plus a
-  comment justifying why the mutation is safe — and is worth an issue against the checker.
+  comment justifying why the mutation is safe, and is worth an issue against the checker.
+
+What the check follows, and where it stops:
+
+* A mutation made directly on a producer call (`List.of(a).add(b)`, `Collections.shuffle(producer())`)
+  is flagged.
+* A local variable that is never reassigned is judged by its initialiser.
+* A local variable that is reassigned is judged by the last assignment (or the initialiser) that
+  comes before the mutation in source order, so `list = new ArrayList<>(list)` before a mutation
+  clears it and a reassignment after a mutation does not hide it. This applies only where source
+  order decides: when that assignment sits in another branch of an `if`, `switch` or `try`, or
+  when a loop contains both the mutation and an assignment to the same variable, the check stays
+  silent.
+* Remaining limit: a list passed to another method as an argument is not followed. A method that
+  mutates its parameter is not flagged, whatever the caller passes in (#371 was this shape).
+  Fields and parameters are not tracked either.
 
 Measured cost: one to a few seconds on the `airsonic-main` javac pass (1.3–4.4s across measured
 runs, under 2% of a full test build).
