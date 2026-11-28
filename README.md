@@ -52,15 +52,15 @@ Written in Java, Airsonic runs on most platforms, including Windows, Mac, Linux 
 Airsonic-Pulse v12.x.x series are intercompatible with Kagemomiji's [Airsonic-Advanced](https://github.com/kagemomiji/airsonic-advanced).
 However, this is no longer the case with vanilla Airsonic 10.6.x series, and may not necessarily be the case with 11.x versions of original Airsonic-Advanced (https://github.com/airsonic-advanced/airsonic-advanced).
 
-Also note that Airsonic-Pulse versions 13.x and higher (and its snapshots) are *breaking* (non-backwards-compatible) version changes. You will not be able to revert back to 10.x.x or 11.x.x versions after upgrading (the system _does_ create a backup of the DB in case such revert is necessary, but it must be manually restored).
+Also note that Airsonic-Pulse 13.x and higher (including snapshots) are *breaking*, non-backwards-compatible releases. After upgrading you cannot go back to 12.x, or to any 10.x or 11.x version. The upgrade creates a backup of the database in case you need to return, but that backup must be restored manually.
 
 ### Stand-alone binaries
 Airsonic-Pulse can be downloaded from
 [GitHub](https://github.com/Airsonic-Pulse/airsonic-pulse/releases).
 
-You need a _minimum_ Java Runtime Environment (JRE) of 17 for 12.x onwards (including snapshots).
-- For 12.x releases -> Java 17
-- For 13.x releases -> Java 21
+Airsonic-Pulse needs a _minimum_ Java Runtime Environment (JRE) depending on the release:
+- 12.x releases: Java 17
+- 13.x releases: Java 21
 
 Airsonic-Pulse is run similarly to (and in lieu of) vanilla Airsonic or Airsonic-Advanced.
 
@@ -101,22 +101,17 @@ Docker Compose files for HSQLDB, PostgreSQL, and MariaDB are provided in [`insta
 
 For full Docker documentation, see [docs/docker/](./docs/docker/README.md).
 
-
-[GHCR](https://ghcr.io/airsonic-pulse/airsonic-pulse). Docker releases are multiplatform, which means ARM64 is also released to Dockerhub. However, automated testing for those archs is not currently done in the CI/CD pipeline (only Linux platform is tested).
-
+[GHCR](https://ghcr.io/airsonic-pulse/airsonic-pulse). Images are published for both architectures, but only the `linux/amd64` is tested in the CI pipeline.
 
 Please use the [Airsonic documentation](https://airsonic.github.io/docs/) for instructions on running Airsonic. For the most part (currently) Airsonic-Pulse shares similar running instructions unless stated otherwise. 
-Notable exceptions will be available in the /docs folder (and if you think something is missing in the documentaion, please raise a documentation issue).
-
+Notable exceptions will be available in the /docs folder (and if you think something is missing in the documentation, please raise a documentation issue).
 
 ## 5. Building/Compiling
-(to rewrite/update)
-
-You may compile the code yourself by using Maven. A sample invocation would be (in the root):
+To build from source you need Java 21 and Maven 3.9 or newer. From the repository root:
 ```
-mvn clean package
+mvn clean package -DskipTests
 ```
-Requires Java 21 and Maven 3.9+. The WAR file will be at `airsonic-main/target/airsonic.war`.
+The WAR file is written to `airsonic-main/target/airsonic.war`. Leave out `-DskipTests` to run the test suite as part of the build, which takes considerably longer.
 
 ### Build-time guard: ImmutableListMutation
 
@@ -167,30 +162,31 @@ See the [Configuration](./docs/configuration/README.md)
 For Airsonic-Pulse-specific documentation, see the [`docs/`](./docs/README.md)
 directory in this repository.
 
-## 8. Compatibility Notes:
+## 8. Releases and compatibility
 
-### Airsonic-Pulse 12.x (released)
-Version 12.0.0 is the initial Airsonic-Pulse release. It is based on the final version of kagemomiji/airsonic-advanced (11.1.4) and remains fully compatible with it. Future 13.x releases will modernize the codebase (Java 21 exclusively) and may introduce breaking changes. Migration notes will be documented here when applicable.
+### Airsonic-Pulse 12.x (initial release)
+Version 12.0.0 is the initial Airsonic-Pulse release. It is based on the final version of kagemomiji/airsonic-advanced (11.1.4) and remains fully compatible with it. Future 13.x releases will modernize the codebase (Java 21 exclusively) and may introduce breaking changes. 14.x releases and future releases beyond 14.x will introduce more major changes (architecture, UI, ....). Migration notes will be documented here when applicable together with the release notes of each release.
 
-### Airsonic-Pulse 13.x
+Release notes for every version are on the [Releases page](https://github.com/Airsonic-Pulse/airsonic-pulse/releases) and in [`docs/release-notes/`](./docs/release-notes).
 
-#### Airsonic-Pulse 13.0.x (released)
+| Line   | Status            | Focus                                                                                                               |
+| ------ | ----------------- | ------------------------------------------------------------------------------------------------------------------- |
+| 12.0.x | Released          | Rebrand and stabilization. Based on the final kagemomiji/airsonic-advanced release (11.1.4) and compatible with it. |
+| 13.0.x | Released          | Java 21 only (Java 17 support dropped), virtual threads.                                                            |
+| 13.1.x | Released          | Subsonic API refactor, first part of the OpenSubsonic API.                                                          |
+| 13.2.x | Released          | OpenSubsonic API continued, user-reported bug fixes.                                                                |
+| 13.3.x | Release candidate | Hardening, bug fixes, security updates of dependencies.                                                             |
+| 13.4.x | In development    | Backend work: scanning, the artist model, further OpenSubsonic extensions.                                          |
+| 14.x   | Planned           | Frontend modernization.                                                                                             |
 
-13.x releases will modernize the codebase:
-- Java 21 exclusively, java 17 support is dropped
-- may introduce breaking changes. 
-Migration notes will be documented here when applicable.
+### Upgrade notes
 
-#### Airsonic-Pulse 13.1.x (planned)
-
-13.1.0 releases will further refactor the codebase:
-- refactoring of the Subsonic API
-- implementation of the OpenSubsonic API
-- update settings pages (ffmpeg path, some reset options)
-- removal of legacy (unsecure) authentication. (WARNING: before upgrading to 13.1.x or higher, make sure none of the userid's still use any legacy authentication)
-Migration notes will be documented here when applicable.
+- 13.x requires Java 21.
+- Upgrading to 13.x cannot be undone: a downgrade from 13.x to 12.x, or to any earlier Airsonic or Airsonic-Advanced version, is not possible.
+- Legacy (insecure) authentication is deprecated and will be removed in a later release. Move clients to API keys or token authentication before then.
+- Always take a backup before upgrading.
+  
 **WARNING: before upgrading to 13.1.x or higher, make sure none of the userid's still use any legacy authentication**
-
 **WARNING: Always take backups before trying new versions!**
 
 ## 9. Troubleshooting
